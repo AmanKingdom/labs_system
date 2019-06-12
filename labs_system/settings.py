@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+import sys
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -27,19 +29,19 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# 导入apps这个应用包，此代码不可少
+sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
 # Application definition
 
 INSTALLED_APPS = [
-    'app_apply.apps.AppApplyConfig',
+    'apply_experiments.apps.ApplyExperimentsConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'apps.app_apply',
-    'apps.app_manage',
 ]
 
 MIDDLEWARE = [

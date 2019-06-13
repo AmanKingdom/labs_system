@@ -1,0 +1,95 @@
+<!--base.html-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load staticfiles %}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <title>{% block title %}{% endblock %}</title>
+
+    <link href="{% static 'css_js/css/bootstrap.min.css' %}" rel="stylesheet">
+
+    <link href="{% static 'css_js/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
+    <link href="{% static 'css_js/css/style.css' %}" rel="stylesheet">
+
+    <!--bootstrap-table的依赖-->
+    <link rel="stylesheet" href="{% static 'css_js/css/bootstrap-table.css' %}">
+
+    <!--子html文件用这个填充块添加css样式-->
+    {% block add_css %}{% endblock %}
+</head>
+
+<body>
+<div id="wrapper">
+    <div {% block div_id %}{% endblock %} class="gray-bg dashbard-1">
+        <div class="row border-bottom">
+            <nav class="navbar navbar-static-top" role="navigation" style="margin-bottom: 0">
+                <ul class="nav navbar-top-links navbar-right">
+                    <li>
+                        <a href="#">
+                            <i class="fa fa-sign-in"></i> 登录
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="row border-bottom white-bg dashboard-header">
+            <div class="ibox float-e-margins">
+{#                <div class="ibox-title">#}
+{#                    <h5>课程信息</h5>#}
+{#                    <div class="ibox-tools">#}
+{#                        <a class="collapse-link">#}
+{#                            <i class="fa fa-chevron-up"></i>#}
+{#                        </a>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="ibox-content">#}
+{#                    <table data-toggle="table" id="lesson_info_table" class="table-hover">#}
+{#                        <thead><tr>#}
+{#                            <th data-field="institute">学院</th>#}
+{#                            <th data-field="teacher_name">教师姓名</th>#}
+{#                            <th data-field="lesson">课程</th>#}
+{#                            <th data-field="classes">授课班级</th>#}
+{#                            <th data-field="teaching_material">实验教材</th>#}
+{#                            <th data-field="consume_requirements">总体耗材需求</th>#}
+{#                            <th data-field="system_requirements">总体系统需求</th>#}
+{#                            <th data-field="soft_requirements">总体软件需求</th>#}
+{#                        </tr></thead>#}
+{#                        <tbody><tr>#}
+{#                            <td id="institute">由数据库提供</td>#}
+{#                            <td id="teacher_name">由数据库提供</td>#}
+{#                            <td>#}
+{#                                <a href="#" id="lesson" data-type="select" data-title="Select status"></a>#}
+{#                            </td>#}
+{#                            <td>#}
+{#                                <a href="#" id="classes" data-type="select" data-title="Select status"></a>#}
+{#                            </td>#}
+{#                            <td><a href="#" id="teaching_material" data-type="text"></a></td>#}
+{#                            <td><a href="#" id="consume_requirements" data-type="text"></a></td>#}
+{#                            <td><a href="#" id="system_requirements" data-type="text"></a></td>#}
+{#                            <td><a href="#" id="soft_requirements" data-type="text"></a></td>#}
+{#                        </tr></tbody>#}
+{#                    </table>#}
+{#                </div>#}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mainly scripts -->
+<script src="{% static 'css_js/js/jquery-3.1.1.min.js' %}"></script>
+<script src="{% static 'css_js/js/bootstrap.min.js' %}"></script>
+<script src="{% static 'css_js/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
+<script src="{% static 'css_js/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
+
+<!-- jQuery UI -->
+<script src="{% static 'css_js/js/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
+
+<!--子html文件用这个填充块添加js样式-->
+{% block add_js %}{% endblock %}
+</body>
+
+</html>

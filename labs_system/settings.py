@@ -83,8 +83,20 @@ WSGI_APPLICATION = 'labs_system.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': os.path.join(BASE_DIR, 'labs_system_database.db'),
     }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.mysql',
+    #     'NAME': 'labs_system_database',
+    #     'USER': 'root',
+    #     'PASSWORD': 'dgut520!',
+    #     'HOST': 'localhost',
+    #     'PORT': '3306',
+    #
+    #     # 'OPTIONS': {
+    #     #     'read_default_file': '/path/to/my.cnf',
+    #     # },
+    # }
 }
 
 

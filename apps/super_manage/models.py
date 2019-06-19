@@ -52,6 +52,19 @@ class Department(models.Model):
         return self.name
 
 
+# 年级
+class Grade(models.Model):
+    class Meta:
+        # 该数据库表名自定义为如下：
+        db_table = 'grade'
+
+    name = models.CharField(max_length=30, verbose_name='年级名称')
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, verbose_name='所属系')
+
+    def __str__(self):
+        return self.name
+
+
 # 班级
 class Classes(models.Model):
     class Meta:
@@ -59,7 +72,7 @@ class Classes(models.Model):
         db_table = 'classes'
 
     name = models.CharField(max_length=30, verbose_name='班级名称')
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, verbose_name='所属系')
+    grade = models.ForeignKey(Grade, on_delete=models.CASCADE, verbose_name='所属年级')
 
     def __str__(self):
         return self.name
@@ -81,15 +94,30 @@ class Teacher(models.Model):
         return self.name
 
 
-# 课程
-class Lesson(models.Model):
+# 实验总体需求，包含实验教材
+class TotalRequirements(models.Model):
     class Meta:
         # 该数据库表名自定义为如下：
-        db_table = 'lesson'
+        db_table = 'total_requirements'
+
+    total_consume_requirements = models.CharField(max_length=100, verbose_name='总体耗材需求', null=True, blank=True)
+    total_system_requirements = models.CharField(max_length=100, verbose_name='总体系统需求', null=True, blank=True)
+    total_soft_requirements = models.CharField(max_length=100, verbose_name='总体软件需求', null=True, blank=True)
+    teaching_materials = models.CharField(max_length=200, verbose_name='总体软件需求', null=True, blank=True)
+
+
+# 课程
+class Course(models.Model):
+    class Meta:
+        # 该数据库表名自定义为如下：
+        db_table = 'course'
 
     name = models.CharField(max_length=50, verbose_name='课程名称')
-    classes = models.ForeignKey(Classes, on_delete=models.CASCADE, verbose_name='授课班级')
-    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, verbose_name='授课老师')
+    # 一个班级选择多个课程，一个课程可以被多个班级选择
+    classes = models.ManyToManyField(Classes, verbose_name='授课班级')
+    # 一个课程可以多个老师讲授，一个老师也可以讲授多个课程
+    teachers = models.ManyToManyField(Teacher, verbose_name='授课老师')
+    total_requirements = models.ForeignKey(TotalRequirements, on_delete=models.CASCADE, verbose_name='总体实验需求')
 
     def __str__(self):
         return self.name

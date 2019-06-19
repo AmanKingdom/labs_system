@@ -35,15 +35,15 @@ sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 # Application definition
 
 INSTALLED_APPS = [
-    'apps.apply_experiments.apps.ApplyExperimentsConfig',
-    'apps.browse.apps.BrowseConfig',
-    'apps.super_manage.apps.SuperManageConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'apps.browse.apps.BrowseConfig',
+    'apps.apply_experiments.apps.ApplyExperimentsConfig',
+    'apps.super_manage.apps.SuperManageConfig',
 ]
 
 MIDDLEWARE = [
@@ -81,22 +81,22 @@ WSGI_APPLICATION = 'labs_system.wsgi.application'
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'labs_system_database.db'),
-    }
     # 'default': {
-    #     'ENGINE': 'django.db.backends.mysql',
-    #     'NAME': 'labs_system_database',
-    #     'USER': 'root',
-    #     'PASSWORD': 'dgut520!',
-    #     'HOST': 'localhost',
-    #     'PORT': '3306',
-    #
-    #     # 'OPTIONS': {
-    #     #     'read_default_file': '/path/to/my.cnf',
-    #     # },
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': os.path.join(BASE_DIR, 'labs_system_database.db'),
     # }
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'labs_system_database',
+        'USER': 'root',
+        'PASSWORD': 'dgut520!',
+        'HOST': 'localhost',
+        'PORT': '3307',
+
+        # 'OPTIONS': {
+        #     'read_default_file': '/path/to/my.cnf',
+        # },
+    }
 }
 
 

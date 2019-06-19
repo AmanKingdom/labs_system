@@ -1,5 +1,5 @@
 from django.db import models
-from super_manage.models import Institute, Lesson
+from apps.super_manage.models import Institute, Course
 
 
 # 实验类型
@@ -29,18 +29,6 @@ class Labs(models.Model):
         return self.name
 
 
-# 实验总体需求，包含实验教材
-class TotalRequirements(models.Model):
-    class Meta:
-        # 该数据库表名自定义为如下：
-        db_table = 'total_requirements'
-
-    total_consume_requirements = models.CharField(max_length=100, verbose_name='总体耗材需求', null=True, blank=True)
-    total_system_requirements = models.CharField(max_length=100, verbose_name='总体系统需求', null=True, blank=True)
-    total_soft_requirements = models.CharField(max_length=100, verbose_name='总体软件需求', null=True, blank=True)
-    teaching_materials = models.CharField(max_length=200, verbose_name='总体软件需求', null=True, blank=True)
-
-
 # 单项实验的特殊需求
 class SpecialRequirements(models.Model):
     class Meta:
@@ -65,9 +53,8 @@ class Experiment(models.Model):
     days_of_the_week = models.IntegerField(verbose_name='星期')
     section = models.IntegerField(verbose_name='节次')
     labs = models.ForeignKey(Labs, on_delete=models.SET_NULL, null=True, verbose_name='实验室')
-    total_requirements = models.ForeignKey(TotalRequirements, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='总体需求')
     special_requirements = models.ForeignKey(SpecialRequirements, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='特殊需求')
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, verbose_name='所属课程名称')
+    lesson = models.ForeignKey(Course, on_delete=models.CASCADE, verbose_name='所属课程名称')
     status = models.IntegerField(verbose_name='状态，0-草稿状态，1-已提交但未审核状态，2-已提交但审核未通过状态，4-审核通过状态', default=0)
 
     def __str__(self):

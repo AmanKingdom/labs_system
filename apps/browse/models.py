@@ -1,6 +1,5 @@
 from django.db import models
-
-from apply_experiments.models import Experiment
+from apps.apply_experiments.models import Experiment
 
 
 # 已有安排的实验室及其时间，时间通过实验的id从实验项目中获取

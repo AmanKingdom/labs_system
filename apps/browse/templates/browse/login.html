@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <link rel="icon" href="/static/image/default/logo.svg">
+
+    <title>{% if title %}{{ title }}{% else %}登录{% endif %}</title>
+
+    <link href="/static/css_js/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css_js/font-awesome/css/font-awesome.css" rel="stylesheet">
+
+    <link href="/static/css_js/css/animate.css" rel="stylesheet">
+    <link href="/static/css_js/css/style.css" rel="stylesheet">
+</head>
+
+<body class="gray-bg">
+<div class="middle-box text-center loginscreen animated fadeInDown">
+    <div>
+        <div>
+            <h1 class="logo-name">LAB</h1>
+        </div>
+        <h3>东莞理工学院 · 实验室管理系统</h3>
+        <p>{% if message %}{{ message }}{% else %}请先登录{% endif %}</p>
+        <form class="m-t" role="form" action="{% url 'browse:login' %}" method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <input type="text" class="form-control" placeholder="工号/学号" required name="account" autofocus >
+            </div>
+            <div class="form-group">
+                <input type="password" class="form-control" placeholder="密码" required name="password">
+            </div>
+            <button type="submit" class="btn btn-primary block full-width m-b">登录</button>
+        </form>
+    </div>
+</div>
+
+<!-- Mainly scripts -->
+<script src="/static/css_js/js/jquery-3.1.1.min.js"></script>
+<script src="/static/css_js/js/bootstrap.min.js"></script>
+</body>
+</html>

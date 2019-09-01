@@ -39,6 +39,35 @@ class Institute(models.Model):
         return self.name
 
 
+# 实验室属性
+class LabsAttribute(models.Model):
+    class Meta:
+        # 该数据库表名自定义为如下：
+        db_table = 'labs_attribute'
+
+    name = models.CharField(max_length=50, verbose_name='属性名称')
+    # labs = models.ForeignKey(Labs, verbose_name='对应实验室', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+
+# 实验室
+class Labs(models.Model):
+    class Meta:
+        # 该数据库表名自定义为如下：
+        db_table = 'labs'
+
+    name = models.CharField(max_length=30, verbose_name='实验室名称')
+    institute = models.ForeignKey(Institute, on_delete=models.CASCADE, verbose_name='所属学院')
+    number_of_people = models.IntegerField(verbose_name='容纳人数', default=40)
+    dispark = models.BooleanField(verbose_name='开放情况', default=True)
+    attribute = models.ForeignKey(LabsAttribute, on_delete=models.SET_NULL, verbose_name='实验室属性', blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+
 # 系
 class Department(models.Model):
     class Meta:
@@ -86,9 +115,9 @@ class Teacher(models.Model):
 
     name = models.CharField(max_length=20, verbose_name='教师姓名')
     department = models.ForeignKey(Department, on_delete=models.CASCADE, verbose_name='所属系')
-    account = models.IntegerField(verbose_name='登录账号，应为教师工号')
+    account = models.CharField(max_length=100, verbose_name='登录账号，应为教师工号')
     password = models.CharField(max_length=18, verbose_name='登录密码', default='123456')
-    phone = models.IntegerField(verbose_name='手机号码（用于找回密码，非必填）', null=True, blank=True)
+    phone = models.CharField(max_length=11, verbose_name='手机号码（用于找回密码，非必填）', null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -117,7 +146,8 @@ class Course(models.Model):
     classes = models.ManyToManyField(Classes, verbose_name='授课班级')
     # 一个课程可以多个老师讲授，一个老师也可以讲授多个课程
     teachers = models.ManyToManyField(Teacher, verbose_name='授课老师')
-    total_requirements = models.ForeignKey(TotalRequirements, on_delete=models.CASCADE, verbose_name='总体实验需求')
+    total_requirements = models.ForeignKey(TotalRequirements, on_delete=models.CASCADE,
+                                           verbose_name='总体实验需求', blank=True, null=True)
 
     def __str__(self):
         return self.name

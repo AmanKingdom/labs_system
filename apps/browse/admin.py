@@ -1,3 +1,6 @@
 from django.contrib import admin
 
-# Register your models here.
+from apps.browse.models import Schedule, Assistant
+
+admin.site.register(Schedule)
+admin.site.register(Assistant)

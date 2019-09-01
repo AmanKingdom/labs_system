@@ -1,0 +1,763 @@
+<!--apply.html-->
+
+{% extends 'apply_experiments/base.html' %}
+
+{% block add_css %}
+    <!--多项选择的css依赖-->
+    <link href="/static/css_js/css/plugins/select2/select2.min.css" rel="stylesheet" type="text/css">
+    <link href="/static/css_js/css/plugins/select2/select2-bootstrap.css" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block body_block %}
+    <div class="row border-bottom white-bg dashboard-header">
+        <div class="ibox float-e-margins">
+            <div class="ibox-title">
+                <h5>课程信息</h5>
+                <div class="ibox-tools">
+                    <a class="collapse-link">
+                        <i class="fa fa-chevron-up"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="ibox-content">
+                <table data-toggle="table" id="course_info_table" class="table-hover">
+                    <thead><tr>
+                        <th data-field="department">教师所属系</th>
+                        <th data-field="teacher_name">教师姓名</th>
+                        <th data-field="course">课程</th>
+                        <th data-field="classes">授课班级</th>
+                        <th data-field="teaching_materials">实验教材</th>
+                        <th data-field="consume_requirements">总体耗材需求</th>
+                        <th data-field="system_requirements">总体系统需求</th>
+                        <th data-field="soft_requirements">总体软件需求</th>
+                    </tr></thead>
+                    <tbody><tr>
+                        <td id="department">{{ user.department.name }}</td>
+                        <td id="teacher_name">{{ user.name }}</td>
+                        <td>
+                            {#<a href="#" id="course" data-type="select" data-title="Select status"></a>#}
+                            <select id="course" class="form-control">
+                                <option value=0>请先选择课程</option>
+                                {% for x in courses %}
+                                    <option value={{ x.id }}>{{ x.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            {#<a href="#" id="classes" data-type="select" data-title="Select status"></a>#}
+                            <select id="classes" class="form-control" multiple="multiple" size="1"></select>
+                        </td>
+                        <td><a href="#" id="teaching_materials" data-type="text"></a></td>
+                        <td><a href="#" id="consume_requirements" data-type="text"></a></td>
+                        <td><a href="#" id="system_requirements" data-type="text"></a></td>
+                        <td><a href="#" id="soft_requirements" data-type="text"></a></td>
+                    </tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="ibox float-e-margins">
+            <div class="ibox-title">
+                <h5>实验课信息 </h5>
+                <div class="ibox-tools">
+                    <button id="add_experiment_button" class="btn btn-primary">添加实验项目</button>
+                    <button id="remove_experiment_button" class="btn btn-danger" disabled>批量删除</button>
+                    <a class="collapse-link">
+                        <i class="fa fa-chevron-up"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="ibox-content">
+                <table
+                        id="experiment_info_table"
+                        data-detail-formatter="detailFormatter"
+                        data-minimum-count-columns="2"
+                        data-id-field="id"
+                        data-side-pagination="server"
+                        data-response-handler="responseHandler">
+                </table>
+                <div align="right">
+                    <br>
+                    <button id="submit" class="btn btn-primary" data-target="#all_info_after_submit_modal_table" href="javascript:void(0)" title="提交后会显示所有提交的信息" data-toggle="modal">提交</button>
+                </div>
+
+                <!--单独添加特殊需求的模态表格-->
+                <div id="add_special_requirements_modal_table" class="modal fade" tabindex="-1" role="dialog">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">为该实验单独添加特殊需求</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <table id="special_requirements_table"
+                                       data-toggle="table"
+                                       data-height="268">
+                                    <thead><tr>
+                                        <th data-field="special_consume_requirements">耗材需求</th>
+                                        <th data-field="special_system_requirements">系统需求</th>
+                                        <th data-field="special_soft_requirements">软件需求</th>
+                                    </tr></thead>
+                                    <tbody><tr>
+                                        <td><a href="#" id="special_consume_requirements" data-type="text"></a></td>
+                                        <td><a href="#" id="special_system_requirements" data-type="text"></a></td>
+                                        <td><a href="#" id="special_soft_requirements" data-type="text"></a></td>
+                                    </tr></tbody>
+                                </table>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="set_special_requirements">确定</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!--显示提交后所有信息的模态表格-->
+                <div id="all_info_after_submit_modal_table" class="modal fade" tabindex="-1" role="dialog">
+                    <div class="modal-dialog" role="document" style="width: 1388px;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">您提交的信息如下</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <!--提交后的课程的信息表-->
+                                <table id="all_submit_info_table_course"
+                                       data-toggle="table"
+                                       data-height="100">
+                                    <thead><tr>
+                                        <th data-field="after_submit_department">学院</th>
+                                        <th data-field="after_submit_teacher_name">教师姓名</th>
+                                        <th data-field="after_submit_course">课程</th>
+                                        <th data-field="after_submit_classes">班级</th>
+                                        <th data-field="after_submit_teaching_materials">实验教材</th>
+                                        <th data-field="after_submit_consume_requirements">总体耗材需求</th>
+                                        <th data-field="after_submit_system_requirements">总体系统需求</th>
+                                        <th data-field="after_submit_soft_requirements">总体软件需求</th>
+                                    </tr></thead>
+                                </table>
+                                <!--提交后的该课程的所有实验项目的信息表-->
+                                <table id="all_submit_info_table_experiments"
+                                       data-toggle="table"
+                                       data-height="368">
+                                    <thead><tr>
+                                        <th data-field="after_submit_id">编号</th>
+                                        <th data-field="after_submit_experiment_name">项目名称</th>
+                                        <th data-field="after_submit_experiment_type">类型</th>
+                                        <th data-field="after_submit_lecture_time">学时</th>
+                                        <th data-field="after_submit_which_week">周次</th>
+                                        <th data-field="after_submit_days_of_the_week">星期</th>
+                                        <th data-field="after_submit_section">节次</th>
+                                        <th data-field="after_submit_labs_of_institute">实验室所属学院</th>
+                                        <th data-field="after_submit_labs_attribute">实验室属性</th>
+                                        <th data-field="after_submit_labs">实验室</th>
+                                        <th data-field="after_submit_special_consume_requirements">特殊耗材需求</th>
+                                        <th data-field="after_submit_special_system_requirements">特殊系统需求</th>
+                                        <th data-field="after_submit_special_soft_requirements">特殊软件需求</th>
+                                    </tr></thead>
+                                </table>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="quit_modal_table">好的</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block add_js %}
+    <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
+
+    <!--全局的bootstrap table 和 X-editable 配置 开始-->
+    <script>
+        var global_current_special_requirements_row = null;  // 临时存放当前行数据
+
+        var empty_text = '点击输入';    // 全局性的空文本
+        var not_found_data = '暂无数据';    // 全局性的找不到数据提示文本
+
+        $.fn.editable.defaults.mode = 'inline';//设置行内编辑模式
+        $.fn.editable.defaults.showbuttons = false;//设置所有的元素不显示按钮
+        $.fn.editable.defaults.emptytext = empty_text;//设置默认的空文本
+        $.fn.editable.defaults.onblur= "submit"; //表示鼠标离开输入框即进行提交保存操作
+
+        $.fn.bootstrapTable.columnDefaults.valign = 'middle';//垂直居中
+        $.fn.bootstrapTable.columnDefaults.align = 'center';//水平居中
+        $.fn.bootstrapTable.columnDefaults.class='not-wrap';//什么作用来着？
+        $.fn.bootstrapTable.columnDefaults.undefinedText = empty_text;//当表格项没有数据时显示的内容
+        $.fn.bootstrapTable.defaults.striped = true;
+    </script>
+    <!--全局的bootstrap table 和 X-editable 配置 结束-->
+
+    <!--课程信息表配置 开始-->
+    <script>
+        $(document).ready(function() {
+
+            // 选择课程后的授课班级联动数据刷新
+            $("#course").change(function () {
+                var course_id = $(this).val();
+                console.log('选择的课程 ID 为：' + course_id);
+
+                $.ajax({    // 通过 AJAX 请求联动数据
+                    url: '{% url 'apply_experiments:ajax_load_classes_of_course' %}',
+                    data: {
+                        'course_id': course_id  // course_id 传到GET参数
+                    },
+                    success: function (data) {  // 由 load_classes_of_course 返回的 classes_data 作为 data
+                        $("#classes").empty();  // 清空原来选中但未提交的内容
+                        var classes= $("#classes").select2({
+                            language: {
+                                noResults: function (params) {
+                                    return "请先选择课程";
+                                }
+                            },
+                            {#width:200,#}
+                        });
+                        classes.val(classes.dataType).trigger("change");
+                        $("#classes").html(data);  // 用返回的数据替换班级选择栏的内容
+                    }
+                });
+            });
+
+            // 授课班级设置为多选select
+            $("#classes").select2({
+                language: {
+                    noResults: function (params) {
+                        return "请先选择课程";
+                    }
+                },
+                {#width:200,#}
+            });
+
+            // 实验教材
+            $('#teaching_materials').editable({
+                placeholder: "一般为书籍或视频",
+                validate: function (v) {
+                    if ($.trim(v) == '') {
+                        return '该项必填';
+                    }
+                }
+            });
+
+            // 总体环境需求
+            $('#consume_requirements').editable({
+                placeholder: '如：电子试验箱'
+            });
+            $('#system_requirements').editable({
+                placeholder: '如：windows10'
+            });
+            $('#soft_requirements').editable({
+                placeholder: '如：pycharm专业版'
+            });
+        });
+    </script>
+    <!--课程信息表配置 结束-->
+
+    <!--实验项目表的配置 开始-->
+    <script>
+        var $experiment_info_table = $('#experiment_info_table');
+        var $remove_experiment_button = $('#remove_experiment_button');
+        var selections = [];
+
+        // 初始化实验项目表
+        function init_experiment_info_table() {
+            console.log('init_experiment_info_table()执行');
+            $experiment_info_table.bootstrapTable('destroy').bootstrapTable({
+                locale: $('#locale').val(),
+                columns: [
+                    [{
+                        field: 'state',
+                        checkbox: true,
+                    }, {
+                        title: '编号',
+                        field: 'id',
+                        editable:{
+                            type:'text',
+                        }
+                    }, {
+                        field: 'experiment_name',
+                        title: '项目名称',
+                        editable:{
+                            type:'text',
+                        },
+                    }, {
+                        field: 'experiment_type',
+                        title: '类型',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% if experiments_type %}
+                                    {% for x in experiments_type %}
+                                        { value: {{ x.id }}, text: '{{ x.name }}'},
+                                    {% endfor %}
+                                {% else %}
+                                    { value:"", text: not_found_data},
+                                {% endif %}
+                            ]
+                        }
+                    }, {
+                        field: 'lecture_time',
+                        title: '学时',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% if lecture_time %}
+                                    {% for x in lecture_time %}
+                                        { value: {{ x }}, text: {{ x }}},
+                                    {% endfor %}
+                                {% else %}
+                                    { value:"", text: not_found_data},
+                                {% endif %}
+                            ]
+                        }
+                    }, {
+                        field: 'which_week',
+                        title: '周次',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% if which_week %}
+                                    {% for x in which_week %}
+                                        { value: {{ x }}, text: {{ x }}},
+                                    {% endfor %}
+                                {% else %}
+                                    { value:"", text: not_found_data},
+                                {% endif %}
+                            ]
+                        }
+                    }, {
+                        field: 'days_of_the_week',
+                        title: '星期',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% if days_of_the_week %}
+                                    {% for x in days_of_the_week %}
+                                        { value: {{ x }}, text: {{ x }}},
+                                    {% endfor %}
+                                {% else %}
+                                    { value:"", text: not_found_data},
+                                {% endif %}
+                            ]
+                        }
+                    }, {
+                        field: 'section',
+                        title: '节次',
+                        editable:{
+                            type:'select2',
+                            source: [
+                                {% if section %}
+                                    {% for x in section %}
+                                        { value: {{ x }}, text: {{ x }}},
+                                    {% endfor %}
+                                {% else %}
+                                    { value:"", text: not_found_data},
+                                {% endif %}
+                            ],
+                            select2 : {
+                                multiple : true,
+                                width : '100px'//设置宽，这个一定要，不然显示框很窄
+                            }
+                        }
+                    }, {
+                        field: 'labs_of_institute',
+                        title: '实验室所属学院',
+                        onchange:select_institute,
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% if labs_of_institute %}
+                                    {% for x in labs_of_institute %}
+                                        { value: {{ x.id }}, text: '{{ x.name }}'},
+                                    {% endfor %}
+                                {% else %}
+                                    { value:"", text: not_found_data},
+                                {% endif %}
+                            ]
+                        }
+                    }, {
+                        field: 'labs_attribute',
+                        title: '实验室属性',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% if labs_attribute %}
+                                    {% for x in labs_attribute %}
+                                        {value: {{ x.id }}, text: '{{ x.name }}' },
+                                    {% endfor %}
+                                {% else %}
+                                    {value:"", text: '暂无数据'}
+                                {% endif %}
+                            ]
+                        }
+                    }, {
+                        field: 'labs',
+                        title: '实验室',
+                        editable:{
+                            type:'select2',
+                            source: [
+                                {% if all_labs %}
+                                    {% for x in all_labs %}
+                                        {value: {{ x.id }}, text: '{{ x.name }}' },
+                                    {% endfor %}
+                                {% else %}
+                                    {value:"", text: '暂无数据'}
+                                {% endif %}
+                            ],
+                            select2 : {
+                                // allowClear : true,
+                                multiple : true,
+                                // tokenSeparators : [",", " "],
+                                width : '100px'//设置宽，这个一定要，不然显示框很窄
+                            }
+                        }
+                    }, {
+                        field: 'operate',
+                        title: '单项操作',
+                        events: window.operateEvents,
+                        formatter: operateFormatter
+                    }]
+                ]
+            });
+
+            function operateFormatter(value, row, index) {
+                console.log('operateFormatter()执行');
+                return [
+                    '<a class="add_special_requirements" href="javascript:void(0)" title="为该项单独添加耗材、系统、软件需求" data-toggle="modal" data-target="#add_special_requirements_modal_table">',
+                    '<i class="glyphicon glyphicon-plus-sign"></i>',
+                    '</a>',
+                    {#'<a class="remove_experiment_button" href="javascript:void(0)" title="删除该项">',#}
+                    {#'<i class="glyphicon glyphicon-trash"></i>',#}
+                    {#'</a>'#}
+                ].join('')
+            }
+
+            function select_institute(value, row, index){
+                console.log('ddd')
+            }
+
+            $experiment_info_table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table', function () {
+                $remove_experiment_button.prop('disabled', !$experiment_info_table.bootstrapTable('getSelections').length);
+                // save your data, here just save the current page
+                selections = getIdSelections()
+                // push or splice the selections if you want to save all data selections
+            });
+            $experiment_info_table.on('all.bs.table', function (e, name, args) {
+                console.log(name, args)
+            });
+
+
+            // 删除实验项目的点击事件
+            $remove_experiment_button.click(function () {
+                var ids = getIdSelections();
+                $experiment_info_table.bootstrapTable('remove', {
+                    field: 'id',
+                    values: ids
+                });
+                $remove_experiment_button.prop('disabled', true)
+            })
+        }
+
+        function getIdSelections() {
+            return $.map($experiment_info_table.bootstrapTable('getSelections'), function (row) {
+                console.log('getIdSelections()执行');
+                return row.id
+            })
+        }
+
+        function responseHandler(res) {
+            $.each(res.rows, function (i, row) {
+                row.state = $.inArray(row.id, selections) !== -1
+            });
+            console.log('responseHandler()执行');
+            return res
+        }
+
+        $(function() {
+            init_experiment_info_table();
+
+            $('#locale').change(init_experiment_info_table)
+        })
+    </script>
+    <!--实验项目表的配置 结束-->
+
+    <!--动态添加实验项目表格行 事件 开始-->
+    <script>
+        $("#add_experiment_button").click(function () {
+            // 用index实现编号自增
+            var data = $experiment_info_table.bootstrapTable('getData');
+            var index = data.length;
+            var new_row = JSON.stringify(data[index-1]);
+            // 如果是第一次添加行，则为空
+            if(!new_row){
+                new_row = {
+                    "id":index,
+                    "experiment_name":"",
+                    "experiment_type":"",
+                    "lecture_time":"",
+                    "which_week":"",
+                    "days_of_the_week":"",
+                    "section":"",
+                    "labs_of_institute":"",
+                    "labs_attribute":"",
+                    "labs":"",
+                    "special_consume_requirements":"",
+                    "special_system_requirements":"",
+                    "special_soft_requirements":""
+                }
+            }else{
+                new_row = JSON.parse(new_row);
+                // 清空上一行的所有特殊需求，因为多数情况下并不是每个实验都有这个特殊需求
+                new_row.special_consume_requirements = "";
+                new_row.special_system_requirements = "";
+                new_row.special_soft_requirements = "";
+
+                new_row = JSON.stringify(new_row);
+                new_row = eval('(' + new_row + ')');
+
+                console.log('动态添加实验项目--获取到上一行数据：'+JSON.stringify(new_row));
+                new_row["id"] = index;
+            }
+            // 最后插入该行
+            $experiment_info_table.bootstrapTable('insertRow', {
+                index: index,
+                row: new_row
+            });
+        });
+    </script>
+    <!--动态添加实验项目表格行 事件 结束-->
+
+    <!--单项点击事件配置 开始-->
+    <script>
+        window.operateEvents = {
+            // 点击对单项实验添加需求的事件
+            'click .add_special_requirements': function (e, value, row, index) {
+                global_current_special_requirements_row = eval('(' + JSON.stringify(row) + ')');
+                $('#experiment_info_table').bootstrapTable('updateRow', row=global_current_special_requirements_row)
+            },
+            /*// 点击删除单项实验的事件
+            'click .remove_experiment_button': function (e, value, row, index) {
+                $experiment_info_table.bootstrapTable('remove', {
+                    field: 'id',
+                    values: [row.id]
+                })
+            }*/
+        };
+    </script>
+    <!--单项点击事件配置 结束-->
+
+    <!--为单个项目添加特殊需求 模态表格 开始-->
+    <script>
+        var special_requirements_table = $('#special_requirements_table');
+
+        $(function() {
+            $('#add_special_requirements_modal_table').on('shown.bs.modal', function () {
+                console.log('单个项目添加特殊需求模态表格--获取到耗材需求数据：'+global_current_special_requirements_row.special_consume_requirements);
+
+                // 下面这一串if-else是用来区分是否已经填过数据，并把填过的数据还原到模态表格显示
+                if(global_current_special_requirements_row.special_consume_requirements){
+                    $('#special_consume_requirements').editable('setValue', global_current_special_requirements_row.special_consume_requirements);
+                }else{
+                    $('#special_consume_requirements').editable('setValue', null);
+                }
+                if(global_current_special_requirements_row.special_system_requirements){
+                    $('#special_system_requirements').editable('setValue', global_current_special_requirements_row.special_system_requirements);
+                }else{
+                    $('#special_system_requirements').editable('setValue', null);
+                }
+                if(global_current_special_requirements_row.special_soft_requirements){
+                    $('#special_soft_requirements').editable('setValue', global_current_special_requirements_row.special_soft_requirements);
+                }else{
+                    $('#special_soft_requirements').editable('setValue', null);
+                }
+                special_requirements_table.bootstrapTable('resetView')
+            })
+        });
+
+        // 点击确认提交特殊需求数据的按钮事件
+        $('#set_special_requirements').click(function () {
+            var special_consume_requirements = document.getElementById('special_consume_requirements').innerText;
+            var special_system_requirements = document.getElementById('special_system_requirements').innerText;
+            var special_soft_requirements = document.getElementById('special_soft_requirements').innerText;
+
+            if(special_consume_requirements != empty_text){
+                global_current_special_requirements_row.special_consume_requirements = special_consume_requirements;
+                console.log(special_consume_requirements+' 不等于空文本 '+empty_text)
+            }
+            if(special_system_requirements != empty_text){
+                global_current_special_requirements_row.special_system_requirements = special_system_requirements;
+                console.log(special_system_requirements+' 不等于空文本 '+empty_text)
+            }
+            if(special_soft_requirements != empty_text){
+                global_current_special_requirements_row.special_soft_requirements = special_soft_requirements;
+                console.log(special_soft_requirements+' 不等于空文本 '+empty_text)
+            }
+
+            global_current_special_requirements_row = eval('(' + JSON.stringify(global_current_special_requirements_row) + ')');
+            console.log('单个项目添加特殊需求模态表格--添加了特殊的需求后：'+ JSON.stringify(global_current_special_requirements_row));
+            $('#experiment_info_table').bootstrapTable('updateRow', {
+                index: global_current_special_requirements_row.id,
+                row: global_current_special_requirements_row
+            })
+        })
+    </script>
+    <!--为单个项目添加特殊需求 模态表格 结束-->
+
+    <!--整理所有信息并存储到session 开始-->
+    <script>
+        $('#submit').click(function () {
+            var experiments = $experiment_info_table.bootstrapTable('getData');
+            var consume_requirements = check_empty(document.getElementById("consume_requirements").innerText);
+            var system_requirements = check_empty(document.getElementById("system_requirements").innerText);
+            var soft_requirements = check_empty(document.getElementById("soft_requirements").innerText);
+            var teaching_materials = check_empty(document.getElementById("teaching_materials").innerText);
+
+            function check_empty(x) {
+                if(x == empty_text){
+                    return ""
+                }else{
+                    return x
+                }
+            }
+
+            var selected_course = $('#course option:selected').text();
+            var selected_course_id = "";
+
+            if(selected_course == "请先选择课程"){
+                selected_course = ""
+            }else{
+                selected_course_id = $('#course option:selected').val()
+            }
+
+            /*
+            // 可行的获取 select2 的 value 和 text 的方案
+            var selected_classes_name =  $("#classes option:checked").text();
+            var selected_classes_id = $('#classes').select2().val();
+            console.log('选中的班级：'+selected_classes_name+'。id分别为：'+selected_classes_id);
+            */
+
+
+            var  selected_classes_name=eval('([])');
+            {#var  selected_classes_id=eval('([])');#}
+            var selected_classes_id = $('#classes').select2().val();
+            var selected_classes=document.getElementById('classes');
+
+            var options=selected_classes.options;
+            for(var i=0;i<options.length;i++){
+                if(options[i].selected){
+                    selected_classes_name.push(options[i].text);
+                    {#selected_classes_id.push(options[i].value);#}
+                }
+            }
+            console.log('选择的班级为：'+selected_classes_name+' id 为：'+selected_classes_id);
+
+            var data_json = {
+                "department":document.getElementById("department").innerText,
+                "teacher_name":document.getElementById("teacher_name").innerText,
+
+                "course":selected_course,
+                "course_id": selected_course_id,
+
+                "classes":selected_classes_name,
+                "classes_id":selected_classes_id,
+
+                "teaching_materials":teaching_materials,
+
+                "consume_requirements":consume_requirements,
+                "system_requirements":system_requirements,
+                "soft_requirements":soft_requirements,
+
+                "experiments": experiments
+            };
+
+            /*
+            for(var i=0; i<experiments.length; i++){
+                if(consume_requirements != empty_text){
+                    experiments[i].special_consume_requirements = consume_requirements+','+experiments[i].special_consume_requirements;
+                }
+                if(system_requirements != empty_text) {
+                    experiments[i].special_system_requirements = system_requirements + ',' + experiments[i].special_system_requirements;
+                }
+                if(soft_requirements != empty_text) {
+                    experiments[i].special_soft_requirements = soft_requirements + ',' + experiments[i].special_soft_requirements;
+                }
+                data_json.experiments.push(experiments[i]);
+            }*/
+            console.log('整理所有信息后：'+data_json.toString());
+            sessionStorage.setItem("course_and_its_experiments_json", JSON.stringify(data_json));
+            // window.location.href="manage_application.html";
+        });
+    </script>
+    <!--整理所有信息并存储到session 结束-->
+
+    <!--提交后显示所有信息 模态表格 开始-->
+    <script>
+        var all_submit_info_table_course = $('#all_submit_info_table_course');
+        var all_submit_info_table_experiments = $('#all_submit_info_table_experiments');
+        $(function() {
+            $('#all_info_after_submit_modal_table').on('shown.bs.modal', function () {
+                // 首先清空原来的数据，我知道我这个方法不对，但我目前还找不出那个刷新的方法，很苦恼，暂时先这样
+                all_submit_info_table_course.bootstrapTable('removeAll');
+                all_submit_info_table_experiments.bootstrapTable('removeAll');
+
+                var course_and_its_experiments_json = sessionStorage.getItem("course_and_its_experiments_json");
+                course_and_its_experiments_json = JSON.parse(course_and_its_experiments_json)
+                course_and_its_experiments_json = eval('(' + JSON.stringify(course_and_its_experiments_json) + ')');
+
+                var course_submit_info_json = {
+                    "after_submit_department":course_and_its_experiments_json.department,
+                    "after_submit_teacher_name":course_and_its_experiments_json.teacher_name,
+                    "after_submit_course":course_and_its_experiments_json.course,
+                    "after_submit_classes":course_and_its_experiments_json.classes,
+                    "after_submit_teaching_materials":course_and_its_experiments_json.teaching_materials,
+                    "after_submit_consume_requirements":course_and_its_experiments_json.consume_requirements,
+                    "after_submit_system_requirements":course_and_its_experiments_json.system_requirements,
+                    "after_submit_soft_requirements":course_and_its_experiments_json.soft_requirements,
+                };
+                course_submit_info_json = eval('(' + JSON.stringify(course_submit_info_json) + ')');
+
+                all_submit_info_table_course.bootstrapTable('insertRow', {
+                    index: 0,
+                    row: course_submit_info_json
+                });
+
+                var experiments = course_and_its_experiments_json.experiments;
+                console.log('提交后显示所有信息模态表格--所有实验为：'+experiments);
+
+                for(var i=0; i<experiments.length; i++){
+                    var experiments_submit_info_json = {
+                        "after_submit_id":experiments[i].id,
+                        "after_submit_experiment_name":experiments[i].experiment_name,
+                        "after_submit_experiment_type":experiments[i].experiment_type,
+                        "after_submit_lecture_time":experiments[i].lecture_time,
+                        "after_submit_which_week":experiments[i].which_week,
+                        "after_submit_days_of_the_week":experiments[i].days_of_the_week,
+                        "after_submit_section":experiments[i].section,
+                        "after_submit_labs_of_institute":experiments[i].labs_of_institute,
+                        "after_submit_labs_attribute":experiments[i].labs_attribute,
+                        "after_submit_labs":experiments[i].labs,
+                        "after_submit_special_consume_requirements":experiments[i].special_consume_requirements,
+                        "after_submit_special_system_requirements":experiments[i].special_system_requirements,
+                        "after_submit_special_soft_requirements":experiments[i].special_soft_requirements,
+                    };
+
+                    all_submit_info_table_experiments.bootstrapTable('insertRow', {
+                        index: i,
+                        row: experiments_submit_info_json
+                    });
+                }
+
+                all_submit_info_table_course.bootstrapTable('resetView');
+                all_submit_info_table_experiments.bootstrapTable('resetView')
+            })
+        });
+    </script>
+    <!--提交后显示所有信息 模态表格 结束-->
+{% endblock %}

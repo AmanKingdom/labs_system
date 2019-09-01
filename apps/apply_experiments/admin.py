@@ -1,3 +1,7 @@
 from django.contrib import admin
 
-# Register your models here.
+from apps.apply_experiments.models import ExperimentType, SpecialRequirements, Experiment
+
+admin.site.register(ExperimentType)
+admin.site.register(SpecialRequirements)
+admin.site.register(Experiment)

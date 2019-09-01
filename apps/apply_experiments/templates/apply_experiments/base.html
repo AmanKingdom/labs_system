@@ -1,0 +1,177 @@
+<!--base.html-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <link rel="icon" href="/static/image/default/logo.svg">
+
+    <title>{% if title %}{{ title }}{% else %}实验室管理系统{% endif %}</title>
+
+    <link href="/static/css_js/css/bootstrap.min.css" rel="stylesheet">
+
+    <link href="/static/css_js/font-awesome/css/font-awesome.css" rel="stylesheet">
+    <link href="/static/css_js/css/style.css" rel="stylesheet">
+
+    <!--bootstrap-table的依赖-->
+    <link rel="stylesheet" href="/static/css_js/css/bootstrap-table.css">
+
+    <!--editable的依赖-->
+    <link href="/static/css_js/css/bootstrap-editable.css" rel="stylesheet">
+
+    <!--子html文件用这个填充块添加css样式-->
+    {% block add_css %}{% endblock %}
+</head>
+
+<body>
+<div id="wrapper">
+    <nav class="navbar-default navbar-static-side" role="navigation">
+        <div class="sidebar-collapse">
+            <ul class="nav metismenu" id="side-menu">
+                <li class="nav-header">
+                    <div class="dropdown profile-element text-center">
+                        <span>
+                            <img alt="image" class="img-circle" src="/static/image/default/head.svg" style="width: 80px"/>
+                        </span>
+                        <a data-toggle="dropdown" class="dropdown-toggle" href="#">
+                            <span class="clear">
+                                <span class="block m-t-xs"> <strong class="font-bold">{{ user.name }}</strong></span>
+                                <span class="text-muted text-xs block">教师<b class="caret"></b></span>
+                            </span>
+                        </a>
+                        <ul class="dropdown-menu animated fadeInRight m-t-xs">
+                            <li><a href="{% url 'browse:logout' %}">退出账号</a></li>
+                        </ul>
+                    </div>
+                    <div class="logo-element">
+                        <img alt="image" class="img-circle" src="/static/image/default/head.svg" style="width: 40px"/>
+                    </div>
+                </li>
+                <li {% if personal_info_active %}class="active"{% endif %}><a href="/"><i class="fa fa-laptop"></i><span class="nav-label">个人信息</span></a></li>
+                <li class="active">
+                    <a href="#"><i class="fa fa-edit"></i> <span class="nav-label">申请实验室</span><span class="fa arrow"></span></a>
+                    <ul class="nav nav-second-level collapse">
+                        <li {% if apply_experiments_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:apply' %}">实验课申请</a></li>
+                        <li {% if apply_info_active %}class="active"{% endif %}><a href="manage_application.html">实验课申请信息管理</a></li>
+                    </ul>
+                </li>
+                <li class="active">
+                    <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">统计分析</span><span class="fa arrow"></span></a>
+                    <ul class="nav nav-second-level collapse">
+                        <li {% if apply_week_active %}class="active"{% endif %}><a href="weeks_analyze.html">周次安排表</a></li>
+                        <li {% if apply_labs_active %}class="active"{% endif %}><a href="rooms_analyze.html">实验室安排表</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div id="page-wrapper" class="gray-bg dashbard-1">
+        <div class="row border-bottom">
+            <nav class="navbar navbar-static-top" role="navigation" style="margin-bottom: 0">
+                <div class="navbar-header">
+                    <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i> </a>
+                </div>
+{#                <ol class="nav navbar-top-links navbar-left breadcrumb">#}
+{#                    <li>#}
+{#                        <a href="/">主页</a>#}
+{#                    </li>#}
+{#                    <li>#}
+{#                        {{ title }}#}
+{#                    </li>#}
+{#                </ol>#}
+                <ul class="nav navbar-top-links navbar-right">
+                    <li class="dropdown">
+                        <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
+                            <i class="fa fa-envelope"></i>  <span class="label label-warning">16</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-messages">
+                            <li>
+                                <div class="dropdown-messages-box">
+                                    <div class="media-body">
+                                        <a href="#">
+                                            <small class="pull-right text-navy">1小时前</small>
+                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>
+                                            <small class="text-muted">2019.05.21 16:58</small>
+                                        </a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="divider"></li>
+                            <li>
+                                <div class="dropdown-messages-box">
+                                    <div class="media-body">
+                                        <a href="#">
+                                            <small class="pull-right">6小时前</small>
+                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>
+                                            <small class="text-muted">2019.05.21 16:58</small>
+                                        </a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="divider"></li>
+                            <li>
+                                <div class="dropdown-messages-box">
+                                    <div class="media-body">
+                                        <a href="#">
+                                            <small class="pull-right">8小时前</small>
+                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>
+                                            <small class="text-muted">2019.05.21 16:58</small>
+                                        </a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="divider"></li>
+                            <li>
+                                <div class="text-center link-block">
+                                    <a href="#">
+                                        <i class="fa fa-envelope"></i> <strong>阅读所有消息</strong>
+                                    </a>
+                                </div>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="{% url 'browse:logout' %}">
+                            <i class="fa fa-sign-out"></i> 退出账户
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        {% block body_block %}{% endblock %}
+    </div>
+</div>
+
+<!-- Mainly scripts -->
+<script src="/static/css_js/js/jquery-3.1.1.min.js"></script>
+<script src="/static/css_js/js/bootstrap.min.js"></script>
+<script src="/static/css_js/js/plugins/metisMenu/jquery.metisMenu.js"></script>
+<script src="/static/css_js/js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+
+<!-- Custom and plugin javascript 和左侧主导航栏有关 -->
+<script src="/static/css_js/js/inspinia.js"></script>
+<script src="/static/css_js/js/plugins/pace/pace.min.js"></script>
+
+<!-- jQuery UI -->
+<script src="/static/css_js/js/plugins/jquery-ui/jquery-ui.min.js"></script>
+
+<!-- add bootstrap table的js依赖-->
+<script type="text/javascript" src="/static/css_js/js/bootstrap-table.js"></script>
+<!-- add bootstrap table的中文js依赖-->
+<script type="text/javascript" src="/static/css_js/js/bootstrap-table-zh-CN.js"></script>
+<script type="text/javascript" src="/static/css_js/js/bootstrap-table-export.js"></script>
+
+<!-- editable 依赖 -->
+<script src="/static/css_js/js/bootstrap-editable.js"></script>
+<!-- editable和table 结合的依赖 -->
+<script src="/static/css_js/js/bootstrap-table-editable.js"></script>
+
+<!--子html文件用这个填充块添加js样式-->
+{% block add_js %}{% endblock %}
+</body>
+
+</html>

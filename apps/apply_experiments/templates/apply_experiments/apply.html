@@ -162,7 +162,7 @@
                                 </table>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="quit_modal_table">好的</button>
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="submit_all_items">好的</button>
                             </div>
                         </div>
                     </div>
@@ -697,7 +697,7 @@
     </script>
     <!--整理所有信息并存储到session 结束-->
 
-    <!--提交后显示所有信息 模态表格 开始-->
+    <!--提交时显示所有信息 模态表格 开始-->
     <script>
         var all_submit_info_table_course = $('#all_submit_info_table_course');
         var all_submit_info_table_experiments = $('#all_submit_info_table_experiments');
@@ -758,6 +758,26 @@
                 all_submit_info_table_experiments.bootstrapTable('resetView')
             })
         });
+
+        $('#submit_all_items').click(function(){
+            var course_and_its_experiments_json = sessionStorage.getItem("course_and_its_experiments_json");
+            course_and_its_experiments_json = JSON.parse(course_and_its_experiments_json);
+            {#course_and_its_experiments_json = eval('(' + JSON.stringify(course_and_its_experiments_json) + ')');#}
+            $.ajax({
+                cache:true,//保留缓存数据
+                type:"POST",
+                url:"{% url 'apply_experiments:submit_experiments' %}",
+                data:JSON.stringify(course_and_its_experiments_json),
+                async:false,//设置成true，这标志着在请求开始后，其他代码依然能够执行。如果把这个选项设置成false，这意味着所有的请求都不再是异步的了，这也会导致浏览器被锁死
+                error:function(request){//请求失败之后的操作
+                    console.log("submit fail");
+                    return "submit fail";
+                },
+                success:function(data){//请求成功之后的操作
+                    console.log("success");
+                }
+            });
+        })
     </script>
-    <!--提交后显示所有信息 模态表格 结束-->
+    <!--提交时显示所有信息 模态表格 结束-->
 {% endblock %}

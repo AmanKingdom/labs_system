@@ -1,7 +1,8 @@
+import json
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 
-from apps.apply_experiments.models import ExperimentType
+from apps.apply_experiments.models import ExperimentType, Experiment
 from apps.super_manage.models import Teacher, Course, Classes, Institute, Labs, LabsAttribute
 
 from logging_setting import ThisLogger
@@ -12,7 +13,8 @@ this_logger = ThisLogger().logger
 def load_classes_of_course(request):
     course_id = request.GET.get('course_id')
     this_logger.info('选择id为' + course_id + '的课程')
-    classes_data = Classes.objects.filter(course=course_id).values('id', 'name', 'grade__name')
+    classes_data = Classes.objects.filter(course=course_id).values('id', 'name', 'grade__name',
+                                                                   'grade__department__name')
     # print('classes_data:', classes_data, 'type:', type(classes_data))
 
     # classes_data_list = []
@@ -80,3 +82,17 @@ def apply(request):
     context['all_labs'] = Labs.objects.all()
     return render(request, 'apply_experiments/apply.html', context)
 
+
+def submit_experiments(request):
+    data = json.loads(list(request.POST.keys())[0])
+    this_logger.info('接收到提交的数据：'+str(data)+'类型为：'+str(type(data)))
+    # for x in data['experiments']:
+    #     new_experiment = Experiment(no=x['id'], name=x['experiment_name'], lecture_time=x['lecture_time'],
+    #                                 which_week=x['which_week'], days_of_the_week=x['days_of_the_week'],
+    #                                 section=x['section'], status=1)
+    #     new_experiment.experiment_type = ExperimentType.objects.get(name=x['experiment_type'])
+    #     new_experiment.labs.add(Labs.objects)
+    #     if new_experiment.save():
+    #         print('成功一个')
+
+    return render(request, 'apply_experiments/apply.html')

@@ -386,7 +386,7 @@
                         field: 'labs_attribute',
                         title: '实验室属性',
                         editable:{
-                            type:'select',
+                            type:'select2',
                             source: [
                                 {% if labs_attribute %}
                                     {% for x in labs_attribute %}
@@ -395,7 +395,13 @@
                                 {% else %}
                                     {value:"", text: '暂无数据'}
                                 {% endif %}
-                            ]
+                            ],
+                            select2 : {
+                                // allowClear : true,
+                                multiple : true,
+                                // tokenSeparators : [",", " "],
+                                width : '100px'//设置宽，这个一定要，不然显示框很窄
+                            }
                         }
                     }, {
                         field: 'labs',
@@ -518,6 +524,8 @@
                 new_row.special_consume_requirements = "";
                 new_row.special_system_requirements = "";
                 new_row.special_soft_requirements = "";
+                new_row.which_week = Number(new_row.which_week);
+                new_row.which_week += 1;
 
                 new_row = JSON.stringify(new_row);
                 new_row = eval('(' + new_row + ')');

@@ -88,82 +88,100 @@ def submit_experiments(request):
     data = json.loads(list(request.POST.keys())[0])
     this_logger.info('接收到提交的数据：' + str(data) + '类型为：' + str(type(data)))
 
-    if data['experiments'] is not None and data['experiments'] is not "":
-        # 先通过提交的课程id获取课程
-        try:
-            course = Course.objects.get(id=data['course_id'])
-            this_logger.info('获取course:' + course.name)
+    context = {
+        'empty_course': None,
+        'empty_experiment': None,
+    }
 
-            # 判断是否需要创建总体需求模型的实例
-            if data['teaching_materials'] is "" and data['consume_requirements'] is "" \
-                    and data['system_requirements'] is "" and data['soft_requirements'] is "":
-                this_logger.info('提交的信息中没有总体需求')
-            else:
-                total_requirements = TotalRequirements.objects.create(
-                    teaching_materials=data['teaching_materials'],
-                    total_consume_requirements=data['consume_requirements'],
-                    total_system_requirements=data['system_requirements'],
-                    total_soft_requirements=data['soft_requirements']
-                )
-                # 把总体需求实例添加到该课程的对应外键
-                course.total_requirements = total_requirements
-                course.save()
-                this_logger.info('提交的总体需求已存入课程，该总体需求的id为：' + str(course.total_requirements.pk))
+    if data['course_id'] is not '':
+        if data['experiments']:
+            # 先通过提交的课程id获取课程
+            try:
+                course = Course.objects.get(id=data['course_id'])
+                this_logger.info('获取course:' + course.name)
 
-                # 遍历所有的实验项目并创建、存储到数据库
-                for experiment_item in data['experiments']:
-                    this_logger.info('当前实验项目：'+str(experiment_item))
-                    new_experiment = Experiment()
+                # 判断是否需要创建总体需求模型的实例
+                if data['teaching_materials'] is "" and data['consume_requirements'] is "" \
+                        and data['system_requirements'] is "" and data['soft_requirements'] is "":
+                    this_logger.info('提交的信息中没有总体需求')
+                else:
+                    total_requirements = TotalRequirements.objects.create(
+                        teaching_materials=data['teaching_materials'],
+                        total_consume_requirements=data['consume_requirements'],
+                        total_system_requirements=data['system_requirements'],
+                        total_soft_requirements=data['soft_requirements']
+                    )
+                    # 把总体需求实例添加到该课程的对应外键
+                    course.total_requirements = total_requirements
+                    course.save()
+                    this_logger.info('提交的总体需求已存入课程，该总体需求的id为：' + str(course.total_requirements.pk))
 
-                    new_experiment.no = int(experiment_item['id'])
-                    new_experiment.name = experiment_item['experiment_name']
-                    new_experiment.lecture_time = int(experiment_item['lecture_time'])
-                    new_experiment.which_week = int(experiment_item['which_week'])
-                    new_experiment.days_of_the_week = int(experiment_item['days_of_the_week'])
-                    new_experiment.section = experiment_item['section'][1:]
-                    new_experiment.status = 1
-                    new_experiment.course = course
-                    new_experiment.save()
+                    # 遍历所有的实验项目并创建、存储到数据库
+                    for experiment_item in data['experiments']:
+                        this_logger.info('当前实验项目：' + str(experiment_item))
+                        new_experiment = Experiment()
 
-                    try:
-                        new_experiment.experiment_type = ExperimentType.objects.get(id=int(experiment_item['experiment_type']))
-                    except (Exception) as e:
-                        print('id为'+experiment_item['experiment_type']+'的实验类型获取失败',e)
+                        new_experiment.no = int(experiment_item['id'])
+                        new_experiment.name = experiment_item['experiment_name']
+                        new_experiment.lecture_time = int(experiment_item['lecture_time'])
+                        new_experiment.which_week = int(experiment_item['which_week'])
+                        new_experiment.days_of_the_week = int(experiment_item['days_of_the_week'])
+                        new_experiment.section = experiment_item['section'][1:]
+                        new_experiment.status = 1
+                        new_experiment.course = course
+                        new_experiment.save()
 
-                    # 判断该实验项目是否有特殊需求
-                    if experiment_item['special_consume_requirements'] is "" and experiment_item['special_system_requirements'] is "" \
-                            and experiment_item['special_soft_requirements'] is "":
-                        this_logger.info('该实验项目没有特殊实验需求')
-                    else:
-                        special_requirements = SpecialRequirements.objects.create(
-                            special_consume_requirements=experiment_item['special_consume_requirements'],
-                            special_system_requirements=experiment_item['special_system_requirements'],
-                            special_soft_requirements=experiment_item['special_soft_requirements']
-                        )
-                        new_experiment.special_requirements = special_requirements
-
-                    labs_ids = experiment_item['labs'].split(',')[1:]
-                    this_logger.info('待处理的实验室的id列表：'+str(labs_ids))
-                    for lab_item_id in labs_ids:
                         try:
-                            lab = Labs.objects.get(id=int(lab_item_id))
-                            this_logger.info('获取到lab：'+lab.name)
-                            new_experiment.labs.add(lab)
+                            new_experiment.experiment_type = ExperimentType.objects.get(
+                                id=int(experiment_item['experiment_type']))
                         except (Exception) as e:
-                            print('获取id为'+lab_item_id+'的实验室失败',e)
+                            print('id为' + experiment_item['experiment_type'] + '的实验类型获取失败', e)
 
-                    labs_attributes_ids = experiment_item['labs_attribute'].split(',')[1:]
-                    this_logger.info('待处理的实验室属性的id列表'+str(labs_attributes_ids))
-                    for labs_attribute_item_id in labs_attributes_ids:
-                        try:
-                            labs_attribute = LabsAttribute.objects.get(id=int(labs_attribute_item_id))
-                            this_logger.info('获取到lab_attribute：' + labs_attribute.name)
-                            new_experiment.labs_attribute.add(labs_attribute)
-                        except (Exception) as e:
-                            print('获取id为' + labs_attribute_item_id + '的实验室属性失败', e)
+                        # 判断该实验项目是否有特殊需求
+                        if experiment_item['special_consume_requirements'] is "" and experiment_item[
+                            'special_system_requirements'] is "" \
+                                and experiment_item['special_soft_requirements'] is "":
+                            this_logger.info('该实验项目没有特殊实验需求')
+                        else:
+                            special_requirements = SpecialRequirements.objects.create(
+                                special_consume_requirements=experiment_item['special_consume_requirements'],
+                                special_system_requirements=experiment_item['special_system_requirements'],
+                                special_soft_requirements=experiment_item['special_soft_requirements']
+                            )
+                            new_experiment.special_requirements = special_requirements
 
-                    new_experiment.save()
-        except (Exception) as e:
-            print('处理id为' + data['course_id'] + '的课程的实验项目时失败',e)
+                        labs_ids = experiment_item['labs'].split(',')[1:]
+                        this_logger.info('待处理的实验室的id列表：' + str(labs_ids))
+                        for lab_item_id in labs_ids:
+                            try:
+                                lab = Labs.objects.get(id=int(lab_item_id))
+                                this_logger.info('获取到lab：' + lab.name)
+                                new_experiment.labs.add(lab)
+                            except (Exception) as e:
+                                print('获取id为' + lab_item_id + '的实验室失败', e)
 
-    return render(request, 'apply_experiments/apply.html')
+                        labs_attributes_ids = experiment_item['labs_attribute'].split(',')[1:]
+                        this_logger.info('待处理的实验室属性的id列表' + str(labs_attributes_ids))
+                        for labs_attribute_item_id in labs_attributes_ids:
+                            try:
+                                labs_attribute = LabsAttribute.objects.get(id=int(labs_attribute_item_id))
+                                this_logger.info('获取到lab_attribute：' + labs_attribute.name)
+                                new_experiment.labs_attribute.add(labs_attribute)
+                            except (Exception) as e:
+                                print('获取id为' + labs_attribute_item_id + '的实验室属性失败', e)
+
+                        new_experiment.save()
+                        return '成功'
+            except (Exception) as e:
+                print('处理id为' + data['course_id'] + '的课程的实验项目时失败', e)
+        else:
+            this_logger.info('experiments没有内容')
+            context['empty_experiment'] = '请添加实验项目'
+    else:
+        context['empty_course'] = '请选择课程'
+        this_logger.info('没有选择课程')
+    return render(request, 'apply_experiments/apply.html', context)
+
+
+def manage_application(request):
+    return render(request, 'apply_experiments/manage_application.html')

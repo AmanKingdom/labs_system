@@ -37,11 +37,27 @@
                         <td>
                             {#<a href="#" id="course" data-type="select" data-title="Select status"></a>#}
                             <select id="course" class="form-control">
-                                <option value=0>请先选择课程</option>
+{#                                {% for x in courses %}#}
+{#                                    {% if forloop.first %}#}
+{#                                        <option value={{ x.id }} selected>{{ x.name }}</option>#}
+{#                                    {% else %}#}
+{#                                        <option value={{ x.id }}>{{ x.name }}</option>#}
+{#                                    {% endif %}#}
+{#                                {% empty %}#}
+{#                                    <option>暂无课程数据</option>#}
+{#                                {% endfor %}#}
+                                <option>请先选择课程</option>
                                 {% for x in courses %}
                                     <option value={{ x.id }}>{{ x.name }}</option>
+                                {% empty %}
+                                    <option>暂无课程数据</option>
                                 {% endfor %}
                             </select>
+                        {% if empty_course %}
+                            <span style="color: #9f191f">{{ empty_course }}</span>
+                            {% else %}
+                            <span style="color: #9f191f">{{ empty_course }}</span>
+                        {% endif %}
                         </td>
                         <td>
                             {#<a href="#" id="classes" data-type="select" data-title="Select status"></a>#}
@@ -78,7 +94,7 @@
                 </table>
                 <div align="right">
                     <br>
-                    <button id="submit" class="btn btn-primary" data-target="#all_info_after_submit_modal_table" href="javascript:void(0)" title="提交后会显示所有提交的信息" data-toggle="modal">提交</button>
+                    <button id="submit" class="btn btn-primary" data-target="#all_info_after_submit_modal_table" title="提交后会显示所有提交的信息" data-toggle="modal">提交</button>
                 </div>
 
                 <!--单独添加特殊需求的模态表格-->
@@ -114,7 +130,7 @@
                     </div>
                 </div>
 
-                <!--显示提交后所有信息的模态表格-->
+                <!--显示提交时所有信息的模态表格-->
                 <div id="all_info_after_submit_modal_table" class="modal fade" tabindex="-1" role="dialog">
                     <div class="modal-dialog" role="document" style="width: 1388px;">
                         <div class="modal-content">
@@ -685,19 +701,6 @@
                 "experiments": experiments
             };
 
-            /*
-            for(var i=0; i<experiments.length; i++){
-                if(consume_requirements != empty_text){
-                    experiments[i].special_consume_requirements = consume_requirements+','+experiments[i].special_consume_requirements;
-                }
-                if(system_requirements != empty_text) {
-                    experiments[i].special_system_requirements = system_requirements + ',' + experiments[i].special_system_requirements;
-                }
-                if(soft_requirements != empty_text) {
-                    experiments[i].special_soft_requirements = soft_requirements + ',' + experiments[i].special_soft_requirements;
-                }
-                data_json.experiments.push(experiments[i]);
-            }*/
             console.log('整理所有信息后：'+data_json.toString());
             sessionStorage.setItem("course_and_its_experiments_json", JSON.stringify(data_json));
             // window.location.href="manage_application.html";
@@ -776,13 +779,14 @@
                 type:"POST",
                 url:"{% url 'apply_experiments:submit_experiments' %}",
                 data:JSON.stringify(course_and_its_experiments_json),
-                async:false,//设置成true，这标志着在请求开始后，其他代码依然能够执行。如果把这个选项设置成false，这意味着所有的请求都不再是异步的了，这也会导致浏览器被锁死
+                dataType:'JSON',
+                async:true,
                 error:function(request){//请求失败之后的操作
                     console.log("submit fail");
-                    return "submit fail";
+                    console.log(request)
                 },
                 success:function(data){//请求成功之后的操作
-                    console.log("success");
+                    console.log(data)
                 }
             });
         })

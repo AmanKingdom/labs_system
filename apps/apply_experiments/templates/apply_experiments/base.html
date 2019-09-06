@@ -55,7 +55,7 @@
                     <a href="#"><i class="fa fa-edit"></i> <span class="nav-label">申请实验室</span><span class="fa arrow"></span></a>
                     <ul class="nav nav-second-level collapse">
                         <li {% if apply_experiments_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:apply' %}">实验课申请</a></li>
-                        <li {% if apply_info_active %}class="active"{% endif %}><a href="manage_application.html">实验课信息管理</a></li>
+                        <li {% if apply_info_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:manage_application' %}">申请信息管理</a></li>
                     </ul>
                 </li>
                 <li class="active">
@@ -75,14 +75,14 @@
                 <div class="navbar-header">
                     <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i> </a>
                 </div>
-{#                <ol class="nav navbar-top-links navbar-left breadcrumb">#}
-{#                    <li>#}
-{#                        <a href="/">主页</a>#}
-{#                    </li>#}
-{#                    <li>#}
-{#                        {{ title }}#}
-{#                    </li>#}
-{#                </ol>#}
+                {#                <ol class="nav navbar-top-links navbar-left breadcrumb">#}
+                {#                    <li>#}
+                {#                        <a href="/">主页</a>#}
+                {#                    </li>#}
+                {#                    <li>#}
+                {#                        {{ title }}#}
+                {#                    </li>#}
+                {#                </ol>#}
                 <ul class="nav navbar-top-links navbar-right">
                     <li class="dropdown">
                         <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
@@ -142,7 +142,9 @@
                 </ul>
             </nav>
         </div>
-        {% block body_block %}{% endblock %}
+        <div class="row border-bottom white-bg dashboard-header">
+            {% block body_block %}{% endblock %}
+        </div>
     </div>
 </div>
 

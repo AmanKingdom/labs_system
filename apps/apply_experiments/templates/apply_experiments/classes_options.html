@@ -1,4 +1,10 @@
-{% for x in classes_data %}
-    <option id={{ x.id }} value={{ x.id }}>{{ x.grade__name }}级{{ x.grade__department__name }}{{ x.name }}班</option>
-{% endfor %}
+{#{% for x in classes_data %}#}
+{#    <option id={{ x.id }} value={{ x.id }}>{{ x.grade__name }}级{{ x.grade__department__name }}{{ x.name }}班</option>#}
+{#{% endfor %}#}
 
+
+{% for x in classes_data %}
+    {{ x.grade__name }}级{{ x.grade__department__name }}{{ x.name }}班<br>
+{% empty %}
+    暂无数据
+{% endfor %}

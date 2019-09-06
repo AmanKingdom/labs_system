@@ -149,6 +149,7 @@ class Course(models.Model):
     teachers = models.ManyToManyField(Teacher, verbose_name='授课老师')
     total_requirements = models.ForeignKey(TotalRequirements, on_delete=models.SET_NULL,
                                            verbose_name='总体实验需求', blank=True, null=True)
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
 
     def __str__(self):
         return self.name

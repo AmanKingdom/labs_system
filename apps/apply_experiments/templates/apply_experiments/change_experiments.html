@@ -1,4 +1,4 @@
-<!--manage_application.html-->
+<!--change_experiments.html-->
 
 {% extends 'apply_experiments/base.html' %}
 {% block add_css %}{% endblock %}
@@ -6,18 +6,7 @@
 {% block body_block %}
     <div class="ibox float-e-margins">
         <div class="ibox-title row">
-            {#                <div class="col-md-9">#}
-            <h5>实验室申请信息管理 </h5>
-            {#                </div>#}
-            {#                <div class="col-md-3">#}
-            {#                    <select class="form-control input-sm">#}
-            {#                        {% for x in term %}#}
-            {#                            <option value="{{ x }}">{{ x }}</option>#}
-            {#                        {% empty %}#}
-            {#                            暂无数据#}
-            {#                        {% endfor %}#}
-            {#                    </select>#}
-            {#                </div>#}
+            <h5>实验室申请信息管理</h5>/ 实验室申请信息管理
         </div>
         <div class="ibox-content">
             <div class="table-responsive">
@@ -31,7 +20,7 @@
                        data-response-handler="responseHandler">
                     <thead><tr>
                         <th data-field="no" data-sortable="true">序号</th>
-                        <th data-field="teacher">授课教师</th>
+                        <th data-field="teacher">教师</th>
                         <th data-field="school_year" data-sortable="true">学年</th>
                         <th data-field="term" data-sortable="true">学期</th>
                         <th data-field="course" data-sortable="true">课程</th>
@@ -67,29 +56,9 @@
 
 <!--子html文件用这个填充块添加js样式-->
 {% block add_js %}
-    <script>
-        $("#all_applications_table").bootstrapTable({
-            height:550,
-            pagination:true, //显示页码
-        });
-    </script>
-
-    // 全局配置代码
+    <!-- 全局配置代码 -->
     <script>
         $.fn.bootstrapTable.columnDefaults.valign = 'middle';//垂直居中
         $.fn.bootstrapTable.columnDefaults.align = 'center';//水平居中
-    </script>
-
-    <script>
-
-        $("#all_info_table").bootstrapTable({
-            onClickRow:function (row,$element) {
-                console.log('点击了我:'+row.teacher, row);
-
-                var url = "{% url 'apply_experiments:change_experiments' 'school_year' 'term' 'course' %}";
-                url = url.replace('school_year/term/course', row.school_year+'/'+row.term+'/'+row.course);
-                window.location.href=url;
-            },
-        });
     </script>
 {% endblock %}

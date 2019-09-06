@@ -94,7 +94,7 @@ admin.site.register(TotalRequirements, TotalRequirementsAdmin)
 
 
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'institute')  # 设置展示的列
+    list_display = ('id', 'name', 'institute', 'modify_time')  # 设置展示的列
     search_fields = ('name', 'institute')  # 设置可对教师名称、系名称、教师账号进行搜索
     list_filter = ('institute', )  # 对系名称设置可筛选
 

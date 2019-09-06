@@ -6,180 +6,190 @@
     <!--多项选择的css依赖-->
     <link href="/static/css_js/css/plugins/select2/select2.min.css" rel="stylesheet" type="text/css">
     <link href="/static/css_js/css/plugins/select2/select2-bootstrap.css" rel="stylesheet" type="text/css">
+    <style type="text/css">
+        #need{
+            color: #ff0000;
+        }
+    </style>
 {% endblock %}
 
 {% block body_block %}
-    <div class="row border-bottom white-bg dashboard-header">
-        <div class="ibox float-e-margins">
-            <div class="ibox-title">
-                <h5>课程信息</h5>
-                <div class="ibox-tools">
-                    <a class="collapse-link">
-                        <i class="fa fa-chevron-up"></i>
-                    </a>
-                </div>
-            </div>
-            <div class="ibox-content">
-                <table data-toggle="table" id="course_info_table" class="table-hover">
-                    <thead><tr>
-                        <th data-field="department">教师所属系</th>
-                        <th data-field="teacher_name">教师姓名</th>
-                        <th data-field="course">课程</th>
-                        <th data-field="classes">授课班级</th>
-                        <th data-field="teaching_materials">实验教材</th>
-                        <th data-field="consume_requirements">总体耗材需求</th>
-                        <th data-field="system_requirements">总体系统需求</th>
-                        <th data-field="soft_requirements">总体软件需求</th>
-                    </tr></thead>
-                    <tbody><tr>
-                        <td id="department">{{ user.department.name }}</td>
-                        <td id="teacher_name">{{ user.name }}</td>
-                        <td>
-                            {#<a href="#" id="course" data-type="select" data-title="Select status"></a>#}
-                            <select id="course" class="form-control">
-{#                                {% for x in courses %}#}
-{#                                    {% if forloop.first %}#}
-{#                                        <option value={{ x.id }} selected>{{ x.name }}</option>#}
-{#                                    {% else %}#}
-{#                                        <option value={{ x.id }}>{{ x.name }}</option>#}
-{#                                    {% endif %}#}
-{#                                {% empty %}#}
-{#                                    <option>暂无课程数据</option>#}
-{#                                {% endfor %}#}
-                                <option>请先选择课程</option>
-                                {% for x in courses %}
-                                    <option value={{ x.id }}>{{ x.name }}</option>
-                                {% empty %}
-                                    <option>暂无课程数据</option>
-                                {% endfor %}
-                            </select>
-                        {% if empty_course %}
-                            <span style="color: #9f191f">{{ empty_course }}</span>
-                            {% else %}
-                            <span style="color: #9f191f">{{ empty_course }}</span>
-                        {% endif %}
-                        </td>
-                        <td>
-                            {#<a href="#" id="classes" data-type="select" data-title="Select status"></a>#}
-                            <select id="classes" class="form-control" multiple="multiple" size="1"></select>
-                        </td>
-                        <td><a href="#" id="teaching_materials" data-type="text"></a></td>
-                        <td><a href="#" id="consume_requirements" data-type="text"></a></td>
-                        <td><a href="#" id="system_requirements" data-type="text"></a></td>
-                        <td><a href="#" id="soft_requirements" data-type="text"></a></td>
-                    </tr></tbody>
-                </table>
+    <div class="ibox float-e-margins">
+        <div class="ibox-title">
+            <h5>实验对应的课程信息</h5>
+            <div class="ibox-tools">
+                <a class="collapse-link">
+                    <i class="fa fa-chevron-up"></i>
+                </a>
             </div>
         </div>
+        <div class="ibox-content">
+            <table data-toggle="table" id="course_info_table" class="table-hover">
+                <thead><tr>
+                    <th data-field="department">教师所属系<span id="need">*</span></th>
+                    <th data-field="teacher_name">教师姓名<span id="need">*</span></th>
+                    <th data-field="course">课程<span id="need">*</span></th>
+                    <th data-field="classes">授课班级<span id="need">*</span></th>
+                    <th data-field="teaching_materials">实验教材</th>
+                    <th data-field="consume_requirements">总体耗材需求</th>
+                    <th data-field="system_requirements">总体系统需求</th>
+                    <th data-field="soft_requirements">总体软件需求</th>
+                </tr></thead>
+                <tbody><tr>
+                    <td id="department">{{ user.department.name }}</td>
+                    <td id="teacher_name">{{ user.name }}</td>
+                    <td>
+                        {#<a href="#" id="course" data-type="select" data-title="Select status"></a>#}
+                        <select id="course" class="form-control">
+                            {% for x in courses %}
+                                {% if forloop.first %}
+                                    <option value={{ x.id }} selected>{{ x.name }}</option>
+                                {% else %}
+                                    <option value={{ x.id }}>{{ x.name }}</option>
+                                {% endif %}
+                            {% empty %}
+                                <option>暂无课程数据</option>
+                            {% endfor %}
+                            {#                                <option>请先选择课程</option>#}
+                            {#                                {% for x in courses %}#}
+                            {#                                    <option value={{ x.id }}>{{ x.name }}</option>#}
+                            {#                                {% empty %}#}
+                            {#                                    <option>暂无课程数据</option>#}
+                            {#                                {% endfor %}#}
+                        </select>
+                    </td>
+                    <td>
+                        {#<a href="#" id="classes" data-type="select" data-title="Select status"></a>#}
+                        {#                            <select id="classes" class="form-control" multiple="multiple" size="1"></select>#}
+                        <div id="classes">
+                            {% if courses %}
+                                {% for x in classes_data %}
+                                    {{ x.grade__name }}级{{ x.grade__department__name }}{{ x.name }}班
+                                {% empty %}
+                                    暂无数据
+                                {% endfor %}
+                            {% else %}
+                                暂无数据
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td><a href="#" id="teaching_materials" data-type="text"></a></td>
+                    <td><a href="#" id="consume_requirements" data-type="text"></a></td>
+                    <td><a href="#" id="system_requirements" data-type="text"></a></td>
+                    <td><a href="#" id="soft_requirements" data-type="text"></a></td>
+                </tr></tbody>
+            </table>
+        </div>
+    </div>
 
-        <div class="ibox float-e-margins">
-            <div class="ibox-title">
-                <h5>实验课信息 </h5>
-                <div class="ibox-tools">
-                    <button id="add_experiment_button" class="btn btn-primary">添加实验项目</button>
-                    <button id="remove_experiment_button" class="btn btn-danger" disabled>批量删除</button>
-                    <a class="collapse-link">
-                        <i class="fa fa-chevron-up"></i>
-                    </a>
-                </div>
+    <div class="ibox float-e-margins">
+        <div class="ibox-title">
+            <h5>实验项目申请表</h5>
+            <div class="ibox-tools">
+                <button id="add_experiment_button" class="btn btn-primary">添加实验项目</button>
+                <button id="remove_experiment_button" class="btn btn-danger" disabled>批量删除</button>
+                <a class="collapse-link">
+                    <i class="fa fa-chevron-up"></i>
+                </a>
             </div>
-            <div class="ibox-content">
-                <table
-                        id="experiment_info_table"
-                        data-detail-formatter="detailFormatter"
-                        data-minimum-count-columns="2"
-                        data-id-field="id"
-                        data-side-pagination="server"
-                        data-response-handler="responseHandler">
-                </table>
-                <div align="right">
-                    <br>
-                    <button id="submit" class="btn btn-primary" data-target="#all_info_after_submit_modal_table" title="提交后会显示所有提交的信息" data-toggle="modal">提交</button>
-                </div>
+        </div>
+        <div class="ibox-content">
+            <table
+                    id="experiment_info_table"
+                    data-detail-formatter="detailFormatter"
+                    data-minimum-count-columns="2"
+                    data-id-field="id"
+                    data-side-pagination="server"
+                    data-response-handler="responseHandler"
+                    data-click-to-select="true">
+            </table>
+            <div align="right">
+                <br>
+                <button id="submit" class="btn btn-primary" data-target="#all_info_after_submit_modal_table" title="提交后会显示所有提交的信息" data-toggle="modal">提交</button>
+            </div>
 
-                <!--单独添加特殊需求的模态表格-->
-                <div id="add_special_requirements_modal_table" class="modal fade" tabindex="-1" role="dialog">
-                    <div class="modal-dialog" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">为该实验单独添加特殊需求</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <table id="special_requirements_table"
-                                       data-toggle="table"
-                                       data-height="268">
-                                    <thead><tr>
-                                        <th data-field="special_consume_requirements">耗材需求</th>
-                                        <th data-field="special_system_requirements">系统需求</th>
-                                        <th data-field="special_soft_requirements">软件需求</th>
-                                    </tr></thead>
-                                    <tbody><tr>
-                                        <td><a href="#" id="special_consume_requirements" data-type="text"></a></td>
-                                        <td><a href="#" id="special_system_requirements" data-type="text"></a></td>
-                                        <td><a href="#" id="special_soft_requirements" data-type="text"></a></td>
-                                    </tr></tbody>
-                                </table>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="set_special_requirements">确定</button>
-                            </div>
+            <!--单独添加特殊需求的模态表格-->
+            <div id="add_special_requirements_modal_table" class="modal fade" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">为该实验单独添加特殊需求</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <table id="special_requirements_table"
+                                   data-toggle="table"
+                                   data-height="268">
+                                <thead><tr>
+                                    <th data-field="special_consume_requirements">耗材需求</th>
+                                    <th data-field="special_system_requirements">系统需求</th>
+                                    <th data-field="special_soft_requirements">软件需求</th>
+                                </tr></thead>
+                                <tbody><tr>
+                                    <td><a href="#" id="special_consume_requirements" data-type="text"></a></td>
+                                    <td><a href="#" id="special_system_requirements" data-type="text"></a></td>
+                                    <td><a href="#" id="special_soft_requirements" data-type="text"></a></td>
+                                </tr></tbody>
+                            </table>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal" id="set_special_requirements">确定</button>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!--显示提交时所有信息的模态表格-->
-                <div id="all_info_after_submit_modal_table" class="modal fade" tabindex="-1" role="dialog">
-                    <div class="modal-dialog" role="document" style="width: 1388px;">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">您提交的信息如下</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <!--提交后的课程的信息表-->
-                                <table id="all_submit_info_table_course"
-                                       data-toggle="table"
-                                       data-height="100">
-                                    <thead><tr>
-                                        <th data-field="after_submit_department">学院</th>
-                                        <th data-field="after_submit_teacher_name">教师姓名</th>
-                                        <th data-field="after_submit_course">课程</th>
-                                        <th data-field="after_submit_classes">班级</th>
-                                        <th data-field="after_submit_teaching_materials">实验教材</th>
-                                        <th data-field="after_submit_consume_requirements">总体耗材需求</th>
-                                        <th data-field="after_submit_system_requirements">总体系统需求</th>
-                                        <th data-field="after_submit_soft_requirements">总体软件需求</th>
-                                    </tr></thead>
-                                </table>
-                                <!--提交后的该课程的所有实验项目的信息表-->
-                                <table id="all_submit_info_table_experiments"
-                                       data-toggle="table"
-                                       data-height="368">
-                                    <thead><tr>
-                                        <th data-field="after_submit_id">编号</th>
-                                        <th data-field="after_submit_experiment_name">项目名称</th>
-                                        <th data-field="after_submit_experiment_type">类型</th>
-                                        <th data-field="after_submit_lecture_time">学时</th>
-                                        <th data-field="after_submit_which_week">周次</th>
-                                        <th data-field="after_submit_days_of_the_week">星期</th>
-                                        <th data-field="after_submit_section">节次</th>
-                                        <th data-field="after_submit_labs_of_institute">实验室所属学院</th>
-                                        <th data-field="after_submit_labs_attribute">实验室属性</th>
-                                        <th data-field="after_submit_labs">实验室</th>
-                                        <th data-field="after_submit_special_consume_requirements">特殊耗材需求</th>
-                                        <th data-field="after_submit_special_system_requirements">特殊系统需求</th>
-                                        <th data-field="after_submit_special_soft_requirements">特殊软件需求</th>
-                                    </tr></thead>
-                                </table>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="submit_all_items">好的</button>
-                            </div>
+            <!--显示提交时所有信息的模态表格-->
+            <div id="all_info_after_submit_modal_table" class="modal fade" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document" style="width: 1388px;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">您将提交的信息如下，请认真检查：</h4>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <!--提交后的课程的信息表-->
+                            <table id="all_submit_info_table_course"
+                                   data-toggle="table"
+                                   data-height="100">
+                                <thead><tr>
+                                    <th data-field="after_submit_department">学院</th>
+                                    <th data-field="after_submit_teacher_name">教师姓名</th>
+                                    <th data-field="after_submit_course">课程</th>
+                                    <th data-field="after_submit_classes">班级</th>
+                                    <th data-field="after_submit_teaching_materials">实验教材</th>
+                                    <th data-field="after_submit_consume_requirements">总体耗材需求</th>
+                                    <th data-field="after_submit_system_requirements">总体系统需求</th>
+                                    <th data-field="after_submit_soft_requirements">总体软件需求</th>
+                                </tr></thead>
+                            </table>
+                            <!--提交后的该课程的所有实验项目的信息表-->
+                            <table id="all_submit_info_table_experiments"
+                                   data-toggle="table"
+                                   data-height="368">
+                                <thead><tr>
+                                    <th data-field="after_submit_id">编号</th>
+                                    <th data-field="after_submit_experiment_name">项目名称</th>
+                                    <th data-field="after_submit_experiment_type">类型</th>
+                                    <th data-field="after_submit_lecture_time">学时</th>
+                                    <th data-field="after_submit_which_week">周次</th>
+                                    <th data-field="after_submit_days_of_the_week">星期</th>
+                                    <th data-field="after_submit_section">节次</th>
+                                    <th data-field="after_submit_labs_of_institute">实验室所属学院</th>
+                                    <th data-field="after_submit_labs_attribute">实验室属性</th>
+                                    <th data-field="after_submit_labs">实验室</th>
+                                    <th data-field="after_submit_special_consume_requirements">特殊耗材需求</th>
+                                    <th data-field="after_submit_special_system_requirements">特殊系统需求</th>
+                                    <th data-field="after_submit_special_soft_requirements">特殊软件需求</th>
+                                </tr></thead>
+                            </table>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal" id="submit_all_items">确认提交</button>
                         </div>
                     </div>
                 </div>
@@ -228,38 +238,33 @@
                     },
                     success: function (data) {  // 由 load_classes_of_course 返回的 classes_data 作为 data
                         $("#classes").empty();  // 清空原来选中但未提交的内容
-                        var classes= $("#classes").select2({
+                        /*var classes= $("#classes").select2({
                             language: {
                                 noResults: function (params) {
                                     return "请先选择课程";
                                 }
                             },
-                            {#width:200,#}
-                        });
-                        classes.val(classes.dataType).trigger("change");
+                            width:200,
+                        });*/
+                        {#classes.val(classes.dataType).trigger("change");#}
                         $("#classes").html(data);  // 用返回的数据替换班级选择栏的内容
                     }
                 });
             });
 
             // 授课班级设置为多选select
-            $("#classes").select2({
+            /*$("#classes").select2({
                 language: {
                     noResults: function (params) {
                         return "请先选择课程";
                     }
                 },
-                {#width:200,#}
-            });
+                //width:200,
+            });*/
 
             // 实验教材
             $('#teaching_materials').editable({
                 placeholder: "一般为书籍或视频",
-                /*validate: function (v) {
-                    if ($.trim(v) == '') {
-                        return '该项必填';
-                    }
-                }*/
             });
 
             // 总体环境需求
@@ -292,35 +297,33 @@
                         field: 'state',
                         checkbox: true,
                     }, {
-                        title: '编号',
+                        title: '编号<span id="need">*</span>',
                         field: 'id',
                         editable:{
                             type:'text',
                         }
                     }, {
                         field: 'experiment_name',
-                        title: '项目名称',
+                        title: '项目名称<span id="need">*</span>',
                         editable:{
                             type:'text',
                         },
                     }, {
                         field: 'experiment_type',
-                        title: '类型',
+                        title: '类型<span id="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
-                                {% if experiments_type %}
-                                    {% for x in experiments_type %}
-                                        { value: {{ x.id }}, text: '{{ x.name }}'},
-                                    {% endfor %}
-                                {% else %}
+                                {% for x in experiments_type %}
+                                    { value: {{ x.id }}, text: '{{ x.name }}'},
+                                {% empty %}
                                     { value:"", text: not_found_data},
-                                {% endif %}
+                                {% endfor %}
                             ]
                         }
                     }, {
                         field: 'lecture_time',
-                        title: '学时',
+                        title: '学时<span id="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
@@ -335,7 +338,7 @@
                         }
                     }, {
                         field: 'which_week',
-                        title: '周次',
+                        title: '周次<span id="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
@@ -350,7 +353,7 @@
                         }
                     }, {
                         field: 'days_of_the_week',
-                        title: '星期',
+                        title: '星期<span id="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
@@ -365,7 +368,7 @@
                         }
                     }, {
                         field: 'section',
-                        title: '节次',
+                        title: '节次<span id="need">*</span>',
                         editable:{
                             type:'select2',
                             source: [
@@ -515,17 +518,18 @@
         $("#add_experiment_button").click(function () {
             // 用index实现编号自增
             var data = $experiment_info_table.bootstrapTable('getData');
+            console.log('获取上一行实验项目数据：', data);
             var index = data.length;
             var new_row = JSON.stringify(data[index-1]);
             // 如果是第一次添加行，则为空
             if(!new_row){
                 new_row = {
-                    "id":index,
+                    "id":1,
                     "experiment_name":"",
-                    "experiment_type":"",
-                    "lecture_time":"",
-                    "which_week":"",
-                    "days_of_the_week":"",
+                    "experiment_type":{% if experiments_type %}{{ experiments_type.0.id }}{% else %}""{% endif %},
+                    "lecture_time":{{ lecture_time.1 }},
+                    "which_week":{{ which_week.0 }},
+                    "days_of_the_week":{{ days_of_the_week.0 }},
                     "section":"",
                     "labs_of_institute":"",
                     "labs_attribute":"",
@@ -547,7 +551,7 @@
                 new_row = eval('(' + new_row + ')');
 
                 console.log('动态添加实验项目--获取到上一行数据：'+JSON.stringify(new_row));
-                new_row["id"] = index;
+                new_row["id"] = index+1;
             }
             // 最后插入该行
             $experiment_info_table.bootstrapTable('insertRow', {
@@ -667,9 +671,8 @@
             console.log('选中的班级：'+selected_classes_name+'。id分别为：'+selected_classes_id);
             */
 
-
+            /*
             var  selected_classes_name=eval('([])');
-            {#var  selected_classes_id=eval('([])');#}
             var selected_classes_id = $('#classes').select2().val();
             var selected_classes=document.getElementById('classes');
 
@@ -677,10 +680,12 @@
             for(var i=0;i<options.length;i++){
                 if(options[i].selected){
                     selected_classes_name.push(options[i].text);
-                    {#selected_classes_id.push(options[i].value);#}
+                    selected_classes_id.push(options[i].value);
                 }
             }
-            console.log('选择的班级为：'+selected_classes_name+' id 为：'+selected_classes_id);
+            console.log('选择的班级为：'+selected_classes_name+' id 为：'+selected_classes_id);*/
+            var selected_classes_name = document.getElementById("classes").innerText;
+            console.log('选择的班级为：'+selected_classes_name);
 
             var data_json = {
                 "department":document.getElementById("department").innerText,
@@ -690,7 +695,7 @@
                 "course_id": selected_course_id,
 
                 "classes":selected_classes_name,
-                "classes_id":selected_classes_id,
+                //"classes_id":selected_classes_id,
 
                 "teaching_materials":teaching_materials,
 
@@ -698,7 +703,7 @@
                 "system_requirements":system_requirements,
                 "soft_requirements":soft_requirements,
 
-                "experiments": experiments
+                "experiments": experiments,
             };
 
             console.log('整理所有信息后：'+data_json.toString());
@@ -770,25 +775,61 @@
             })
         });
 
+        // 真正提交按钮点击
         $('#submit_all_items').click(function(){
             var course_and_its_experiments_json = sessionStorage.getItem("course_and_its_experiments_json");
             course_and_its_experiments_json = JSON.parse(course_and_its_experiments_json);
             {#course_and_its_experiments_json = eval('(' + JSON.stringify(course_and_its_experiments_json) + ')');#}
-            $.ajax({
-                cache:true,//保留缓存数据
-                type:"POST",
-                url:"{% url 'apply_experiments:submit_experiments' %}",
-                data:JSON.stringify(course_and_its_experiments_json),
-                dataType:'JSON',
-                async:true,
-                error:function(request){//请求失败之后的操作
-                    console.log("submit fail");
-                    console.log(request)
-                },
-                success:function(data){//请求成功之后的操作
-                    console.log(data)
+
+            var experiments = course_and_its_experiments_json['experiments'];
+            if(experiments.length !== 0){
+                var pass = true;
+                $.each(experiments, function (index, value) {
+                    console.log(index, value);
+                    if(value['id'] === ""){
+                        pass = false;
+                        window.alert('提交失败，实验'+(index+1)+'的编号不可以为空');
+                        return pass
+                    }
+                    if(value['experiment_name'] == ""){
+                        pass = false;
+                        window.alert('提交失败，实验'+(index+1)+'的项目名不可以为空');
+                        return pass
+                    }
+                    if(value['section'] == ""){
+                        pass = false;
+                        window.alert('提交失败，实验'+(index+1)+'的节次不可以为空');
+                        return pass
+                    }
+                });
+                if(pass){
+                    $.ajax({
+                        cache:true,//保留缓存数据
+                        type:"POST",
+                        url:"{% url 'apply_experiments:submit_experiments' %}",
+                        data:JSON.stringify(course_and_its_experiments_json),
+                        dataType:'JSON',
+                        async:true,
+                        headers:{'X-CSRFToken':'{{ csrf_token }}'},
+                        error:function(request){
+                            console.log("无法提交");
+                            console.log(request)
+                        },
+                        success:function(data){
+                            console.log("已提交");
+                            console.log(data);
+                            if(data.status){
+                                console.log('提交成功！');
+                                window.location.href="{% url 'apply_experiments:manage_application' %}"
+                            }else{
+                                console.log('提交信息有问题：'+data.empty_experiment)
+                            }
+                        }
+                    });
                 }
-            });
+            }else{
+                window.alert('提交失败，实验项目不能为空！')
+            }
         })
     </script>
     <!--提交时显示所有信息 模态表格 结束-->

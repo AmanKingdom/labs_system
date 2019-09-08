@@ -6,11 +6,6 @@
     <!--多项选择的css依赖-->
     <link href="/static/css_js/css/plugins/select2/select2.min.css" rel="stylesheet" type="text/css">
     <link href="/static/css_js/css/plugins/select2/select2-bootstrap.css" rel="stylesheet" type="text/css">
-    <style type="text/css">
-        #need{
-            color: #ff0000;
-        }
-    </style>
 {% endblock %}
 
 {% block body_block %}
@@ -63,7 +58,7 @@
                         {#                            <select id="classes" class="form-control" multiple="multiple" size="1"></select>#}
                         <div id="classes">
                             {% if courses %}
-                                {% for x in classes_data %}
+                                {% for x in classes %}
                                     {{ x.grade__name }}级{{ x.grade__department__name }}{{ x.name }}班
                                 {% empty %}
                                     暂无数据
@@ -204,7 +199,7 @@
 
     <!--全局的bootstrap table 和 X-editable 配置 开始-->
     <script>
-        var global_current_special_requirements_row = null;  // 临时存放当前行数据
+        var global_current_special_requirements_row = null;  // 临时存放当前行的特殊需求数据
 
         var empty_text = '点击输入';    // 全局性的空文本
         var not_found_data = '暂无数据';    // 全局性的找不到数据提示文本
@@ -236,7 +231,7 @@
                     data: {
                         'course_id': course_id  // course_id 传到GET参数
                     },
-                    success: function (data) {  // 由 load_classes_of_course 返回的 classes_data 作为 data
+                    success: function (data) {  // 由 load_classes_of_course 返回的 classes 作为 data
                         $("#classes").empty();  // 清空原来选中但未提交的内容
                         /*var classes= $("#classes").select2({
                             language: {
@@ -388,7 +383,6 @@
                     }, {
                         field: 'labs_of_institute',
                         title: '实验室所属学院',
-                        onchange:select_institute,
                         editable:{
                             type:'select',
                             source: [
@@ -464,10 +458,6 @@
                 ].join('')
             }
 
-            function select_institute(value, row, index){
-                console.log('ddd')
-            }
-
             $experiment_info_table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table', function () {
                 $remove_experiment_button.prop('disabled', !$experiment_info_table.bootstrapTable('getSelections').length);
                 // save your data, here just save the current page
@@ -477,7 +467,6 @@
             $experiment_info_table.on('all.bs.table', function (e, name, args) {
                 console.log(name, args)
             });
-
 
             // 删除实验项目的点击事件
             $remove_experiment_button.click(function () {
@@ -592,7 +581,9 @@
                 // 下面这一串if-else是用来区分是否已经填过数据，并把填过的数据还原到模态表格显示
                 if(global_current_special_requirements_row.special_consume_requirements){
                     $('#special_consume_requirements').editable('setValue', global_current_special_requirements_row.special_consume_requirements);
+                    console.log('原来的')
                 }else{
+                    console.log('清空原来的')
                     $('#special_consume_requirements').editable('setValue', null);
                 }
                 if(global_current_special_requirements_row.special_system_requirements){
@@ -812,8 +803,7 @@
                         async:true,
                         headers:{'X-CSRFToken':'{{ csrf_token }}'},
                         error:function(request){
-                            console.log("无法提交");
-                            console.log(request)
+                            console.log("无法提交", request);
                         },
                         success:function(data){
                             console.log("已提交");

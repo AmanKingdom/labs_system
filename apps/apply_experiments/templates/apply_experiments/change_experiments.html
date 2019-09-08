@@ -1,64 +1,394 @@
 <!--change_experiments.html-->
 
 {% extends 'apply_experiments/base.html' %}
-{% block add_css %}{% endblock %}
+{% block add_css %}
+    <!--多项选择的css依赖-->
+    <link href="/static/css_js/css/plugins/select2/select2.min.css" rel="stylesheet" type="text/css">
+    <link href="/static/css_js/css/plugins/select2/select2-bootstrap.css" rel="stylesheet" type="text/css">
+{% endblock %}
 
 {% block body_block %}
-    <div class="ibox float-e-margins">
-        <div class="ibox-title row">
-            <h5>实验室申请信息管理</h5>/ 实验室申请信息管理
-        </div>
-        <div class="ibox-content">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover"
-                       data-toggle="table"
-                       id="all_info_table"
-                       data-detail-formatter="detailFormatter"
-                       data-minimum-count-columns="2"
-                       data-id-field="id"
-                       data-side-pagination="server"
-                       data-response-handler="responseHandler">
-                    <thead><tr>
-                        <th data-field="no" data-sortable="true">序号</th>
-                        <th data-field="teacher">教师</th>
-                        <th data-field="school_year" data-sortable="true">学年</th>
-                        <th data-field="term" data-sortable="true">学期</th>
-                        <th data-field="course" data-sortable="true">课程</th>
-                        <th data-field="teaching_materials">实验教材</th>
-                        <th data-field="experiments_amount" data-sortable="true">实验项数</th>
-                        <th data-field="classes" data-sortable="true">教学班级</th>
-                        <th data-field="create_time" data-sortable="true">创建时间</th>
-                        <th data-field="status" data-sortable="true">状态</th>
-                    </tr></thead>
-                    <tbody>
-                    {% for x in experiments %}
+    {% if status %}
+        <div class="ibox float-e-margins">
+            <div class="ibox-title row">
+                <h5>实验室申请信息管理</h5>/ 实验项目申请信息管理
+            </div>
+            <div class="ibox-content">
+                <div class="table-responsive">
+                    <table id="course_table"
+                           class="table table-striped table-hover"
+                           data-toggle="table"
+                           data-minimum-count-columns="2"
+                           data-id-field="id">
+                        <thead><tr>
+                            <th data-field="term">学年学期</th>
+                            <th data-field="course">课程</th>
+                            <th data-field="teacher">教师</th>
+                            <th data-field="classes">教学班级</th>
+                            <th data-field="teaching_materials">实验教材</th>
+                            <th data-field="total_consume_requirements">总体耗材需求</th>
+                            <th data-field="total_system_requirements">总体系统需求</th>
+                            <th data-field="total_soft_requirements">总体软件需求</th>
+                            <th data-field="modify_time" data-sortable="true">修改时间</th>
+                            <th data-field="status" data-sortable="true">状态</th>
+                        </tr></thead>
+                        <tbody>
                         <tr>
-                            <td>{{ x.no }}</td>
-                            <td>{{ x.teacher }}</td>
-                            <td>{{ x.school_year }}</td>
-                            <td>{{ x.term }}</td>
-                            <td>{{ x.course }}</td>
-                            <td>{{ x.teaching_materials }}</td>
-                            <td>{{ x.experiments_amount }}</td>
-                            <td>{{ x.classes }}</td>
-                            <td>{{ x.create_time }}</td>
-                            <td>{{ x.status }}</td>
+                            <td>{{ course.course.term }}</td>
+                            <td>{{ course.course.name }}</td>
+                            <td>{{ course.teachers }}</td>
+                            <td>{{ course.classes }}</td>
+                            <td>{{ course.course.total_requirements.teaching_materials }}</td>
+                            <td>{{ course.course.total_requirements.total_consume_requirements }}</td>
+                            <td>{{ course.course.total_requirements.total_system_requirements }}</td>
+                            <td>{{ course.course.total_requirements.total_soft_requirements }}</td>
+                            <td>{{ course.course.modify_time }}</td>
+                            <td>{{ course.status }}</td>
                         </tr>
-                    {% empty %}
-                        暂无数据
-                    {% endfor %}
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    </div>
+        <div class="ibox float-e-margins">
+            <div class="ibox-title">
+                <h5>实验项目申请表</h5>
+                <div class="ibox-tools">
+                    <button id="add_experiment_button" class="btn btn-primary">添加实验项目</button>
+                    <button id="remove_experiment_button" class="btn btn-danger" disabled>批量删除</button>
+                    <a class="collapse-link">
+                        <i class="fa fa-chevron-up"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="ibox-content">
+                <table
+                        id="experiments_table"
+                        data-id-field="id"
+                        data-side-pagination="server"
+                        data-response-handler="responseHandler"
+                        data-click-to-select="true">
+                    {#                    <thead><tr>#}
+                    {#                        <th data-field="state" data-checkbox="true"></th>#}
+                    {#                        <th data-field="id">编号</th>#}
+                    {#                        <th data-field="experiment_name">项目名称</th>#}
+                    {#                        <th data-field="experiment_type">类型</th>#}
+                    {#                        <th data-field="lecture_time">学时</th>#}
+                    {#                        <th data-field="which_week">周次</th>#}
+                    {#                        <th data-field="days_of_the_week">星期</th>#}
+                    {#                        <th data-field="section">节次</th>#}
+                    {#                        <th data-field="labs_of_institute">实验室所属学院</th>#}
+                    {#                        <th data-field="labs_attribute">实验室属性</th>#}
+                    {#                        <th data-field="labs">实验室</th>#}
+                    {#                        <th data-field="special_consume_requirements">特殊耗材需求</th>#}
+                    {#                        <th data-field="special_system_requirements">特殊系统需求</th>#}
+                    {#                        <th data-field="special_soft_requirements">特殊软件需求</th>#}
+                    {#                    </tr></thead>#}
+                    {#                    <tbody>#}
+                    {#                    {% for experiment in experiments %}#}
+                    {#                        <tr>#}
+                    {#                            <td></td>#}
+                    {#                            <td>{{ experiment.no }}</td>#}
+                    {#                            <td>#}
+                    {#                                <a class="experiment_name">{{ experiment.name }}</a>#}
+                    {#                            </td>#}
+                    {#                            <td>#}
+                    {#                                <a class="experiment_type">{{ experiment.experiment_type }}</a>#}
+                    {#                                <select class="experiment_type">#}
+                    {#                                    <option selected>{{ experiment.experiment_type }}</option>#}
+                    {#                                    {% for x in experiment_type %}#}
+                    {#                                        <option>{{ x }}</option>#}
+                    {#                                    {% endfor %}#}
+                    {#                                </select>#}
+                    {#                            </td>#}
+                    {#                            <td><a class="lecture_time">{{ experiment.lecture_time }}</a></td>#}
+                    {#                            <td><a class="which_week">{{ experiment.which_week }}</a></td>#}
+                    {#                            <td><a class="days_of_the_week">{{ experiment.days_of_the_week }}</a></td>#}
+                    {#                            <td><a class="section">{{ experiment.section }}</a></td>#}
+                    {#                            <td><a class="labs_of_institute">{{ experiment.labs_of_institute }}</a></td>#}
+                    {#                            <td><a class="labs_attribute">{{ experiment.labs_attribute }}</a></td>#}
+                    {#                            <td><a class="labs">{{ experiment.labs }}</a></td>#}
+                    {#                            <td><a class="special_consume_requirements">{{ experiment.special_consume_requirements }}</a></td>#}
+                    {#                            <td><a class="special_system_requirements">{{ experiment.special_system_requirements }}</a></td>#}
+                    {#                            <td><a class="special_soft_requirements">{{ experiment.special_soft_requirements }}</a></td>#}
+                    {#                        </tr>#}
+                    {#                    {% endfor %}#}
+                    {#                    </tbody>#}
+                </table>
+                <div align="right">
+                    <br>
+                    <button id="submit" class="btn btn-primary" title="申请修改">确认修改</button>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        {{ message }}
+    {% endif %}
 {% endblock %}
 
 <!--子html文件用这个填充块添加js样式-->
 {% block add_js %}
+    <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
+
     <!-- 全局配置代码 -->
     <script>
+        var not_found_data = '暂无数据';    // 全局性的找不到数据提示文本
         $.fn.bootstrapTable.columnDefaults.valign = 'middle';//垂直居中
         $.fn.bootstrapTable.columnDefaults.align = 'center';//水平居中
+        $.fn.editable.defaults.mode = 'inline';//设置行内编辑模式
+        $.fn.editable.defaults.showbuttons = false;//设置所有的元素不显示按钮
+        $.fn.editable.defaults.onblur= "submit"; //表示鼠标离开输入框即进行提交保存操作
+    </script>
+
+    <script>
+        var $experiments_table = $('#experiments_table');
+        var $remove = $('#remove_experiment_button');
+        var selections = [];
+
+        function getIdSelections() {
+            return $.map($experiments_table.bootstrapTable('getSelections'), function (row) {
+                return row.id
+            })
+        }
+
+        function responseHandler(res) {
+            $.each(res.rows, function (i, row) {
+                row.state = $.inArray(row.id, selections) !== -1
+            })
+            return res
+        }
+
+        function initTable() {
+            console.log('initTable()执行');
+            $experiments_table.bootstrapTable('destroy').bootstrapTable({
+                locale: $('#locale').val(),
+                columns: [
+                    [{
+                        field: 'state',
+                        checkbox: true,
+                    }, {
+                        title: '编号<span id="need">*</span>',
+                        field: 'id',
+                        editable:{
+                            type:'text',
+                        }
+                    }, {
+                        field: 'experiment_name',
+                        title: '项目名称<span id="need">*</span>',
+                        editable:{
+                            type:'text',
+                        },
+                    }, {
+                        field: 'experiment_type',
+                        title: '类型<span id="need">*</span>',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% for x in experiments_type %}
+                                    { value: {{ x.id }}, text: '{{ x.name }}'},
+                                {% empty %}
+                                    { value:"", text: not_found_data},
+                                {% endfor %}
+                            ]
+                        }
+                    }, {
+                        field: 'lecture_time',
+                        title: '学时<span id="need">*</span>',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% if lecture_time %}
+                                    {% for x in lecture_time %}
+                                        { value: {{ x }}, text: {{ x }}},
+                                    {% endfor %}
+                                {% else %}
+                                    { value:"", text: not_found_data},
+                                {% endif %}
+                            ]
+                        }
+                    }, {
+                        field: 'which_week',
+                        title: '周次<span id="need">*</span>',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% if which_week %}
+                                    {% for x in which_week %}
+                                        { value: {{ x }}, text: {{ x }}},
+                                    {% endfor %}
+                                {% else %}
+                                    { value:"", text: not_found_data},
+                                {% endif %}
+                            ]
+                        }
+                    }, {
+                        field: 'days_of_the_week',
+                        title: '星期<span id="need">*</span>',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% if days_of_the_week %}
+                                    {% for x in days_of_the_week %}
+                                        { value: {{ x }}, text: {{ x }}},
+                                    {% endfor %}
+                                {% else %}
+                                    { value:"", text: not_found_data},
+                                {% endif %}
+                            ]
+                        }
+                    }, {
+                        field: 'section',
+                        title: '节次<span id="need">*</span>',
+                        editable:{
+                            type:'select2',
+                            source: [
+                                {% if section %}
+                                    {% for x in section %}
+                                        { value: {{ x }}, text: {{ x }}},
+                                    {% endfor %}
+                                {% else %}
+                                    { value:"", text: not_found_data},
+                                {% endif %}
+                            ],
+                            select2 : {
+                                multiple : true,
+                                width : '100px'//设置宽，这个一定要，不然显示框很窄
+                            }
+                        }
+                    }, {
+                        field: 'labs_of_institute',
+                        title: '实验室所属学院',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% if labs_of_institute %}
+                                    {% for x in labs_of_institute %}
+                                        { value: {{ x.id }}, text: '{{ x.name }}'},
+                                    {% endfor %}
+                                {% else %}
+                                    { value:"", text: not_found_data},
+                                {% endif %}
+                            ]
+                        }
+                    }, {
+                        field: 'labs_attribute',
+                        title: '实验室属性',
+                        editable:{
+                            type:'select2',
+                            source: [
+                                {% if labs_attribute %}
+                                    {% for x in labs_attribute %}
+                                        {value: {{ x.id }}, text: '{{ x.name }}' },
+                                    {% endfor %}
+                                {% else %}
+                                    {value:"", text: not_found_data}
+                                {% endif %}
+                            ],
+                            select2 : {
+                                // allowClear : true,
+                                multiple : true,
+                                // tokenSeparators : [",", " "],
+                                width : '100px'//设置宽，这个一定要，不然显示框很窄
+                            }
+                        }
+                    }, {
+                        field: 'labs',
+                        title: '实验室',
+                        editable:{
+                            type:'select2',
+                            source: [
+                                {% if all_labs %}
+                                    {% for x in all_labs %}
+                                        {value: {{ x.id }}, text: '{{ x.name }}' },
+                                    {% endfor %}
+                                {% else %}
+                                    {value:"", text: not_found_data}
+                                {% endif %}
+                            ],
+                            select2 : {
+                                // allowClear : true,
+                                multiple : true,
+                                // tokenSeparators : [",", " "],
+                                width : '100px'//设置宽，这个一定要，不然显示框很窄
+                            }
+                        }
+                    }, {
+                        title: '特殊耗材需求',
+                        field: 'special_consume_requirements',
+                        editable:{
+                            type:'text',
+                        }
+                    }, {
+                        title: '特殊系统需求',
+                        field: 'special_system_requirements',
+                        editable:{
+                            type:'text',
+                        }
+                    }, {
+                        title: '特殊软件需求',
+                        field: 'special_soft_requirements',
+                        editable:{
+                            type:'text',
+                        }
+                    }]
+                ]
+            });
+
+            $experiments_table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table',
+                function () {
+                    $remove.prop('disabled', !$experiments_table.bootstrapTable('getSelections').length);
+
+                    // save your data, here just save the current page
+                    selections = getIdSelections()
+                    // push or splice the selections if you want to save all data selections
+                }
+            )
+            $experiments_table.on('all.bs.table', function (e, name, args) {
+                console.log(name, args)
+            })
+            $remove.click(function () {
+                var ids = getIdSelections()
+                $experiments_table.bootstrapTable('remove', {
+                    field: 'id',
+                    values: ids
+                })
+                $remove.prop('disabled', true)
+            })
+        }
+
+        function loadExperiments(){
+            console.log('loadExperiment()执行');
+            {% for e in experiments %}
+                {#console.log({{ e }});#}
+                var new_row = {
+                    "id": {% if e.experiment.no %}{{ e.experiment.no }}{% else %}""{% endif %},
+                    "experiment_name": {% if e.experiment.name %}'{{ e.experiment.name }}'{% else %}""{% endif %},
+                    "experiment_type": {% if e.experiment.experiment_type.id %}'{{ e.experiment.experiment_type.id }}'{% else %}""{% endif %},
+                    "lecture_time": {% if e.experiment.lecture_time %}'{{ e.experiment.lecture_time }}'{% else %}""{% endif %},
+                    "which_week": {% if e.experiment.which_week %}'{{ e.experiment.which_week }}'{% else %}""{% endif %},
+                    "days_of_the_week": {% if e.experiment.days_of_the_week %}'{{ e.experiment.days_of_the_week }}'{% else %}""{% endif %},
+                    "section": {% if e.experiment.section %}'{{ e.experiment.section }}'{% else %}""{% endif %},
+                    "labs_of_institute": {% if e.labs_of_institute.id %}'{{ e.labs_of_institute.id }}'{% else %}""{% endif %},
+                    "labs_attribute": {% if e.labs_attribute %}'{{ e.labs_attribute }}'{% else %}""{% endif %},
+                    "labs": {% if e.labs %}'{{ e.labs }}'{% else %}""{% endif %},
+                    {#"labs": "1",    //要传id，字符串类型的id，而不要直接传下拉列表里的text值#}
+                    "special_consume_requirements": {% if e.experiment.special_requirements.special_consume_requirements %}'{{ e.experiment.special_requirements.special_consume_requirements }}'{% else %}""{% endif %},
+                    "special_system_requirements": {% if e.experiment.special_requirements.special_system_requirements %}'{{ e.experiment.special_requirements.special_system_requirements }}'{% else %}""{% endif %},
+                    "special_soft_requirements": {% if e.experiment.special_requirements.special_soft_requirements %}'{{ e.experiment.special_requirements.special_soft_requirements }}'{% else %}""{% endif %}
+                };
+                // 插入该行
+                $experiments_table.bootstrapTable('insertRow', {
+                    index: Number({{ e.no }}),
+                    row: new_row
+                });
+            {% empty %}
+            {% endfor %}
+        }
+
+        $(function() {
+            initTable();
+            loadExperiments();
+            $('#locale').change(initTable);
+        })
     </script>
 {% endblock %}

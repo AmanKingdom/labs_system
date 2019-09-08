@@ -3,7 +3,7 @@
 {#{% endfor %}#}
 
 
-{% for x in classes_data %}
+{% for x in classes %}
     {{ x.grade__name }}级{{ x.grade__department__name }}{{ x.name }}班<br>
 {% empty %}
     暂无数据

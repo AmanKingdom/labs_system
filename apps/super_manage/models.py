@@ -135,6 +135,36 @@ class TotalRequirements(models.Model):
     total_soft_requirements = models.CharField(max_length=100, verbose_name='总体软件需求', null=True, blank=True)
 
 
+# 学年
+class SchoolYear(models.Model):
+    class Meta:
+        # 该数据库表名自定义为如下：
+        db_table = 'school_year'
+
+    since = models.IntegerField(default=2019, verbose_name='起始年份')
+    to = models.IntegerField(default=2020, verbose_name='终止年份')
+
+    def __str__(self):
+        return '%s-%s学年' % (self.since, self.to)
+
+
+# 学期
+class Term(models.Model):
+    class Meta:
+        # 该数据库表名自定义为如下：
+        db_table = 'term'
+
+    TERM = (
+        ('第一学期', '第一学期'),
+        ('第二学期', '第二学期'),
+    )
+    name = models.CharField(max_length=20, choices=TERM, verbose_name='学期名')
+    school_year = models.ForeignKey(SchoolYear, verbose_name='所属学年', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return '%s%s' % (self.school_year, self.name)
+
+
 # 课程
 class Course(models.Model):
     class Meta:
@@ -150,6 +180,7 @@ class Course(models.Model):
     total_requirements = models.ForeignKey(TotalRequirements, on_delete=models.SET_NULL,
                                            verbose_name='总体实验需求', blank=True, null=True)
     modify_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
+    term = models.ForeignKey(Term, on_delete=models.SET_NULL, verbose_name='学年学期', blank=True, null=True)
 
     def __str__(self):
         return self.name

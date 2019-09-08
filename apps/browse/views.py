@@ -1,4 +1,4 @@
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
@@ -10,25 +10,26 @@ from logging_setting import ThisLogger
 this_logger = ThisLogger().logger
 
 
-def check_is_login(request):
-    if 'user_account' in request.session and 'user_type' in request.session:
-        if request.session['user_account'] and request.session['user_type']:
-            this_logger.info(str(request.session['user_account']) + '已登录')
-            if request.session['user_type'] == 'assistant':
-                return 'assistant'
+# 基础视图，检查登录
+def require_login(view):
+    def new_view(request, *args, **kwargs):
+        if 'user_account' in request.session and 'user_type' in request.session:
+            if not request.session['user_account'] or not request.session['user_type']:
+                return HttpResponseRedirect('/browse/login')
             else:
-                return 'teacher'
-    else:
-        return 'need_login'
+                return view(request, *args, **kwargs)
+        else:
+            return HttpResponseRedirect('/browse/login')
+    return new_view
 
 
 def homepage(request):
-    flag = check_is_login(request)
-    if flag == 'assistant':
+    if request.session['user_type'] == 'assistant':
         return HttpResponseRedirect('/browse/assistant_view')
-    elif flag == 'teacher':
+    elif request.session['user_type'] == 'teacher':
         return HttpResponseRedirect('/apply_experiments/apply')
-    return HttpResponseRedirect('/browse/login')
+    else:
+        return HttpResponseRedirect('/browse/login')
 
 
 @csrf_exempt
@@ -36,8 +37,9 @@ def login(request):
     context = {'title': '登录', 'message': None}
 
     if request.method == 'POST':
-        account = request.POST['account']
-        password = request.POST['password']
+        # 建议用get()获取，不要用['xxx']获取
+        account = request.POST.get('account')
+        password = request.POST.get('password')
         try:
             assistant = Assistant.objects.get(account=account, password=password)
             if assistant:

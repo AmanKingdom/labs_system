@@ -1,7 +1,11 @@
 from django.contrib import admin
 
 from apps.super_manage.models import School, Institute, SchoolArea, Labs, Department, Grade, Classes, Teacher, \
-    TotalRequirements, Course, LabsAttribute
+    TotalRequirements, Course, LabsAttribute, SchoolYear, Term
+
+
+admin.site.site_header = '实验室数据后台管理系统'
+admin.site.site_title = '实验室数据管理'
 
 
 class SchoolAdmin(admin.ModelAdmin):
@@ -52,7 +56,12 @@ class LabsAdmin(admin.ModelAdmin):
 
 admin.site.register(Labs, LabsAdmin)
 
-admin.site.register(LabsAttribute)
+
+class LabsAttributeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name')  # 设置展示的列
+
+
+admin.site.register(LabsAttribute, LabsAttributeAdmin)
 
 
 class GradeAdmin(admin.ModelAdmin):
@@ -94,10 +103,28 @@ admin.site.register(TotalRequirements, TotalRequirementsAdmin)
 
 
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'institute', 'modify_time')  # 设置展示的列
+    list_display = ('id', 'name', 'institute', 'modify_time', 'term')  # 设置展示的列
+    list_editable = ['name', 'institute', 'term']  # 设置可行内编辑
     search_fields = ('name', 'institute')  # 设置可对教师名称、系名称、教师账号进行搜索
     list_filter = ('institute', )  # 对系名称设置可筛选
 
 
 admin.site.register(Course, CourseAdmin)
+
+
+class SchoolYearAdmin(admin.ModelAdmin):
+    list_display = ('id', '__str__', 'since', 'to')  # 设置展示的列
+    list_editable = ['since', 'to'] # 设置可行内编辑
+
+
+admin.site.register(SchoolYear, SchoolYearAdmin)
+
+
+class TermAdmin(admin.ModelAdmin):
+    list_display = ('id', '__str__', 'name', 'school_year')  # 设置展示的列
+    list_editable = ['name', 'school_year']  # 设置可行内编辑
+    fields = ('school_year', 'name')  # 设置详情信息页面所能显示的字段及其顺序
+
+
+admin.site.register(Term, TermAdmin)
 

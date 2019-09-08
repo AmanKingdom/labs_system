@@ -32,8 +32,7 @@
                     <thead><tr>
                         <th data-field="no" data-sortable="true">序号</th>
                         <th data-field="teacher">授课教师</th>
-                        <th data-field="school_year" data-sortable="true">学年</th>
-                        <th data-field="term" data-sortable="true">学期</th>
+                        <th data-field="term" data-sortable="true">学年学期</th>
                         <th data-field="course" data-sortable="true">课程</th>
                         <th data-field="teaching_materials">实验教材</th>
                         <th data-field="experiments_amount" data-sortable="true">实验项数</th>
@@ -42,11 +41,10 @@
                         <th data-field="status" data-sortable="true">状态</th>
                     </tr></thead>
                     <tbody>
-                    {% for x in experiments %}
+                    {% for x in courses %}
                         <tr>
                             <td>{{ x.no }}</td>
-                            <td>{{ x.teacher }}</td>
-                            <td>{{ x.school_year }}</td>
+                            <td>{{ x.teachers }}</td>
                             <td>{{ x.term }}</td>
                             <td>{{ x.course }}</td>
                             <td>{{ x.teaching_materials }}</td>
@@ -86,8 +84,8 @@
             onClickRow:function (row,$element) {
                 console.log('点击了我:'+row.teacher, row);
 
-                var url = "{% url 'apply_experiments:change_experiments' 'school_year' 'term' 'course' %}";
-                url = url.replace('school_year/term/course', row.school_year+'/'+row.term+'/'+row.course);
+                var url = "{% url 'apply_experiments:change_experiments' 'term' 'course_name' %}";
+                url = url.replace('term/course_name', row.term+'/'+row.course);
                 window.location.href=url;
             },
         });

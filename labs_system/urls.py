@@ -18,7 +18,7 @@ from django.urls import path, include
 from apps.browse.views import *
 
 urlpatterns = [
-    path('', homepage, name='homepage'),
+    path('', require_login(homepage), name='homepage'),
 
     path('admin/', admin.site.urls),
     path('apply_experiments/', include('apps.apply_experiments.urls')),

@@ -31,7 +31,7 @@ def set_global_data(context):
     context['labs_of_institute'] = Institute.objects.all()
     context['labs_attribute'] = LabsAttribute.objects.all()
     # 因为找不到联动数据的解决方案，暂时用所有实验室来代替
-    context['all_labs'] = Labs.objects.all()
+    context['all_labs'] = Labs.objects.filter(dispark=True)
 
 
 def personal_homepage(request):

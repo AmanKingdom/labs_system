@@ -59,7 +59,7 @@
                         <div id="classes">
                             {% if courses %}
                                 {% for x in classes %}
-                                    {{ x.grade__name }}级{{ x.grade__department__name }}{{ x.name }}班
+                                    {{ x.grade__name }}级{{ x.grade__department__name }}{{ x.name }}班<br>
                                 {% empty %}
                                     暂无数据
                                 {% endfor %}
@@ -502,48 +502,52 @@
     <!--动态添加实验项目表格行 事件 开始-->
     <script>
         $("#add_experiment_button").click(function () {
-            // 用index实现编号自增
-            var data = $experiment_info_table.bootstrapTable('getData');
-            console.log('获取上一行实验项目数据：', data);
-            var index = data.length;
-            var new_row = JSON.stringify(data[index-1]);
-            // 如果是第一次添加行，则为空
-            if(!new_row){
-                new_row = {
-                    "id":index,
-                    "experiment_name":"",
-                    "experiment_type":{% if experiments_type %}{{ experiments_type.0.id }}{% else %}""{% endif %},
-                    "lecture_time":{{ lecture_time.1 }},
-                    "which_week":{{ which_week.0 }},
-                    "days_of_the_week":{{ days_of_the_week.0 }},
-                    "section":"",
-                    "labs_of_institute":"",
-                    "labs_attribute":"",
-                    "labs":"",
-                    "special_consume_requirements":"",
-                    "special_system_requirements":"",
-                    "special_soft_requirements":""
-                }
+            if($('#course option:selected').text() == "暂无课程数据"){
+                alert('没有课程可以申请了哦，您可以到申请信息页面看看已经申请了的课程')
             }else{
-                new_row = JSON.parse(new_row);
-                // 清空上一行的所有特殊需求，因为多数情况下并不是每个实验都有这个特殊需求
-                new_row.special_consume_requirements = "";
-                new_row.special_system_requirements = "";
-                new_row.special_soft_requirements = "";
-                new_row.which_week = Number(new_row.which_week);
-                new_row.which_week += 1;
+                // 用index实现编号自增
+                var data = $experiment_info_table.bootstrapTable('getData');
+                console.log('获取上一行实验项目数据：', data);
+                var index = data.length;
+                var new_row = JSON.stringify(data[index-1]);
+                // 如果是第一次添加行，则为空
+                if(!new_row){
+                    new_row = {
+                        "id":index,
+                        "experiment_name":"",
+                        "experiment_type":{% if experiments_type %}{{ experiments_type.0.id }}{% else %}""{% endif %},
+                        "lecture_time":{{ lecture_time.1 }},
+                        "which_week":{{ which_week.0 }},
+                        "days_of_the_week":{{ days_of_the_week.0 }},
+                        "section":"",
+                        "labs_of_institute":"",
+                        "labs_attribute":"",
+                        "labs":"",
+                        "special_consume_requirements":"",
+                        "special_system_requirements":"",
+                        "special_soft_requirements":""
+                    }
+                }else{
+                    new_row = JSON.parse(new_row);
+                    // 清空上一行的所有特殊需求，因为多数情况下并不是每个实验都有这个特殊需求
+                    new_row.special_consume_requirements = "";
+                    new_row.special_system_requirements = "";
+                    new_row.special_soft_requirements = "";
+                    new_row.which_week = Number(new_row.which_week);
+                    new_row.which_week += 1;
 
-                new_row = JSON.stringify(new_row);
-                new_row = eval('(' + new_row + ')');
+                    new_row = JSON.stringify(new_row);
+                    new_row = eval('(' + new_row + ')');
 
-                console.log('动态添加实验项目--获取到上一行数据：'+JSON.stringify(new_row));
-                new_row["id"] = index;
+                    console.log('动态添加实验项目--获取到上一行数据：'+JSON.stringify(new_row));
+                    new_row["id"] = index;
+                }
+                // 最后插入该行
+                $experiment_info_table.bootstrapTable('insertRow', {
+                    index: index,
+                    row: new_row
+                });
             }
-            // 最后插入该行
-            $experiment_info_table.bootstrapTable('insertRow', {
-                index: index,
-                row: new_row
-            });
         });
     </script>
     <!--动态添加实验项目表格行 事件 结束-->

@@ -27,7 +27,7 @@ def homepage(request):
     if request.session['user_type'] == 'assistant':
         return HttpResponseRedirect('/browse/assistant_view')
     elif request.session['user_type'] == 'teacher':
-        return HttpResponseRedirect('/apply_experiments/apply')
+        return HttpResponseRedirect('/apply_experiments/personal_homepage')
     else:
         return HttpResponseRedirect('/browse/login')
 

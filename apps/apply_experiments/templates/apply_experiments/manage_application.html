@@ -49,12 +49,10 @@
                             <td>{{ x.course }}</td>
                             <td>{{ x.teaching_materials }}</td>
                             <td>{{ x.experiments_amount }}</td>
-                            <td>{{ x.classes }}</td>
+                            <td>{{ x.classes | safe }}</td>
                             <td>{{ x.create_time }}</td>
                             <td>{{ x.status }}</td>
                         </tr>
-                    {% empty %}
-                        暂无数据
                     {% endfor %}
                     </tbody>
                 </table>

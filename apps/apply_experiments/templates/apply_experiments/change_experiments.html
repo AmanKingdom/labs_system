@@ -11,7 +11,7 @@
     {% if status %}
         <div class="ibox float-e-margins">
             <div class="ibox-title row">
-                <h5>实验室申请信息管理</h5>/ 实验项目申请信息管理
+                <h5>实验室申请信息管理</h5>/ 课程《{{ course.course.name }}》 的实验项目信息
             </div>
             <div class="ibox-content">
                 <div class="table-responsive">
@@ -29,19 +29,19 @@
                             <th data-field="total_consume_requirements">总体耗材需求</th>
                             <th data-field="total_system_requirements">总体系统需求</th>
                             <th data-field="total_soft_requirements">总体软件需求</th>
-                            <th data-field="modify_time" data-sortable="true">修改时间</th>
-                            <th data-field="status" data-sortable="true">状态</th>
+                            <th data-field="modify_time">修改时间</th>
+                            <th data-field="status">状态</th>
                         </tr></thead>
                         <tbody>
                         <tr>
                             <td>{{ course.course.term }}</td>
                             <td>{{ course.course.name }}</td>
                             <td>{{ course.teachers }}</td>
-                            <td>{{ course.classes }}</td>
-                            <td>{{ course.course.total_requirements.teaching_materials }}</td>
-                            <td>{{ course.course.total_requirements.total_consume_requirements }}</td>
-                            <td>{{ course.course.total_requirements.total_system_requirements }}</td>
-                            <td>{{ course.course.total_requirements.total_soft_requirements }}</td>
+                            <td>{{ course.classes | safe}}</td>
+                            <td><a id="teaching_materials" data-type="text"></a></td>
+                            <td><a id="total_consume_requirements" data-type="text"></a></td>
+                            <td><a id="total_system_requirements" data-type="text"></a></td>
+                            <td><a id="total_soft_requirements" data-type="text"></a></td>
                             <td>{{ course.course.modify_time }}</td>
                             <td>{{ course.status }}</td>
                         </tr>
@@ -68,56 +68,25 @@
                         data-side-pagination="server"
                         data-response-handler="responseHandler"
                         data-click-to-select="true">
-                    {#                    <thead><tr>#}
-                    {#                        <th data-field="state" data-checkbox="true"></th>#}
-                    {#                        <th data-field="id">编号</th>#}
-                    {#                        <th data-field="experiment_name">项目名称</th>#}
-                    {#                        <th data-field="experiment_type">类型</th>#}
-                    {#                        <th data-field="lecture_time">学时</th>#}
-                    {#                        <th data-field="which_week">周次</th>#}
-                    {#                        <th data-field="days_of_the_week">星期</th>#}
-                    {#                        <th data-field="section">节次</th>#}
-                    {#                        <th data-field="labs_of_institute">实验室所属学院</th>#}
-                    {#                        <th data-field="labs_attribute">实验室属性</th>#}
-                    {#                        <th data-field="labs">实验室</th>#}
-                    {#                        <th data-field="special_consume_requirements">特殊耗材需求</th>#}
-                    {#                        <th data-field="special_system_requirements">特殊系统需求</th>#}
-                    {#                        <th data-field="special_soft_requirements">特殊软件需求</th>#}
-                    {#                    </tr></thead>#}
-                    {#                    <tbody>#}
-                    {#                    {% for experiment in experiments %}#}
-                    {#                        <tr>#}
-                    {#                            <td></td>#}
-                    {#                            <td>{{ experiment.no }}</td>#}
-                    {#                            <td>#}
-                    {#                                <a class="experiment_name">{{ experiment.name }}</a>#}
-                    {#                            </td>#}
-                    {#                            <td>#}
-                    {#                                <a class="experiment_type">{{ experiment.experiment_type }}</a>#}
-                    {#                                <select class="experiment_type">#}
-                    {#                                    <option selected>{{ experiment.experiment_type }}</option>#}
-                    {#                                    {% for x in experiment_type %}#}
-                    {#                                        <option>{{ x }}</option>#}
-                    {#                                    {% endfor %}#}
-                    {#                                </select>#}
-                    {#                            </td>#}
-                    {#                            <td><a class="lecture_time">{{ experiment.lecture_time }}</a></td>#}
-                    {#                            <td><a class="which_week">{{ experiment.which_week }}</a></td>#}
-                    {#                            <td><a class="days_of_the_week">{{ experiment.days_of_the_week }}</a></td>#}
-                    {#                            <td><a class="section">{{ experiment.section }}</a></td>#}
-                    {#                            <td><a class="labs_of_institute">{{ experiment.labs_of_institute }}</a></td>#}
-                    {#                            <td><a class="labs_attribute">{{ experiment.labs_attribute }}</a></td>#}
-                    {#                            <td><a class="labs">{{ experiment.labs }}</a></td>#}
-                    {#                            <td><a class="special_consume_requirements">{{ experiment.special_consume_requirements }}</a></td>#}
-                    {#                            <td><a class="special_system_requirements">{{ experiment.special_system_requirements }}</a></td>#}
-                    {#                            <td><a class="special_soft_requirements">{{ experiment.special_soft_requirements }}</a></td>#}
-                    {#                        </tr>#}
-                    {#                    {% endfor %}#}
-                    {#                    </tbody>#}
                 </table>
-                <div align="right">
-                    <br>
-                    <button id="submit" class="btn btn-primary" title="申请修改">确认修改</button>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div align="left">
+                            <br>
+                            <a href="#" onClick="history.back(-1);">
+                                <button id="back" class="btn btn-primary" title="返回上一页">
+                                    返回上一页
+                                </button>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div align="right">
+                            <br>
+                            <button id="remove_all_experiment" class="btn btn-primary" title="取消所有实验">取消所有实验</button>
+                            <button id="submit" class="btn btn-primary" title="申请修改">确认修改</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -132,14 +101,41 @@
 
     <!-- 全局配置代码 -->
     <script>
+        var empty_text = '--';    // 全局性的空文本
         var not_found_data = '暂无数据';    // 全局性的找不到数据提示文本
         $.fn.bootstrapTable.columnDefaults.valign = 'middle';//垂直居中
         $.fn.bootstrapTable.columnDefaults.align = 'center';//水平居中
+        $.fn.bootstrapTable.columnDefaults.undefinedText = empty_text;//当表格项没有数据时显示的内容
+        $.fn.editable.defaults.emptytext = empty_text;//设置默认的空文本
         $.fn.editable.defaults.mode = 'inline';//设置行内编辑模式
         $.fn.editable.defaults.showbuttons = false;//设置所有的元素不显示按钮
         $.fn.editable.defaults.onblur= "submit"; //表示鼠标离开输入框即进行提交保存操作
     </script>
 
+    <!--实验对应课程可修改信息的配置 开始-->
+    <script>
+        $(document).ready(function() {
+            $('#teaching_materials').editable({
+                placeholder: "一般为书籍或视频",
+                value: '{{ course.course.total_requirements.teaching_materials }}'
+            });
+            $('#total_consume_requirements').editable({
+                placeholder: '如：电子试验箱',
+                value: '{{ course.course.total_requirements.total_consume_requirements }}'
+            });
+            $('#total_system_requirements').editable({
+                placeholder: '如：windows10',
+                value: '{{ course.course.total_requirements.total_system_requirements }}'
+            });
+            $('#total_soft_requirements').editable({
+                placeholder: '如：pycharm专业版',
+                value: '{{ course.course.total_requirements.total_soft_requirements }}'
+            });
+        })
+    </script>
+    <!--实验对应课程可修改信息的配置 结束-->
+
+    <!--实验项目表 配置开始-->
     <script>
         var $experiments_table = $('#experiments_table');
         var $remove = $('#remove_experiment_button');
@@ -169,9 +165,6 @@
                     }, {
                         title: '编号<span id="need">*</span>',
                         field: 'id',
-                        editable:{
-                            type:'text',
-                        }
                     }, {
                         field: 'experiment_name',
                         title: '项目名称<span id="need">*</span>',
@@ -361,7 +354,7 @@
             {% for e in experiments %}
                 {#console.log({{ e }});#}
                 var new_row = {
-                    "id": {% if e.experiment.no %}{{ e.experiment.no }}{% else %}""{% endif %},
+                    "id": {{ e.experiment.no }},
                     "experiment_name": {% if e.experiment.name %}'{{ e.experiment.name }}'{% else %}""{% endif %},
                     "experiment_type": {% if e.experiment.experiment_type.id %}'{{ e.experiment.experiment_type.id }}'{% else %}""{% endif %},
                     "lecture_time": {% if e.experiment.lecture_time %}'{{ e.experiment.lecture_time }}'{% else %}""{% endif %},
@@ -391,4 +384,171 @@
             $('#locale').change(initTable);
         })
     </script>
+    <!--实验项目表 配置结束-->
+
+    <!--动态添加实验项目表格行 事件 开始-->
+    <script>
+        $("#add_experiment_button").click(function () {
+            // 用index实现编号自增
+            var data = $experiments_table.bootstrapTable('getData');
+            console.log('获取上一行实验项目数据：', data);
+            var index = data.length;
+            var new_row = JSON.stringify(data[index-1]);
+            // 如果是第一次添加行，则为空
+            if(!new_row){
+                new_row = {
+                    "id":index,
+                    "experiment_name":"",
+                    "experiment_type":{% if experiments_type %}{{ experiments_type.0.id }}{% else %}""{% endif %},
+                    "lecture_time":{{ lecture_time.1 }},
+                    "which_week":{{ which_week.0 }},
+                    "days_of_the_week":{{ days_of_the_week.0 }},
+                    "section":"",
+                    "labs_of_institute":"",
+                    "labs_attribute":"",
+                    "labs":"",
+                    "special_consume_requirements":"",
+                    "special_system_requirements":"",
+                    "special_soft_requirements":""
+                }
+            }else{
+                new_row = JSON.parse(new_row);
+                // 清空上一行的所有特殊需求，因为多数情况下并不是每个实验都有这个特殊需求
+                new_row.special_consume_requirements = "";
+                new_row.special_system_requirements = "";
+                new_row.special_soft_requirements = "";
+                new_row.which_week = Number(new_row.which_week);
+                new_row.which_week += 1;
+
+                new_row = JSON.stringify(new_row);
+                new_row = eval('(' + new_row + ')');
+
+                console.log('动态添加实验项目--获取到上一行数据：'+JSON.stringify(new_row));
+                new_row["id"] = index;
+            }
+            // 最后插入该行
+            $experiments_table.bootstrapTable('insertRow', {
+                index: index,
+                row: new_row
+            });
+        });
+    </script>
+    <!--动态添加实验项目表格行 事件 结束-->
+
+    <!--整理所有信息提交 开始-->
+    <script>
+        $('#remove_all_experiment').click(function () {
+
+            var remove_flag = confirm('删除后该课程的所有实验项目后可以在申请页面再次申请，确认删除吗？');
+
+            if(remove_flag){
+                var remove_json = {
+                    "course_id": {{ course.course.id }},
+                };
+                $.ajax({
+                    type:"POST",
+                    url:"{% url 'apply_experiments:remove_all_experiments' %}",
+                    data:JSON.stringify(remove_json),
+                    dataType:'JSON',
+                    async:true,
+                    headers:{'X-CSRFToken':'{{ csrf_token }}'},
+                    error:function(request){
+                        console.log("无法提交", request);
+                    },
+                    success:function(data){
+                        console.log("已提交");
+                        console.log(data);
+                        if(data.status){
+                            console.log('删除成功！');
+                            window.location.href="{% url 'apply_experiments:manage_application' %}"
+                        }else{
+                            alert('出了点小错误，请稍后再次尝试删除')
+                        }
+                    }
+                });
+            }else{
+                alert('我就知道你是点错了的')
+            }
+        });
+
+        $('#submit').click(function () {
+            var experiments = $experiments_table.bootstrapTable('getData');
+            var total_consume_requirements = check_empty(document.getElementById("total_consume_requirements").innerText);
+            var total_system_requirements = check_empty(document.getElementById("total_system_requirements").innerText);
+            var total_soft_requirements = check_empty(document.getElementById("total_soft_requirements").innerText);
+            var teaching_materials = check_empty(document.getElementById("teaching_materials").innerText);
+
+            function check_empty(x) {
+                if(x == empty_text){
+                    return ""
+                }else{
+                    return x
+                }
+            }
+
+            var data_json = {
+                "course_id": {{ course.course.id }},
+
+                "teaching_materials":teaching_materials,
+                "consume_requirements":total_consume_requirements,
+                "system_requirements":total_system_requirements,
+                "soft_requirements":total_soft_requirements,
+
+                "experiments": experiments,
+            };
+
+            console.log('整理所有信息后：'+data_json.toString());
+            {#var course_and_its_experiments_json = JSON.stringify(data_json);#}
+            {#course_and_its_experiments_json = JSON.parse(course_and_its_experiments_json);#}
+
+            if(experiments.length !== 0){
+                var pass = true;
+                $.each(experiments, function (index, value) {
+                    console.log(index, value);
+                    if(value['id'] === ""){
+                        pass = false;
+                        window.alert('提交失败，实验'+index+'的编号不可以为空');
+                        return pass
+                    }
+                    if(value['experiment_name'] == ""){
+                        pass = false;
+                        window.alert('提交失败，实验'+index+'的项目名不可以为空');
+                        return pass
+                    }
+                    if(value['section'] == ""){
+                        pass = false;
+                        window.alert('提交失败，实验'+index+'的节次不可以为空');
+                        return pass
+                    }
+                });
+                if(pass){
+                    $.ajax({
+                        cache:true,//保留缓存数据
+                        type:"POST",
+                        url:"{% url 'apply_experiments:submit_experiments' %}",
+                        data:JSON.stringify(data_json),
+                        dataType:'JSON',
+                        async:true,
+                        headers:{'X-CSRFToken':'{{ csrf_token }}'},
+                        error:function(request){
+                            console.log("无法提交", request);
+                        },
+                        success:function(data){
+                            console.log("已提交");
+                            console.log(data);
+                            if(data.status){
+                                console.log('提交成功！');
+                                window.location.href="{% url 'apply_experiments:manage_application' %}"
+                            }else{
+                                console.log('提交信息有问题：'+data.message)
+                            }
+                        }
+                    });
+                }
+            }else{
+                window.alert('提交失败，实验项目不能为空！')
+            }
+        });
+    </script>
+    <!--整理所有信息提交 结束-->
 {% endblock %}

@@ -1,0 +1,194 @@
+<!--rooms_analyze.html-->
+
+{% extends 'apply_experiments/base.html' %}
+
+{% block add_css %}
+    <!--固定列表头所需的样式依赖-->
+    <link rel="stylesheet" href="/static/css_js/css/fixed-columns/bootstrap-table-fixed-columns.css">
+{% endblock %}
+
+{% block body_block %}
+    <div class="row">
+        <div class="row">
+            <div class="col-sm-offset-1 col-sm-3 m-b-xs">
+                <select class="input-sm form-control input-s-sm inline">
+                    <option class="selected">计算机科学与技术学院</option>
+                    <option>网络安全学院</option>
+                </select>
+            </div>
+            <div class="col-sm-4 m-b-xs inline">
+                <label for="selected_room" class="col-sm-3 control-label text-center">选择实验室：</label>
+                <div class="col-sm-9">
+                    <select class="input-sm form-control input-s-sm" id="selected_room">
+                        <option class="selected">7A201</option>
+                        <option>7A202</option>
+                        <option>7A203</option>
+                        <option>7A204</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-sm-3 m-b-xs">
+                <select class="input-sm form-control input-s-sm inline">
+                    <option>第14周</option>
+                    <option class="selected">第15周</option>
+                    <option>第16周</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover" id="room_schedule_table"
+               data-toggle="table"
+               data-classes="table table-hover"
+               data-show-columns="true"
+               data-striped="true"
+               data-show-toggle="true"
+               data-search="true"
+               data-show-refresh="true"
+               data-toolbar="#toolbar"
+               data-height="600"
+               align="center">
+            <thead>
+            <tr>
+                <th>节次</th>
+                <th>星期一</th>
+                <th>星期二</th>
+                <th>星期三</th>
+                <th>星期四</th>
+                <th>星期五</th>
+                <th>星期六</th>
+                <th>星期七</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>1</td>
+                <td>
+                    <a href="#">什么课 什么班级</a>
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>7</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>8</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>9</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>10</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>11</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
+
+{% block add_js %}
+    <!--固定列的js-->
+    <script src="/static/css_js/js/fixed-columns/bootstrap-table-fixed-columns.js"></script>
+
+    <script>
+    $(function () {
+        $('#room_schedule_table').bootstrapTable('destroy').bootstrapTable({
+            minimumCountColumns:4,
+            fixedColumns:true,
+            fixedNumber:1,
+        });
+    })
+</script>
+{% endblock %}

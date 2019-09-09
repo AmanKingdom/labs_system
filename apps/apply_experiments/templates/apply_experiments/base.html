@@ -40,7 +40,7 @@
                 <li class="nav-header">
                     <div class="dropdown profile-element text-center">
                         <span>
-                            <img alt="image" class="img-circle" src="/static/image/default/head.svg" style="width: 80px"/>
+                            <img alt="image" class="img-circle" src="/static/image/default/dog.jpg" style="width: 80px"/>
                         </span>
                         <a data-toggle="dropdown" class="dropdown-toggle" href="#">
                             <span class="clear">
@@ -56,7 +56,11 @@
                         <img alt="image" class="img-circle" src="/static/image/default/head.svg" style="width: 40px"/>
                     </div>
                 </li>
-                <li {% if personal_info_active %}class="active"{% endif %}><a href="/"><i class="fa fa-laptop"></i><span class="nav-label">个人信息</span></a></li>
+                <li {% if personal_homepage_active %}class="active"{% endif %}>
+                    <a href="{% url 'apply_experiments:personal_homepage' %}">
+                        <i class="fa fa-user-circle-o"></i><span class="nav-label">个人主页</span>
+                    </a>
+                </li>
                 <li class="active">
                     <a href="#"><i class="fa fa-edit"></i> <span class="nav-label">申请实验室</span><span class="fa arrow"></span></a>
                     <ul class="nav nav-second-level collapse">
@@ -67,8 +71,8 @@
                 <li class="active">
                     <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">统计分析</span><span class="fa arrow"></span></a>
                     <ul class="nav nav-second-level collapse">
-                        <li {% if apply_week_active %}class="active"{% endif %}><a href="weeks_analyze.html">周次安排表</a></li>
-                        <li {% if apply_labs_active %}class="active"{% endif %}><a href="rooms_analyze.html">实验室安排表</a></li>
+                        <li {% if weeks_analyze_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:weeks_analyze' %}">周次安排表</a></li>
+                        <li {% if rooms_analyze_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">实验室安排表</a></li>
                     </ul>
                 </li>
             </ul>
@@ -148,7 +152,7 @@
                 </ul>
             </nav>
         </div>
-        <div class="row border-bottom white-bg dashboard-header">
+        <div class="row border-bottom white-bg dashboard-header" id="base_div">
             {% block body_block %}{% endblock %}
         </div>
     </div>
@@ -177,6 +181,14 @@
 <script src="/static/css_js/js/bootstrap-editable.js"></script>
 <!-- editable和table 结合的依赖 -->
 <script src="/static/css_js/js/bootstrap-table-editable.js"></script>
+
+<script>
+    window.onload = function(){
+        var h=document.documentElement.clientHeight-40;//可见区域高度
+        ss=document.getElementById("base_div");
+        ss.style.height=h+"px";
+    }
+</script>
 
 <!--子html文件用这个填充块添加js样式-->
 {% block add_js %}{% endblock %}

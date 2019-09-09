@@ -1,0 +1,32 @@
+<!--personal_homepage.html-->
+
+{% extends 'apply_experiments/base.html' %}
+
+{% block add_css %}{% endblock %}
+
+{% block body_block %}
+    <div class="col-md-6 col-md-offset-3">
+        <div class="widget-head-color-box navy-bg p-lg text-center">
+            <div class="m-b-md">
+                <h2 class="font-bold no-margins">
+                    {{ user.name }}
+                </h2><br>
+                <small>{{ user.department }}</small>
+            </div>
+            <img alt="头像" class="img-circle circle-border m-b-md" src="/static/image/default/dog.jpg" style="width: 100px"/>
+            <div>
+                <span>{{ term.school_year }}{{ term.name }}</span>|
+                <span>执教课程数：{{ course_amount }}</span> 门
+            </div>
+        </div>
+        <div class="widget-text-box">
+            <h4 class="media-heading">{{ user.name }}</h4>
+            <p>给自己点个赞，生活会因此而发光。</p>
+            <div class="text-right">
+                <a class="btn btn-xs btn-white"><i class="fa fa-thumbs-up"></i> 赞 </a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block add_js %}{% endblock %}

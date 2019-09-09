@@ -294,9 +294,6 @@
                     }, {
                         title: '编号<span id="need">*</span>',
                         field: 'id',
-                        editable:{
-                            type:'text',
-                        }
                     }, {
                         field: 'experiment_name',
                         title: '项目名称<span id="need">*</span>',
@@ -513,7 +510,7 @@
             // 如果是第一次添加行，则为空
             if(!new_row){
                 new_row = {
-                    "id":1,
+                    "id":index,
                     "experiment_name":"",
                     "experiment_type":{% if experiments_type %}{{ experiments_type.0.id }}{% else %}""{% endif %},
                     "lecture_time":{{ lecture_time.1 }},
@@ -540,7 +537,7 @@
                 new_row = eval('(' + new_row + ')');
 
                 console.log('动态添加实验项目--获取到上一行数据：'+JSON.stringify(new_row));
-                new_row["id"] = index+1;
+                new_row["id"] = index;
             }
             // 最后插入该行
             $experiment_info_table.bootstrapTable('insertRow', {
@@ -576,22 +573,21 @@
 
         $(function() {
             $('#add_special_requirements_modal_table').on('shown.bs.modal', function () {
-                console.log('单个项目添加特殊需求模态表格--获取到耗材需求数据：'+global_current_special_requirements_row.special_consume_requirements);
-
                 // 下面这一串if-else是用来区分是否已经填过数据，并把填过的数据还原到模态表格显示
                 if(global_current_special_requirements_row.special_consume_requirements){
+                    console.log('单个项目添加特殊需求模态表格--获取到耗材需求数据：'+global_current_special_requirements_row.special_consume_requirements);
                     $('#special_consume_requirements').editable('setValue', global_current_special_requirements_row.special_consume_requirements);
-                    console.log('原来的')
                 }else{
-                    console.log('清空原来的')
                     $('#special_consume_requirements').editable('setValue', null);
                 }
                 if(global_current_special_requirements_row.special_system_requirements){
+                    console.log('单个项目添加特殊需求模态表格--获取到耗材需求数据：'+global_current_special_requirements_row.special_system_requirements);
                     $('#special_system_requirements').editable('setValue', global_current_special_requirements_row.special_system_requirements);
                 }else{
                     $('#special_system_requirements').editable('setValue', null);
                 }
                 if(global_current_special_requirements_row.special_soft_requirements){
+                    console.log('单个项目添加特殊需求模态表格--获取到耗材需求数据：'+global_current_special_requirements_row.special_soft_requirements);
                     $('#special_soft_requirements').editable('setValue', global_current_special_requirements_row.special_soft_requirements);
                 }else{
                     $('#special_soft_requirements').editable('setValue', null);
@@ -779,17 +775,17 @@
                     console.log(index, value);
                     if(value['id'] === ""){
                         pass = false;
-                        window.alert('提交失败，实验'+(index+1)+'的编号不可以为空');
+                        window.alert('提交失败，实验'+index+'的编号不可以为空');
                         return pass
                     }
                     if(value['experiment_name'] == ""){
                         pass = false;
-                        window.alert('提交失败，实验'+(index+1)+'的项目名不可以为空');
+                        window.alert('提交失败，实验'+index+'的项目名不可以为空');
                         return pass
                     }
                     if(value['section'] == ""){
                         pass = false;
-                        window.alert('提交失败，实验'+(index+1)+'的节次不可以为空');
+                        window.alert('提交失败，实验'+index+'的节次不可以为空');
                         return pass
                     }
                 });
@@ -812,7 +808,7 @@
                                 console.log('提交成功！');
                                 window.location.href="{% url 'apply_experiments:manage_application' %}"
                             }else{
-                                console.log('提交信息有问题：'+data.empty_experiment)
+                                console.log('提交信息有问题：'+data.message)
                             }
                         }
                     });

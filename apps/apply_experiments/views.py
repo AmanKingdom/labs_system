@@ -141,13 +141,18 @@ def submit_experiments(request):
 
         for experiment_item in data['experiments']:
             this_logger.info('当前处理的实验项目：' + str(experiment_item))
+
+            if experiment_item['section'].startswith(','):
+                experiment_item['section'] = experiment_item['section'][1:]
+                print("修正后的experiment_item['section']：", experiment_item['section'])
+
             new_experiment = Experiment.objects.create(
                 no=int(experiment_item['id']),
                 name=experiment_item['experiment_name'],
                 lecture_time=int(experiment_item['lecture_time']),
                 which_week=int(experiment_item['which_week']),
                 days_of_the_week=int(experiment_item['days_of_the_week']),
-                section=experiment_item['section'][1:],
+                section=experiment_item['section'],
                 status=1,
                 course=course
             )
@@ -173,7 +178,10 @@ def submit_experiments(request):
                 )
                 new_experiment.special_requirements = special_requirements
 
-            labs_ids = experiment_item['labs'].split(',')[1:]
+            if experiment_item['labs'].startswith(','):
+                experiment_item['labs'] = experiment_item['labs'][1:]
+                print("修正后的experiment_item['labs']：", experiment_item['labs'])
+            labs_ids = experiment_item['labs'].split(',')
             this_logger.info('待处理的实验室的id列表：' + str(labs_ids))
             for lab_item_id in labs_ids:
                 try:
@@ -184,7 +192,10 @@ def submit_experiments(request):
                     context['status'] = False
                     print('获取id为' + lab_item_id + '的实验室失败', e)
 
-            labs_attributes_ids = experiment_item['labs_attribute'].split(',')[1:]
+            if experiment_item['labs_attribute'].startswith(','):
+                experiment_item['labs_attribute'] = experiment_item['labs_attribute'][1:]
+                print("修正后的experiment_item['labs_attribute']：", experiment_item['labs_attribute'])
+            labs_attributes_ids = experiment_item['labs_attribute'].split(',')
             this_logger.info('待处理的实验室属性的id列表' + str(labs_attributes_ids))
             for labs_attribute_item_id in labs_attributes_ids:
                 try:
@@ -286,7 +297,7 @@ def change_experiments(request, term=None, course_name=None):
         print('无法获取', request.session['user_account'], '的', course_name, '课程实例', e)
 
     if course:
-        experiments_origin = Experiment.objects.filter(course=course)
+        experiments_origin = Experiment.objects.filter(course=course).order_by('-no')
         if len(experiments_origin) > 0:
 
             experiments = []

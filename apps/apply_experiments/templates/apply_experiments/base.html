@@ -26,6 +26,53 @@
         #need{
             color: #ff0000;
         }
+
+        a.editable-empty,a.editable,a.editable-click{
+            width: 100%;
+            height: 25px;
+            display: inline-block;
+        }
+
+        .editable-click,
+        a.editable-click,
+        a.editable-click:hover {
+            text-decoration: none;
+            border-bottom: dashed 0px #0088cc;
+            white-space: nowrap;
+            /*    重写去除下边框
+            */
+        }
+
+        /* 设置input的样式
+            bootstrap table padding为8px,加上左border为1px
+            editable input 的样式中padding:6 24 6 2;border 1px;
+        */
+        .inputclass{
+            width:100% !important;min-width:87px;
+            height:30px;
+            padding-left: 2px;
+        }
+
+        .button-margin{
+            margin-bottom:20px;
+        }
+
+        .fixed{
+            table-layout: fixed;
+
+        }
+
+        .font-color{
+            color:red;
+        }
+
+        .W120 .th-inner {
+            width:90px !important;
+        }
+
+        .white{
+            white-space: nowrap;
+        }
     </style>
 
     <!--子html文件用这个填充块添加css样式-->

@@ -2951,7 +2951,7 @@
             if (this.options.clear) {
                 this.$clear = $('<span class="editable-clear-x"></span>');
                 this.$input.after(this.$clear)
-                    .css('padding-right', 24)
+                    // .css('padding-right', 24)
                     .keyup($.proxy(function(e) {
                         //arrows, enter, tab, etc
                         if(~$.inArray(e.keyCode, [40,38,9,13,27])) {

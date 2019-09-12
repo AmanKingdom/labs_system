@@ -355,7 +355,7 @@
                 {#console.log({{ e }});#}
                 var new_row = {
                     "id": {{ e.experiment.no }},
-                    "experiment_name": {% if e.experiment.name %}'{{ e.experiment.name }}'{% else %}""{% endif %},
+                    "experiment_name": "",
                     "experiment_type": {% if e.experiment.experiment_type.id %}'{{ e.experiment.experiment_type.id }}'{% else %}""{% endif %},
                     "lecture_time": {% if e.experiment.lecture_time %}'{{ e.experiment.lecture_time }}'{% else %}""{% endif %},
                     "which_week": {% if e.experiment.which_week %}'{{ e.experiment.which_week }}'{% else %}""{% endif %},

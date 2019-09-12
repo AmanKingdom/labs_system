@@ -19,7 +19,7 @@
             </div>
         </div>
         <div class="ibox-content">
-            <table data-toggle="table" id="course_info_table" class="table-hover">
+            <table data-toggle="table" id="course_info_table" class="table-hover table-responsive">
                 <thead><tr>
                     <th data-field="department">教师所属系<span id="need">*</span></th>
                     <th data-field="teacher_name">教师姓名<span id="need">*</span></th>
@@ -68,10 +68,10 @@
                             {% endif %}
                         </div>
                     </td>
-                    <td><a href="#" id="teaching_materials" data-type="text"></a></td>
-                    <td><a href="#" id="consume_requirements" data-type="text"></a></td>
-                    <td><a href="#" id="system_requirements" data-type="text"></a></td>
-                    <td><a href="#" id="soft_requirements" data-type="text"></a></td>
+                    <td><a href="#" id="teaching_materials" data-type="textarea"></a></td>
+                    <td><a href="#" id="consume_requirements" data-type="textarea"></a></td>
+                    <td><a href="#" id="system_requirements" data-type="textarea"></a></td>
+                    <td><a href="#" id="soft_requirements" data-type="textarea"></a></td>
                 </tr></tbody>
             </table>
         </div>
@@ -91,12 +91,13 @@
         <div class="ibox-content">
             <table
                     id="experiment_info_table"
+                    class="table-responsive"
                     data-detail-formatter="detailFormatter"
                     data-minimum-count-columns="2"
                     data-id-field="id"
                     data-side-pagination="server"
-                    data-response-handler="responseHandler"
-                    data-click-to-select="true">
+                    data-response-handler="responseHandler">
+                {#                    data-click-to-select="true">#}
             </table>
             <div align="right">
                 <br>
@@ -130,7 +131,7 @@
                             </table>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal" id="set_special_requirements">确定</button>
+                            <button type="button" class="btn btn-primary" data-dismiss="modal" id="set_special_requirements">确定</button>
                         </div>
                     </div>
                 </div>
@@ -184,7 +185,7 @@
                             </table>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal" id="submit_all_items">确认提交</button>
+                            <button type="button" class="btn btn-primary" data-dismiss="modal" id="submit_all_items">确认提交</button>
                         </div>
                     </div>
                 </div>
@@ -201,17 +202,20 @@
     <script>
         var global_current_special_requirements_row = null;  // 临时存放当前行的特殊需求数据
 
-        var empty_text = '点击输入';    // 全局性的空文本
+        var empty_text = '       ';    // 全局性的空文本
         var not_found_data = '暂无数据';    // 全局性的找不到数据提示文本
 
         $.fn.editable.defaults.mode = 'inline';//设置行内编辑模式
         $.fn.editable.defaults.showbuttons = false;//设置所有的元素不显示按钮
         $.fn.editable.defaults.emptytext = empty_text;//设置默认的空文本
         $.fn.editable.defaults.onblur= "submit"; //表示鼠标离开输入框即进行提交保存操作
+        $.fn.editable.defaults.autotext = "always";
+        $.fn.editable.defaults.inputclass="inputclass";
+        //上面这句很重要，作用为是否显示select的文本。当select中source中的value和text均为文本时，需要声明，不然select框会直接显示值
 
         $.fn.bootstrapTable.columnDefaults.valign = 'middle';//垂直居中
         $.fn.bootstrapTable.columnDefaults.align = 'center';//水平居中
-        $.fn.bootstrapTable.columnDefaults.class='not-wrap';//什么作用来着？
+        $.fn.bootstrapTable.columnDefaults.class='not-wrap';
         $.fn.bootstrapTable.columnDefaults.undefinedText = empty_text;//当表格项没有数据时显示的内容
         $.fn.bootstrapTable.defaults.striped = true;
     </script>
@@ -260,17 +264,25 @@
             // 实验教材
             $('#teaching_materials').editable({
                 placeholder: "一般为书籍或视频",
+                rows:5,
+                mode:"popup",
             });
 
             // 总体环境需求
             $('#consume_requirements').editable({
-                placeholder: '如：电子试验箱'
+                placeholder: '如：电子试验箱',
+                rows:5,
+                mode:"popup",
             });
             $('#system_requirements').editable({
-                placeholder: '如：windows10'
+                placeholder: '如：windows10',
+                rows:5,
+                mode:"popup",
             });
             $('#soft_requirements').editable({
-                placeholder: '如：pycharm专业版'
+                placeholder: '如：pycharm专业版',
+                rows:5,
+                mode:"popup",
             });
         });
     </script>
@@ -299,6 +311,14 @@
                         title: '项目名称<span id="need">*</span>',
                         editable:{
                             type:'text',
+                        },
+                        cellStyle:function(value,row,index) {
+                            return {
+                                "css":{
+                                    padding:'0px',
+                                    margin:'0px',
+                                }
+                            };
                         },
                     }, {
                         field: 'experiment_type',
@@ -440,7 +460,7 @@
                         events: window.operateEvents,
                         formatter: operateFormatter
                     }]
-                ]
+                ],
             });
 
             function operateFormatter(value, row, index) {
@@ -529,7 +549,9 @@
                     }
                 }else{
                     new_row = JSON.parse(new_row);
-                    // 清空上一行的所有特殊需求，因为多数情况下并不是每个实验都有这个特殊需求
+                    // 清空新行的实验项目名称
+                    new_row.experiment_name = "";
+                    // 清空新行的所有特殊需求，因为多数情况下并不是每个实验都有这个特殊需求
                     new_row.special_consume_requirements = "";
                     new_row.special_system_requirements = "";
                     new_row.special_soft_requirements = "";

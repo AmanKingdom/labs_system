@@ -97,19 +97,6 @@
 {% block add_js %}
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
 
-    <!-- 全局配置代码 -->
-    <script>
-        var empty_text = '--';    // 全局性的空文本
-        var not_found_data = '暂无数据';    // 全局性的找不到数据提示文本
-        $.fn.bootstrapTable.columnDefaults.valign = 'middle';//垂直居中
-        $.fn.bootstrapTable.columnDefaults.align = 'center';//水平居中
-        $.fn.bootstrapTable.columnDefaults.undefinedText = empty_text;//当表格项没有数据时显示的内容
-        $.fn.editable.defaults.emptytext = empty_text;//设置默认的空文本
-        $.fn.editable.defaults.mode = 'inline';//设置行内编辑模式
-        $.fn.editable.defaults.showbuttons = false;//设置所有的元素不显示按钮
-        $.fn.editable.defaults.onblur= "submit"; //表示鼠标离开输入框即进行提交保存操作
-    </script>
-
     <!--实验对应课程可修改信息的配置 开始-->
     <script>
         $(document).ready(function() {
@@ -473,7 +460,7 @@
                     }
                 });
             }else{
-                alert('我就知道你是点错了的')
+                alert('我就知道你不想删除她的')
             }
         });
 

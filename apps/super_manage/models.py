@@ -20,7 +20,7 @@ class SchoolArea(models.Model):
         db_table = 'school_area'
 
     name = models.CharField(max_length=30, verbose_name='校区名称')
-    school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='所属学校')
+    school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='所属学校', related_name='school_areas')
 
     def __str__(self):
         return '%s-%s' % (self.school.name, self.name)
@@ -33,7 +33,7 @@ class Institute(models.Model):
         db_table = 'institute'
 
     name = models.CharField(max_length=30, verbose_name='学院名称')
-    school_area = models.ForeignKey(SchoolArea, on_delete=models.CASCADE, verbose_name='所属学校与校区')
+    school_area = models.ForeignKey(SchoolArea, on_delete=models.CASCADE, verbose_name='所属学校与校区', related_name='institutes')
 
     def __str__(self):
         return '%s-%s' % (self.school_area, self.name)

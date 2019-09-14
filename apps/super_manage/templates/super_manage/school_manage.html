@@ -5,41 +5,93 @@
 {% block add_css %}
     <style>
         #school_name{
-            width:40%;
+            width:15%;
             height:40px;
         }
         hr{
             margin-bottom: 0;
             margin-top: 0;
         }
+        .table, .ibox{
+            margin-bottom: 0;
+        }
     </style>
 {% endblock %}
 
 {% block body_block %}
     <div class="row">
-        <div class="col-md-3">
-            <label for="school_name">学校名称 <span class="need">*</span> ：</label><a id="school_name">{{ school.name }}</a>
+        <div class="col-md-5 col-sm-10 col-xs-10">
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <label for="school_name">学校名称<span class="need">*</span>：</label> <a id="school_name">{{ school.name }}</a>
         </div>
-        <div class="col-md-2">
-            <button class="btn btn-primary dim" type="button" onclick="submit_school()">
-                {% if school %}
-                    修改
-                {% else %}
-                    确定
-                {% endif %}
-                {#<i class="fa fa-check"></i>#}
-            </button>
+        <div class="col-md-7 col-sm-2 col-xs-2">
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <a onclick="submit_school()" title="保存修改"><i class="fa fa-save"></i></a>
         </div>
-    </div>
-    <hr>
+    </div><hr>
+
     {% if school.name %}
-        校区：
+        <div class="row">
+            <div class="col-md-6">
+                <br>
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>校区信息表</h5>
+                        <div class="ibox-tools">
+                            <button id="add_school_area_button" class="btn btn-primary">添加校区</button>
+                            <button id="save_school_area_table" class="btn btn-primary" disabled>保存修改</button> |
+                            <button id="remove_school_area_button" class="btn btn-danger" disabled>删除校区</button>
+                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                        <table id="school_area_table"
+                               class="table-responsive"
+                               data-id-field="id"
+                               data-response-handler="responseHandler"
+                               data-click-to-select="true">
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div><hr>
     {% else %}
         请先设置您的学校名称，设置完学校名称即可进行下一步设置
+    {% endif %}
+
+    {% if school_areas %}
+        <div class="row">
+            <div class="col-md-9">
+                <br>
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>学院信息表</h5>
+                        <div class="ibox-tools">
+                            <button id="add_institute_button" class="btn btn-primary">添加学院</button>
+                            <button id="save_institute_table" class="btn btn-primary" disabled>保存修改</button> |
+                            <button id="remove_institute_button" class="btn btn-danger" disabled>删除学院</button>
+                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                        <table id="institute_table"
+                               class="table-responsive"
+                               data-id-field="id"
+                               data-response-handler="responseHandler"
+                               data-click-to-select="true">
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div><hr>
+    {% else %}
+        请先添加校区，有校区后可进行下一步设置，只有一个校区的建议填写 主校区
     {% endif %}
 {% endblock %}
 
 {% block add_js %}
+
+    <!--学校信息表设置相关  开始-->
     <script>
         $(document).ready(function() {
             $('#school_name').editable({
@@ -51,18 +103,409 @@
         // 提交学校信息
         function submit_school(){
             var school_name = $('#school_name').html();
-            console.log('school_name:', school_name, 'xx');
+            console.log('school_name:', school_name);
 
             if(school_name == empty_text){
                 alert('请输入学校名称')
             }else{
                 {% if school %}
                     if(school_name != '{{ school.name }}'){
-                        console.log('修改了学校名称')
+                        console.log('修改了学校名称');
+                        create_or_modify_school('{{ school.name }}', school_name)
                     }
                 {% else %}
+                    console.log('创建学校：', school_name);
+                    create_or_modify_school(school_name, school_name);
                 {% endif %}
             }
         }
+        function create_or_modify_school(old_school_name, new_school_name) {
+            $.ajax({
+                cache:true,//保留缓存数据
+                type:"POST",
+                url:"{% url 'super_manage:create_or_modify_school_ajax' %}",
+                data:JSON.stringify({"old_school_name":old_school_name, "new_school_name":new_school_name}),
+                dataType:'JSON',
+                headers:{'X-CSRFToken':'{{ csrf_token }}'},
+                async:false, //异步为真，ajax提交的过程中，同时可以做其他的操作
+                error:function(request){
+                    console.log("无法提交", request);
+                },
+                success:function(data){
+                    console.log("已提交");
+                    if(data.status){
+                        console.log('创建学校or修改学校名称成功！');
+                        window.location.href="{% url 'super_manage:school_manage' %}"
+                    }
+                    else{
+                        alert(data.message);
+                    }
+                }
+            });
+        }
     </script>
+    <!--学校信息表设置相关  结束-->
+
+
+
+    <!--学校校区表设置相关  开始-->
+    <script>
+        var school_area_table = $('#school_area_table');
+        var remove_school_area = $('#remove_school_area_button');
+        var selections = [];
+
+        function get_school_area_id_selections() {
+            return $.map(school_area_table.bootstrapTable('getSelections'), function (row) {
+                return row.id
+            })
+        }
+
+        function get_school_area_id_in_database_selections() {
+            return $.map(school_area_table.bootstrapTable('getSelections'), function (row) {
+                return row.id_in_database
+            })
+        }
+
+        function responseHandler(res) {
+            $.each(res.rows, function (i, row) {
+                row.state = $.inArray(row.id, selections) !== -1
+            });
+            return res
+        }
+
+        function init_school_area_table() {
+            console.log('init_school_area_table()执行');
+            school_area_table.bootstrapTable('destroy').bootstrapTable({
+                locale: $('#locale').val(),
+                columns: [
+                    [{
+                        field: 'state',
+                        checkbox: true,
+                    }, {
+                        title: '序号',
+                        field: 'id',
+                    }, {
+                        field: 'school_area_name',
+                        title: '校区名称<span class="need">*</span>',
+                        editable:{
+                            type:'text',
+                        },
+                    },{
+                        field:'id_in_database',
+                    }]
+                ]
+            });
+
+            // 隐藏校区数据库id列
+            school_area_table.bootstrapTable('hideColumn', 'id_in_database');
+
+            school_area_table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table',
+                function () {
+                    remove_school_area.prop('disabled', !school_area_table.bootstrapTable('getSelections').length);
+
+                    // save your data, here just save the current page
+                    selections = get_school_area_id_selections()
+                    // push or splice the selections if you want to save all data selections
+                }
+            );
+            school_area_table.on('all.bs.table', function (e, name, args) {
+                console.log(name, args)
+            });
+            remove_school_area.click(function () {
+                var ids = get_school_area_id_selections();
+                var ids_in_database = get_school_area_id_in_database_selections();
+                var remove_flag = confirm('您正在删除校区'+ids+'，将会连同该校区下的所有学院都删除（如果有的话），确定删除吗？');
+
+                if(remove_flag) {
+                    var remove_json = {
+                        "remove_school_areas_ids": ids_in_database,
+                    };
+
+                    $.ajax({
+                        type:"POST",
+                        url:"{% url 'super_manage:remove_school_areas_ajax' %}",
+                        data:JSON.stringify(remove_json),
+                        dataType:'JSON',
+                        async:true,
+                        headers:{'X-CSRFToken':'{{ csrf_token }}'},
+                        error:function(request){
+                            console.log("提交失败", request);
+                        },
+                        success:function(data){
+                            console.log("已提交");
+                            console.log(data);
+                            if(data.status){
+                                console.log('删除成功！');
+                                window.location.href="{% url 'super_manage:school_manage' %}";
+
+                                /*school_area_table.bootstrapTable('remove', {
+                                    field: 'id',
+                                    values: ids
+                                });
+                                remove_school_area.prop('disabled', true);*/
+                            }else{
+                                alert('出了点小错误，请稍后再次尝试删除')
+                            }
+                        }
+                    });
+                }else{
+                    alert('我就知道你不想删除她的')
+                }
+            })
+        }
+
+        function load_school_area(){
+            console.log('load_school_area()执行');
+            var index = 0;
+            {% for school_area in school_areas %}
+                var new_row = {
+                    "id": index,
+                    "school_area_name": '{{ school_area.name }}',
+                    "id_in_database": '{{ school_area.id }}',
+                };
+                // 插入该行
+                school_area_table.bootstrapTable('insertRow', {
+                    index: index,
+                    row: new_row
+                });
+                index = index + 1;
+            {% empty %}
+            {% endfor %}
+        }
+
+        $(function() {
+            init_school_area_table();
+            load_school_area();
+            $('#locale').change(init_school_area_table);
+        })
+    </script>
+    <!--学校校区表设置相关  结束-->
+
+    <!--动态添加校区表格行 事件 开始-->
+    <script>
+        $("#add_school_area_button").click(function () {
+            // 用index实现编号自增
+            var data = school_area_table.bootstrapTable('getData');     // 目前获取表格数据只是为了获取长度给index
+            var index = data.length;
+
+            var new_row = {
+                "id": index,
+                "school_area_name":"",
+            };
+            // 最后插入该行
+            school_area_table.bootstrapTable('insertRow', {
+                index: index,
+                row: new_row
+            });
+
+            $('#save_school_area_table').prop('disabled', false);
+        });
+    </script>
+    <!--动态添加校区表格行 事件 结束-->
+
+    <!--保存修改或增加校区信息后的表格 事件 开始 -->
+    <script>
+        $('#save_school_area_table').click(function () {
+            var school_areas = school_area_table.bootstrapTable('getData');
+
+            if(school_areas.length !== 0){
+                var pass = true;
+                $.each(school_areas, function (index, value) {
+                    console.log(index, value);
+
+                    if(value['school_area_name'] === empty_text || value['school_area_name'] == ""){
+                        pass = false;
+                        window.alert('提交失败，校区'+index+'的名称不可以为空');
+                        return pass
+                    }
+                });
+                if(pass){
+                    $.ajax({
+                        cache:true,//保留缓存数据
+                        type:"POST",
+                        url:"{% url 'super_manage:save_school_areas_ajax' %}",
+                        data:JSON.stringify({'school_areas':school_areas, 'school_name':'{{ school.name }}'}),
+                        dataType:'JSON',
+                        async:true,
+                        headers:{'X-CSRFToken':'{{ csrf_token }}'},
+                        error:function(request){
+                            console.log("无法提交", request);
+                        },
+                        success:function(data){
+                            console.log("已提交");
+                            console.log(data);
+                            if(data.status){
+                                console.log('提交成功！');
+                                window.location.href="{% url 'super_manage:school_manage' %}"
+                            }else{
+                                console.log('提交信息有问题：'+data.message)
+                            }
+                        }
+                    });
+                }
+            }else{
+                console.log('校区数据为空，不需要保存，因为删除功能是直接删除后保存了的');
+                $('#save_school_area_table').prop('disabled', true);
+            }
+        })
+    </script>
+    <!--保存修改或增加校区信息后的表格 事件 结束 -->
+
+
+    <!--学院表设置相关  开始-->
+    <script>
+        var institute_table = $('#institute_table');
+        var remove_institute_button = $('#remove_institute_button');
+        var selections = [];
+
+        function get_institute_id_selections() {
+            return $.map(institute_table.bootstrapTable('getSelections'), function (row) {
+                return row.id
+            })
+        }
+
+        function get_institute_id_in_database_selections() {
+            return $.map(institute_table.bootstrapTable('getSelections'), function (row) {
+                return row.id_in_database
+            })
+        }
+
+        function init_institute_table() {
+            console.log('init_institute_table()执行');
+            institute_table.bootstrapTable('destroy').bootstrapTable({
+                locale: $('#locale').val(),
+                columns: [
+                    [{
+                        field: 'state',
+                        checkbox: true,
+                    }, {
+                        title: '序号',
+                        field: 'id',
+                    },{
+                        field:'school_area',
+                        title: '所属校区',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% for school_area in school_areas %}
+                                    { value: {{ school_area.id }}, text: '{{ school_area.name }}'},
+                                {% empty %}
+                                    { value:"", text: not_found_data},
+                                {% endfor %}
+                            ]
+                        },
+                    },{
+                        field: 'institute_name',
+                        title: '学院名称<span class="need">*</span>',
+                        editable:{
+                            type:'text',
+                        },
+                    },{
+                        field:'id_in_database',
+                    }]
+                ]
+            });
+
+            // 隐藏学院数据库id列
+            institute_table.bootstrapTable('hideColumn', 'id_in_database');
+
+            institute_table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table',
+                function () {
+                    remove_institute_button.prop('disabled', !institute_table.bootstrapTable('getSelections').length);
+
+                    // save your data, here just save the current page
+                    selections = get_institute_id_selections()
+                    // push or splice the selections if you want to save all data selections
+                }
+            );
+            institute_table.on('all.bs.table', function (e, name, args) {
+                console.log(name, args)
+            });
+            remove_institute_button.click(function () {
+                var ids = get_institute_id_selections();
+                var ids_in_database = get_institute_id_in_database_selections();
+                var remove_flag = confirm('您正在删除学院'+ids+'，将会连同该学院下的所有系都删除（如果有的话），确定删除吗？');
+
+                if(remove_flag) {
+                    var remove_json = {
+                        "remove_institute_ids": ids_in_database,
+                    };
+
+                    $.ajax({
+                        type:"POST",
+                        url:"",
+                        data:JSON.stringify(remove_json),
+                        dataType:'JSON',
+                        async:true,
+                        headers:{'X-CSRFToken':'{{ csrf_token }}'},
+                        error:function(request){
+                            console.log("提交失败", request);
+                        },
+                        success:function(data){
+                            console.log("已提交");
+                            console.log(data);
+                            if(data.status){
+                                console.log('删除成功！');
+                                window.location.href="{% url 'super_manage:school_manage' %}";
+                            }else{
+                                alert('出了点小错误，请稍后再次尝试删除')
+                            }
+                        }
+                    });
+                }else{
+                    alert('我就知道你不想删除她的')
+                }
+            })
+        }
+
+        function load_institute(){
+            console.log('load_institute()执行');
+            var index = 0;
+            {% for institute in institutes %}
+                var new_row = {
+                    "id": index,
+                    "school_area": '{{ institute.school_area.id }}',
+                    'institute_name': '{{ institute.name }}',
+                    "id_in_database": '{{ institute.id }}',
+                };
+                // 插入该行
+                institute_table.bootstrapTable('insertRow', {
+                    index: index,
+                    row: new_row
+                });
+                index = index + 1;
+            {% empty %}
+            {% endfor %}
+        }
+
+        $(function() {
+            init_institute_table();
+            load_institute();
+            $('#locale').change(init_institute_table);
+        })
+    </script>
+    <!--学院表设置相关  结束-->
+
+    <!--动态添加学院表格行 事件 开始-->
+    <script>
+        $("#add_institute_button").click(function () {
+            // 用index实现编号自增
+            var data = institute_table.bootstrapTable('getData');     // 目前获取表格数据只是为了获取长度给index
+            var index = data.length;
+
+            var new_row = {
+                "id": index,
+                "school_area":"",
+                "institute_name":"",
+            };
+            // 最后插入该行
+            institute_table.bootstrapTable('insertRow', {
+                index: index,
+                row: new_row
+            });
+
+            $('#save_institute_table').prop('disabled', false);
+        });
+    </script>
+    <!--动态添加学院表格行 事件 结束-->
 {% endblock %}

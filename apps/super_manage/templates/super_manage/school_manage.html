@@ -1,0 +1,68 @@
+<!--super_user/school_manage.html-->
+
+{% extends 'apply_experiments/base.html' %}
+
+{% block add_css %}
+    <style>
+        #school_name{
+            width:40%;
+            height:40px;
+        }
+        hr{
+            margin-bottom: 0;
+            margin-top: 0;
+        }
+    </style>
+{% endblock %}
+
+{% block body_block %}
+    <div class="row">
+        <div class="col-md-3">
+            <label for="school_name">学校名称 <span class="need">*</span> ：</label><a id="school_name">{{ school.name }}</a>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary dim" type="button" onclick="submit_school()">
+                {% if school %}
+                    修改
+                {% else %}
+                    确定
+                {% endif %}
+                {#<i class="fa fa-check"></i>#}
+            </button>
+        </div>
+    </div>
+    <hr>
+    {% if school.name %}
+        校区：
+    {% else %}
+        请先设置您的学校名称，设置完学校名称即可进行下一步设置
+    {% endif %}
+{% endblock %}
+
+{% block add_js %}
+    <script>
+        $(document).ready(function() {
+            $('#school_name').editable({
+                type: 'text',
+                placeholder:'请设置您的学校',
+            });
+        });
+
+        // 提交学校信息
+        function submit_school(){
+            var school_name = $('#school_name').html();
+            console.log('school_name:', school_name, 'xx');
+
+            if(school_name == empty_text){
+                alert('请输入学校名称')
+            }else{
+                {% if school %}
+                    if(school_name != '{{ school.name }}'){
+                        console.log('修改了学校名称')
+                    }
+                {% else %}
+                {% endif %}
+            }
+        }
+    </script>
+{% endblock %}

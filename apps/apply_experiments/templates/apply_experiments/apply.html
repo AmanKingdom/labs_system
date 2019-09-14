@@ -21,18 +21,18 @@
         <div class="ibox-content">
             <table data-toggle="table" id="course_info_table" class="table-hover table-responsive">
                 <thead><tr>
-                    <th data-field="department">教师所属系<span id="need">*</span></th>
-                    <th data-field="teacher_name">教师姓名<span id="need">*</span></th>
-                    <th data-field="course">课程<span id="need">*</span></th>
-                    <th data-field="classes">授课班级<span id="need">*</span></th>
+                    <th data-field="department">教师所属系<span class="need">*</span></th>
+                    <th data-field="teacher_name">教师姓名<span class="need">*</span></th>
+                    <th data-field="course">课程<span class="need">*</span></th>
+                    <th data-field="classes">授课班级<span class="need">*</span></th>
                     <th data-field="teaching_materials">实验教材</th>
                     <th data-field="consume_requirements">总体耗材需求</th>
                     <th data-field="system_requirements">总体系统需求</th>
                     <th data-field="soft_requirements">总体软件需求</th>
                 </tr></thead>
                 <tbody><tr>
-                    <td id="department">{{ user.department.name }}</td>
-                    <td id="teacher_name">{{ user.name }}</td>
+                    <td id="department">{{ teacher.department.name }}</td>
+                    <td id="teacher_name">{{ teacher.name }}</td>
                     <td>
                         {#<a href="#" id="course" data-type="select" data-title="Select status"></a>#}
                         <select id="course" class="form-control">
@@ -96,8 +96,8 @@
                     data-minimum-count-columns="2"
                     data-id-field="id"
                     data-side-pagination="server"
-                    data-response-handler="responseHandler">
-                {#                    data-click-to-select="true">#}
+                    data-response-handler="responseHandler"
+                    data-click-to-select="true">
             </table>
             <div align="right">
                 <br>
@@ -198,29 +198,6 @@
 {% block add_js %}
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
 
-    <!--全局的bootstrap table 和 X-editable 配置 开始-->
-    <script>
-        var global_current_special_requirements_row = null;  // 临时存放当前行的特殊需求数据
-
-        var empty_text = '       ';    // 全局性的空文本
-        var not_found_data = '暂无数据';    // 全局性的找不到数据提示文本
-
-        $.fn.editable.defaults.mode = 'inline';//设置行内编辑模式
-        $.fn.editable.defaults.showbuttons = false;//设置所有的元素不显示按钮
-        $.fn.editable.defaults.emptytext = empty_text;//设置默认的空文本
-        $.fn.editable.defaults.onblur= "submit"; //表示鼠标离开输入框即进行提交保存操作
-        $.fn.editable.defaults.autotext = "always";
-        $.fn.editable.defaults.inputclass="inputclass";
-        //上面这句很重要，作用为是否显示select的文本。当select中source中的value和text均为文本时，需要声明，不然select框会直接显示值
-
-        $.fn.bootstrapTable.columnDefaults.valign = 'middle';//垂直居中
-        $.fn.bootstrapTable.columnDefaults.align = 'center';//水平居中
-        $.fn.bootstrapTable.columnDefaults.class='not-wrap';
-        $.fn.bootstrapTable.columnDefaults.undefinedText = empty_text;//当表格项没有数据时显示的内容
-        $.fn.bootstrapTable.defaults.striped = true;
-    </script>
-    <!--全局的bootstrap table 和 X-editable 配置 结束-->
-
     <!--课程信息表配置 开始-->
     <script>
         $(document).ready(function() {
@@ -304,11 +281,11 @@
                         field: 'state',
                         checkbox: true,
                     }, {
-                        title: '编号<span id="need">*</span>',
+                        title: '编号<span class="need">*</span>',
                         field: 'id',
                     }, {
                         field: 'experiment_name',
-                        title: '项目名称<span id="need">*</span>',
+                        title: '项目名称<span class="need">*</span>',
                         editable:{
                             type:'text',
                         },
@@ -322,7 +299,7 @@
                         },
                     }, {
                         field: 'experiment_type',
-                        title: '类型<span id="need">*</span>',
+                        title: '类型<span class="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
@@ -335,7 +312,7 @@
                         }
                     }, {
                         field: 'lecture_time',
-                        title: '学时<span id="need">*</span>',
+                        title: '学时<span class="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
@@ -350,7 +327,7 @@
                         }
                     }, {
                         field: 'which_week',
-                        title: '周次<span id="need">*</span>',
+                        title: '周次<span class="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
@@ -365,7 +342,7 @@
                         }
                     }, {
                         field: 'days_of_the_week',
-                        title: '星期<span id="need">*</span>',
+                        title: '星期<span class="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
@@ -380,7 +357,7 @@
                         }
                     }, {
                         field: 'section',
-                        title: '节次<span id="need">*</span>',
+                        title: '节次<span class="need">*</span>',
                         editable:{
                             type:'select2',
                             source: [

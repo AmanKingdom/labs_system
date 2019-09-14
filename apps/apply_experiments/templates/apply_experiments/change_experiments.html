@@ -14,40 +14,38 @@
                 <h5>实验室申请信息管理</h5>/ 课程《{{ course.course.name }}》 的实验项目信息
             </div>
             <div class="ibox-content">
-                <div class="table-responsive">
-                    <table id="course_table"
-                           class="table table-striped table-hover"
-                           data-toggle="table"
-                           data-minimum-count-columns="2"
-                           data-id-field="id">
-                        <thead><tr>
-                            <th data-field="term">学年学期</th>
-                            <th data-field="course">课程</th>
-                            <th data-field="teacher">教师</th>
-                            <th data-field="classes">教学班级</th>
-                            <th data-field="teaching_materials">实验教材</th>
-                            <th data-field="total_consume_requirements">总体耗材需求</th>
-                            <th data-field="total_system_requirements">总体系统需求</th>
-                            <th data-field="total_soft_requirements">总体软件需求</th>
-                            <th data-field="modify_time">修改时间</th>
-                            <th data-field="status">状态</th>
-                        </tr></thead>
-                        <tbody>
-                        <tr>
-                            <td>{{ course.course.term }}</td>
-                            <td>{{ course.course.name }}</td>
-                            <td>{{ course.teachers }}</td>
-                            <td>{{ course.classes | safe}}</td>
-                            <td><a id="teaching_materials" data-type="text"></a></td>
-                            <td><a id="total_consume_requirements" data-type="text"></a></td>
-                            <td><a id="total_system_requirements" data-type="text"></a></td>
-                            <td><a id="total_soft_requirements" data-type="text"></a></td>
-                            <td>{{ course.course.modify_time }}</td>
-                            <td>{{ course.status }}</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <table id="course_table"
+                       class="table-hover table-responsive"
+                       data-toggle="table"
+                       data-minimum-count-columns="2"
+                       data-id-field="id">
+                    <thead><tr>
+                        <th data-field="term">学年学期</th>
+                        <th data-field="course">课程</th>
+                        <th data-field="teacher">教师</th>
+                        <th data-field="classes">教学班级</th>
+                        <th data-field="teaching_materials">实验教材</th>
+                        <th data-field="total_consume_requirements">总体耗材需求</th>
+                        <th data-field="total_system_requirements">总体系统需求</th>
+                        <th data-field="total_soft_requirements">总体软件需求</th>
+                        <th data-field="modify_time">修改时间</th>
+                        <th data-field="status">状态</th>
+                    </tr></thead>
+                    <tbody>
+                    <tr>
+                        <td>{{ course.course.term }}</td>
+                        <td>{{ course.course.name }}</td>
+                        <td>{{ course.teachers }}</td>
+                        <td>{{ course.classes | safe}}</td>
+                        <td><a id="teaching_materials" data-type="textarea"></a></td>
+                        <td><a id="total_consume_requirements" data-type="textarea"></a></td>
+                        <td><a id="total_system_requirements" data-type="textarea"></a></td>
+                        <td><a id="total_soft_requirements" data-type="textarea"></a></td>
+                        <td>{{ course.course.modify_time }}</td>
+                        <td>{{ course.status }}</td>
+                    </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
         <div class="ibox float-e-margins">
@@ -115,21 +113,30 @@
     <!--实验对应课程可修改信息的配置 开始-->
     <script>
         $(document).ready(function() {
+
             $('#teaching_materials').editable({
                 placeholder: "一般为书籍或视频",
-                value: '{{ course.course.total_requirements.teaching_materials }}'
+                value: '{{ course.course.total_requirements.teaching_materials }}',
+                rows:5,
+                mode:"popup",
             });
             $('#total_consume_requirements').editable({
                 placeholder: '如：电子试验箱',
-                value: '{{ course.course.total_requirements.total_consume_requirements }}'
+                value: '{{ course.course.total_requirements.total_consume_requirements }}',
+                rows:5,
+                mode:"popup",
             });
             $('#total_system_requirements').editable({
                 placeholder: '如：windows10',
-                value: '{{ course.course.total_requirements.total_system_requirements }}'
+                value: '{{ course.course.total_requirements.total_system_requirements }}',
+                rows:5,
+                mode:"popup",
             });
             $('#total_soft_requirements').editable({
                 placeholder: '如：pycharm专业版',
-                value: '{{ course.course.total_requirements.total_soft_requirements }}'
+                value: '{{ course.course.total_requirements.total_soft_requirements }}',
+                rows:5,
+                mode:"popup",
             });
         })
     </script>
@@ -163,17 +170,17 @@
                         field: 'state',
                         checkbox: true,
                     }, {
-                        title: '编号<span id="need">*</span>',
+                        title: '编号<span class="need">*</span>',
                         field: 'id',
                     }, {
                         field: 'experiment_name',
-                        title: '项目名称<span id="need">*</span>',
+                        title: '项目名称<span class="need">*</span>',
                         editable:{
                             type:'text',
                         },
                     }, {
                         field: 'experiment_type',
-                        title: '类型<span id="need">*</span>',
+                        title: '类型<span class="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
@@ -186,7 +193,7 @@
                         }
                     }, {
                         field: 'lecture_time',
-                        title: '学时<span id="need">*</span>',
+                        title: '学时<span class="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
@@ -201,7 +208,7 @@
                         }
                     }, {
                         field: 'which_week',
-                        title: '周次<span id="need">*</span>',
+                        title: '周次<span class="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
@@ -216,7 +223,7 @@
                         }
                     }, {
                         field: 'days_of_the_week',
-                        title: '星期<span id="need">*</span>',
+                        title: '星期<span class="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
@@ -231,7 +238,7 @@
                         }
                     }, {
                         field: 'section',
-                        title: '节次<span id="need">*</span>',
+                        title: '节次<span class="need">*</span>',
                         editable:{
                             type:'select2',
                             source: [
@@ -352,10 +359,9 @@
         function loadExperiments(){
             console.log('loadExperiment()执行');
             {% for e in experiments %}
-                {#console.log({{ e }});#}
                 var new_row = {
                     "id": {{ e.experiment.no }},
-                    "experiment_name": "",
+                    "experiment_name": '{{ e.experiment.name }}',
                     "experiment_type": {% if e.experiment.experiment_type.id %}'{{ e.experiment.experiment_type.id }}'{% else %}""{% endif %},
                     "lecture_time": {% if e.experiment.lecture_time %}'{{ e.experiment.lecture_time }}'{% else %}""{% endif %},
                     "which_week": {% if e.experiment.which_week %}'{{ e.experiment.which_week }}'{% else %}""{% endif %},

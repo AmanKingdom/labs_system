@@ -2,7 +2,7 @@ from django.urls import path
 
 from apps.apply_experiments.views import apply, load_classes_of_course, submit_experiments, \
     manage_application, change_experiments, remove_all_experiments, weeks_analyze, rooms_analyze, personal_homepage
-from browse.views import require_login
+from apps.browse.views import require_login
 
 app_name = 'apply_experiments'
 

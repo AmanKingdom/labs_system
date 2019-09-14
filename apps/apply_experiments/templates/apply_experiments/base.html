@@ -1,4 +1,4 @@
-<!--base.html-->
+<!--apply_experiments/base.html-->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -23,12 +23,12 @@
     <link href="/static/css_js/css/bootstrap-editable.css" rel="stylesheet">
 
     <style type="text/css">
-        #need{
+        .need{
             color: #ff0000;
         }
 
         a.editable-empty,a.editable,a.editable-click{
-            width: 100%;
+            width: 90%;
             height: 25px;
             display: inline-block;
         }
@@ -49,29 +49,8 @@
         */
         .inputclass{
             width:100% !important;min-width:87px;
-            height:30px;
+        {#height:30px;#}
             padding-left: 2px;
-        }
-
-        .button-margin{
-            margin-bottom:20px;
-        }
-
-        .fixed{
-            table-layout: fixed;
-
-        }
-
-        .font-color{
-            color:red;
-        }
-
-        .W120 .th-inner {
-            width:90px !important;
-        }
-
-        .white{
-            white-space: nowrap;
         }
     </style>
 
@@ -91,8 +70,25 @@
                         </span>
                         <a data-toggle="dropdown" class="dropdown-toggle" href="#">
                             <span class="clear">
-                                <span class="block m-t-xs"> <strong class="font-bold">{{ user.name }}</strong></span>
-                                <span class="text-muted text-xs block">教师<b class="caret"></b></span>
+                                <span class="block m-t-xs">
+                                    <strong class="font-bold">
+                                        {% if superuser %}
+                                            {{ superuser.name }}
+                                        {% endif %} &nbsp
+                                        {% if teacher %}
+                                            {{ teacher.name }}
+                                        {% endif%}
+                                    </strong>
+                                </span>
+                                <span class="text-muted text-xs block">
+                                    {% if superuser %}
+                                        超级管理员
+                                    {% endif %} &nbsp
+                                    {% if teacher %}
+                                        教师
+                                    {% endif %}
+                                    <b class="caret"></b>
+                                </span>
                             </span>
                         </a>
                         <ul class="dropdown-menu animated fadeInRight m-t-xs">
@@ -103,18 +99,54 @@
                         <img alt="image" class="img-circle" src="/static/image/default/head.svg" style="width: 40px"/>
                     </div>
                 </li>
+
+                <!--个人信息页面是不论用户是超级管理员还是教师都会展示的-->
                 <li {% if personal_homepage_active %}class="active"{% endif %}>
                     <a href="{% url 'apply_experiments:personal_homepage' %}">
                         <i class="fa fa-user-circle-o"></i><span class="nav-label">个人主页</span>
                     </a>
                 </li>
-                <li class="active">
-                    <a href="#"><i class="fa fa-edit"></i> <span class="nav-label">申请实验室</span><span class="fa arrow"></span></a>
-                    <ul class="nav nav-second-level collapse">
-                        <li {% if apply_experiments_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:apply' %}">实验课申请</a></li>
-                        <li {% if apply_info_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:manage_application' %}">申请信息管理</a></li>
-                    </ul>
-                </li>
+
+                {% if teacher %}
+                    <li class="active">
+                        <a href="#"><i class="fa fa-edit"></i> <span class="nav-label">申请实验室</span><span class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            <li {% if apply_experiments_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:apply' %}">实验课申请</a></li>
+                            <li {% if apply_info_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:manage_application' %}">申请信息管理</a></li>
+                        </ul>
+                    </li>
+                {% endif %}
+
+                <!--超级管理员所使用的导航块-->
+                {% if superuser %}
+                    <li class="active">
+                        <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">教学信息管理</span><span class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            <li {% if school_active %}class="active"{% endif %}><a href="{% url 'super_manage:school_manage' %}">学校管理</a></li>
+                            <li {% if classes_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">班级管理</a></li>
+                            <li {% if teachers_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">教师管理</a></li>
+                            <li {% if courses_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">课程管理</a></li>
+                        </ul>
+                    </li>
+                    <li class="active">
+                        <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">实验室信息管理</span><span class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            <li {% if school_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:weeks_analyze' %}">实验室信息</a></li>
+                            <li {% if classes_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">实验室属性</a></li>
+                        </ul>
+                    </li>
+                    <li class="active">
+                        <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">实验课管理</span><span class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            <li {% if teachers_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">实验类型管理</a></li>
+                            <li {% if school_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:weeks_analyze' %}">实验课管理</a></li>
+                            <li {% if classes_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">智能排课</a></li>
+                            <li {% if teachers_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">发布公告</a></li>
+                        </ul>
+                    </li>
+                {% endif %}
+
+                <!--统计分析页面是不论用户是超级管理员还是教师都会展示的，但应该放在最后-->
                 <li class="active">
                     <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">统计分析</span><span class="fa arrow"></span></a>
                     <ul class="nav nav-second-level collapse">
@@ -236,6 +268,29 @@
         ss.style.height=h+"px";
     }
 </script>
+
+<!--全局的bootstrap table 和 X-editable 配置 开始-->
+    <script>
+        var global_current_special_requirements_row = null;  // 临时存放当前行的特殊需求数据
+
+        var empty_text = '       ';    // 全局性的空文本
+        var not_found_data = '暂无数据';    // 全局性的找不到数据提示文本
+
+        $.fn.editable.defaults.mode = 'inline';//设置行内编辑模式
+        $.fn.editable.defaults.showbuttons = false;//设置所有的元素不显示按钮
+        $.fn.editable.defaults.emptytext = empty_text;//设置默认的空文本
+        $.fn.editable.defaults.onblur= "submit"; //表示鼠标离开输入框即进行提交保存操作
+        $.fn.editable.defaults.autotext = "always";
+        $.fn.editable.defaults.inputclass="inputclass";
+        //上面这句很重要，作用为是否显示select的文本。当select中source中的value和text均为文本时，需要声明，不然select框会直接显示值
+
+        $.fn.bootstrapTable.columnDefaults.valign = 'middle';//垂直居中
+        $.fn.bootstrapTable.columnDefaults.align = 'center';//水平居中
+        $.fn.bootstrapTable.columnDefaults.class='not-wrap';
+        $.fn.bootstrapTable.columnDefaults.undefinedText = empty_text;//当表格项没有数据时显示的内容
+        $.fn.bootstrapTable.defaults.striped = true;
+    </script>
+    <!--全局的bootstrap table 和 X-editable 配置 结束-->
 
 <!--子html文件用这个填充块添加js样式-->
 {% block add_js %}{% endblock %}

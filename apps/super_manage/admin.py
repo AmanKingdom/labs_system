@@ -1,8 +1,7 @@
 from django.contrib import admin
 
 from apps.super_manage.models import School, Institute, SchoolArea, Labs, Department, Grade, Classes, Teacher, \
-    TotalRequirements, Course, LabsAttribute, SchoolYear, Term
-
+    TotalRequirements, Course, LabsAttribute, SchoolYear, Term, SuperUser
 
 admin.site.site_header = '实验室数据后台管理系统'
 admin.site.site_title = '实验室数据管理'
@@ -128,3 +127,10 @@ class TermAdmin(admin.ModelAdmin):
 
 admin.site.register(Term, TermAdmin)
 
+
+class SuperUserAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'account', 'school', 'is_teacher')  # 设置展示的列
+    search_fields = ('name', 'account')  # 设置可对教师名称、系名称、教师账号进行搜索
+
+
+admin.site.register(SuperUser, SuperUserAdmin)

@@ -112,13 +112,7 @@ class Teacher(models.Model):
         # 该数据库表名自定义为如下：
         db_table = 'teacher'
 
-    SEX = (
-        ('男', '男'),
-        ('女', '女'),
-    )
-
     name = models.CharField(max_length=20, verbose_name='教师姓名')
-    sex = models.CharField(max_length=6, verbose_name='性别')
     department = models.ForeignKey(Department, on_delete=models.CASCADE, verbose_name='所属系')
     account = models.CharField(max_length=100, verbose_name='登录账号，通常为教师工号')
     password = models.CharField(max_length=18, verbose_name='登录密码', default='123456')
@@ -187,6 +181,22 @@ class Course(models.Model):
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
     term = models.ForeignKey(Term, on_delete=models.CASCADE, verbose_name='学年学期')
+
+    def __str__(self):
+        return self.name
+
+
+# 超级管理员
+class SuperUser(models.Model):
+    class Meta:
+        # 该数据库表名自定义为如下：
+        db_table = 'super_user'
+
+    name = models.CharField(max_length=20, verbose_name='超级管理员昵称')
+    account = models.CharField(max_length=100, verbose_name='登录账号，用手机号码')
+    password = models.CharField(max_length=18, verbose_name='登录密码', default='123456')
+    school = models.ForeignKey(School, on_delete=models.SET_NULL, verbose_name='所管理的学校', blank=True, null=True)
+    is_teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, verbose_name='是否是教师，是则外键到对应教师', blank=True, null=True)
 
     def __str__(self):
         return self.name

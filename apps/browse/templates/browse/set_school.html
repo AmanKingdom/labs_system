@@ -1,0 +1,56 @@
+<!--browse/set_school.html-->
+
+{% extends 'browse/base.html' %}
+
+{% block css_block %}{% endblock %}
+
+{% block login_register_block %}
+    <p>注册成功！请设置您的学校</p>
+    <br>
+    <div id="tip" style="color: red"></div>
+    <form class="m-t" role="form" id="set_school_form" onkeydown="if(event.keyCode===13) return false;">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-md-9">
+                <input type="text" class="form-control" placeholder="学校名称" required name="school_name" onkeydown="if(event.keyCode===13) set_school_submit();">
+            </div>
+            <div class="col-md-3">
+                <button type="button" class="btn btn-info btn-circle" onclick="set_school_submit()">
+                    <i class="fa fa-check"></i>
+                </button>
+            </div>
+        </div>
+        <br><br>
+        <a href="{% url 'super_manage:school_manage' %}">跳过</a>
+    </form>
+{% endblock %}
+
+{% block js_block %}
+    <script>
+        function set_school_submit(){
+            $.ajax({
+                cache:true,//保留缓存数据
+                type:"POST",
+                url:"{% url 'browse:set_school' %}",
+                data:$('#set_school_form').serialize(),
+                dataType:'JSON',
+                async:false, //异步为真，ajax提交的过程中，同时可以做其他的操作
+                error:function(request){
+                    console.log("无法提交", request);
+                },
+                success:function(data){
+                    console.log("已提交");
+                    if(data.status){
+                        console.log('创建学校成功！');
+                        window.location.href="{% url 'super_manage:school_manage' %}"
+                    }
+                    else{
+                        console.log('注册信息有问题：'+data.message);
+                        $('#tip').html(data.message);
+                    }
+                }
+            });
+        }
+    </script>
+
+{% endblock %}

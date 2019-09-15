@@ -46,7 +46,7 @@ class Department(models.Model):
         db_table = 'department'
 
     name = models.CharField(max_length=30, verbose_name='系名称')
-    institute = models.ForeignKey(Institute, on_delete=models.CASCADE, verbose_name='所属学院')
+    institute = models.ForeignKey(Institute, on_delete=models.CASCADE, verbose_name='所属学院', related_name='departments')
 
     def __str__(self):
         return '%s-%s' % (self.institute, self.name)
@@ -87,7 +87,7 @@ class Grade(models.Model):
         db_table = 'grade'
 
     name = models.CharField(max_length=30, verbose_name='年级名称')
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, verbose_name='所属系')
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, verbose_name='所属系', related_name='grades')
 
     def __str__(self):
         return '%s-%s级' % (self.department, self.name)

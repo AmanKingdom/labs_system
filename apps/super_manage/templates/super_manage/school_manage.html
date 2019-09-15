@@ -57,100 +57,103 @@
                 </div>
             </div>
         </div>
+        {% if school_areas %}
+            <div class="row">
+                <div class="col-md-12">
+                    <br>
+                    <div class="ibox float-e-margins">
+                        <div class="ibox-title">
+                            <h5>学院信息表</h5>
+                            <div class="ibox-tools">
+                                <button id="add_institute_button" class="btn btn-primary">添加学院</button>
+                                <button id="save_institute_button" class="btn btn-primary">保存修改</button> |
+                                <button id="remove_institute_button" class="btn btn-danger" disabled>删除学院</button>
+                                <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                            </div>
+                        </div>
+                        <div class="ibox-content">
+                            <table id="institute_table"
+                                   class="table-responsive"
+                                   data-id-field="id"
+                                   data-response-handler="responseHandler"
+                                   data-click-to-select="true">
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% if institutes %}
+                <div class="row">
+                    <div class="col-md-12">
+                        <br>
+                        <div class="ibox float-e-margins">
+                            <div class="ibox-title">
+                                <h5>系 信息表</h5>
+                                <div class="ibox-tools">
+                                    <button id="add_department_button" class="btn btn-primary">添加 系</button>
+                                    <button id="save_department_button" class="btn btn-primary">保存修改</button> |
+                                    <button id="remove_department_button" class="btn btn-danger" disabled>删除 系</button>
+                                    <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                                </div>
+                            </div>
+                            <div class="ibox-content">
+                                <table id="department_table"
+                                       class="table-responsive"
+                                       data-id-field="id"
+                                       data-response-handler="responseHandler"
+                                       data-click-to-select="true">
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% if departments %}
+                    <div class="row">
+                        <div class="col-md-12">
+                            <br>
+                            <div class="ibox float-e-margins">
+                                <div class="ibox-title">
+                                    <h5>年级信息表</h5>
+                                    <div class="ibox-tools">
+                                        <button id="add_grade_button" class="btn btn-primary">添加年级</button>
+                                        <button id="save_grade_button" class="btn btn-primary">保存修改</button> |
+                                        <button id="remove_grade_button" class="btn btn-danger" disabled>删除年级</button>
+                                        <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                                    </div>
+                                </div>
+                                <div class="ibox-content">
+                                    <table id="grade_table"
+                                           class="table-responsive"
+                                           data-id-field="id"
+                                           data-response-handler="responseHandler"
+                                           data-click-to-select="true">
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <hr>
+                    请先添加系，有系后可进行下一步设置
+                {% endif %}
+            {% else %}
+                <hr>
+                请先添加学院，有学院后可进行下一步设置
+            {% endif %}
+        {% else %}
+            <hr>
+            请先添加校区，有校区后可进行下一步设置，只有一个校区的建议填写 主校区
+        {% endif %}
     {% else %}
         <hr>
         请先设置您的学校名称，设置完学校名称即可进行下一步设置
     {% endif %}
 
-    {% if school_areas %}
-        <div class="row">
-            <div class="col-md-12">
-                <br>
-                <div class="ibox float-e-margins">
-                    <div class="ibox-title">
-                        <h5>学院信息表</h5>
-                        <div class="ibox-tools">
-                            <button id="add_institute_button" class="btn btn-primary">添加学院</button>
-                            <button id="save_institute_button" class="btn btn-primary">保存修改</button> |
-                            <button id="remove_institute_button" class="btn btn-danger" disabled>删除学院</button>
-                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
-                        </div>
-                    </div>
-                    <div class="ibox-content">
-                        <table id="institute_table"
-                               class="table-responsive"
-                               data-id-field="id"
-                               data-response-handler="responseHandler"
-                               data-click-to-select="true">
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {% else %}
-        <hr>
-        请先添加校区，有校区后可进行下一步设置，只有一个校区的建议填写 主校区
-    {% endif %}
 
-    {% if institutes %}
-        <div class="row">
-            <div class="col-md-12">
-                <br>
-                <div class="ibox float-e-margins">
-                    <div class="ibox-title">
-                        <h5>系 信息表</h5>
-                        <div class="ibox-tools">
-                            <button id="add_department_button" class="btn btn-primary">添加 系</button>
-                            <button id="save_department_button" class="btn btn-primary">保存修改</button> |
-                            <button id="remove_department_button" class="btn btn-danger" disabled>删除 系</button>
-                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
-                        </div>
-                    </div>
-                    <div class="ibox-content">
-                        <table id="department_table"
-                               class="table-responsive"
-                               data-id-field="id"
-                               data-response-handler="responseHandler"
-                               data-click-to-select="true">
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {% else %}
-        <hr>
-        请先添加学院，有学院后可进行下一步设置
-    {% endif %}
 
-    {% if departments %}
-        <div class="row">
-            <div class="col-md-12">
-                <br>
-                <div class="ibox float-e-margins">
-                    <div class="ibox-title">
-                        <h5>年级信息表</h5>
-                        <div class="ibox-tools">
-                            <button id="add_grade_button" class="btn btn-primary">添加年级</button>
-                            <button id="save_grade_button" class="btn btn-primary">保存修改</button> |
-                            <button id="remove_grade_button" class="btn btn-danger" disabled>删除年级</button>
-                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
-                        </div>
-                    </div>
-                    <div class="ibox-content">
-                        <table id="grade_table"
-                               class="table-responsive"
-                               data-id-field="id"
-                               data-response-handler="responseHandler"
-                               data-click-to-select="true">
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {% else %}
-        <hr>
-        请先添加系，有系后可进行下一步设置
-    {% endif %}
+
+
+
 {% endblock %}
 
 {% block add_js %}
@@ -496,13 +499,25 @@
     <script>
         $("#add_institute_button").click(function () {
             // 用index实现编号自增
-            var index = institute_table.bootstrapTable('getData').length;
+            var data = institute_table.bootstrapTable('getData');
+            var index = data.length;
 
-            var new_row = {
-                "id": index,
-                "school_area":"",
-                "institute_name":"",
-            };
+            var new_row = null;
+
+            if(index == 0){
+                new_row = {
+                    "id": index,
+                    "school_area": "",
+                    "institute_name": ""
+                };
+            }else{
+                new_row = {
+                    "id": index,
+                    "school_area": data[index-1].school_area,
+                    "institute_name": "",
+                };
+            }
+
             // 最后插入该行
             institute_table.bootstrapTable('insertRow', {
                 index: index,
@@ -622,13 +637,25 @@
     <script>
         $("#add_department_button").click(function () {
             // 用index实现编号自增
-            var index = department_table.bootstrapTable('getData').length;
+            var data = department_table.bootstrapTable('getData');
+            var index = data.length;
 
-            var new_row = {
-                "id": index,
-                "institute": "",
-                "department_name": ""
-            };
+            var new_row = null;
+
+            if(index == 0){
+                new_row = {
+                    "id": index,
+                    "institute": "",
+                    "department_name": ""
+                };
+            }else{
+                new_row = {
+                    "id": index,
+                    "institute": data[index-1].institute,
+                    "department_name": "",
+                };
+            }
+
             // 最后插入该行
             department_table.bootstrapTable('insertRow', {
                 index: index,
@@ -703,7 +730,7 @@
                         },
                     },{
                         field: 'grade_name',
-                        title: '系名称<span class="need">*</span>',
+                        title: '年级名称(建议直接填年级的年份数字)<span class="need">*</span>',
                         editable:{
                             type:'text',
                         },
@@ -748,13 +775,25 @@
     <script>
         $("#add_grade_button").click(function () {
             // 用index实现编号自增
-            var index = grade_table.bootstrapTable('getData').length;
+            var data = grade_table.bootstrapTable('getData');
+            var index = data.length;
 
-            var new_row = {
-                "id": index,
-                "department": "",
-                "grade_name": ""
-            };
+            var new_row = null;
+
+            if(index == 0){
+                new_row = {
+                    "id": index,
+                    "department": "",
+                    "grade_name": ""
+                };
+            }else{
+                new_row = {
+                    "id": index,
+                    "department": data[index-1].department,
+                    "grade_name": data[index-1].grade_name,
+                };
+            }
+
             // 最后插入该行
             grade_table.bootstrapTable('insertRow', {
                 index: index,

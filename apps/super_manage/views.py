@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 
 from apps.apply_experiments.views import set_user_for_context
-from apps.super_manage.models import School, SchoolArea, Institute, Department, Grade
+from apps.super_manage.models import School, SchoolArea, Institute, Department, Grade, SuperUser
 
 from logging_setting import ThisLogger
 
@@ -87,7 +87,9 @@ def create_or_modify_school_ajax(request):
         if old_school_name and new_school_name:
             this_logger.info('接收到old_school_name:' + old_school_name + ' new_school_name:' + new_school_name)
             if old_school_name == new_school_name:
-                School.objects.create(name=new_school_name)
+                s = School.objects.create(name=new_school_name)
+                superuser = SuperUser.objects.filter(account=request.session['user_account'])
+                superuser.update(school=s)
             else:
                 school = School.objects.filter(name=old_school_name)
                 school.update(name=new_school_name)

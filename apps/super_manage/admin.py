@@ -120,9 +120,8 @@ admin.site.register(SchoolYear, SchoolYearAdmin)
 
 
 class TermAdmin(admin.ModelAdmin):
-    list_display = ('id', '__str__', 'name', 'school_year')  # 设置展示的列
-    list_editable = ['name', 'school_year']  # 设置可行内编辑
-    fields = ('school_year', 'name')  # 设置详情信息页面所能显示的字段及其顺序
+    list_display = ('id', '__str__', 'name', 'school_year', 'school', 'begin_date')  # 设置展示的列
+    list_editable = ['name', 'school_year', 'school']  # 设置可行内编辑
 
 
 admin.site.register(Term, TermAdmin)

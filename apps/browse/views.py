@@ -3,11 +3,20 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
 from apps.browse.models import Assistant
-from apps.super_manage.models import Teacher, SuperUser, School
+from apps.super_manage.models import Teacher, SuperUser, School, Term, SchoolYear
 
 from logging_setting import ThisLogger
 
 this_logger = ThisLogger().logger
+
+
+def create_default_term_for_school(school):
+    school_year = SchoolYear.objects.all()
+    if school_year:
+        school_year = school_year[0]
+        Term.objects.create(name='第一学期', school_year=school_year, school=school)
+        return True
+    return False
 
 
 # 基础视图，检查登录
@@ -89,6 +98,8 @@ def set_school(request):
                 superuser = SuperUser.objects.get(account=request.session['user_account'])
                 superuser.school = school
                 superuser.save()
+                # 创建一个学校的同时应该创建一个默认的学年学期给它
+                create_default_term_for_school(school)
         else:
             context['status'] = False
             context['message'] = '请输入学校名称'

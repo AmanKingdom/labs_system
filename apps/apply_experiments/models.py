@@ -1,6 +1,6 @@
 from django.db import models
 
-from apps.super_manage.models import Institute, Course, Labs, LabsAttribute
+from apps.super_manage.models import Institute, Course, Labs, LabsAttribute, School
 
 
 # 实验类型
@@ -10,6 +10,7 @@ class ExperimentType(models.Model):
         db_table = 'experiment_type'
 
     name = models.CharField(max_length=30, verbose_name='实验类型')
+    school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='对应的学校')
 
     def __str__(self):
         return self.name

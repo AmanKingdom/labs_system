@@ -59,6 +59,7 @@ class LabsAttribute(models.Model):
         db_table = 'labs_attribute'
 
     name = models.CharField(max_length=50, verbose_name='属性名称')
+    school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='对应的学校')
 
     def __str__(self):
         return self.name
@@ -100,7 +101,7 @@ class Classes(models.Model):
         db_table = 'classes'
 
     name = models.IntegerField(verbose_name='班级')
-    grade = models.ForeignKey(Grade, on_delete=models.CASCADE, verbose_name='所属年级')
+    grade = models.ForeignKey(Grade, on_delete=models.CASCADE, verbose_name='所属年级', related_name='classes')
 
     def __str__(self):
         return '%s %s班' % (self.grade, self.name)
@@ -113,7 +114,7 @@ class Teacher(models.Model):
         db_table = 'teacher'
 
     name = models.CharField(max_length=20, verbose_name='教师姓名')
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, verbose_name='所属系')
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, verbose_name='所属系', related_name='teachers')
     account = models.CharField(max_length=100, verbose_name='登录账号，通常为教师工号')
     password = models.CharField(max_length=18, verbose_name='登录密码', default='123456')
     phone = models.CharField(max_length=11, verbose_name='手机号码（用于找回密码，非必填）', null=True, blank=True)
@@ -157,8 +158,10 @@ class Term(models.Model):
         ('第一学期', '第一学期'),
         ('第二学期', '第二学期'),
     )
-    name = models.CharField(max_length=20, choices=TERM, verbose_name='学期名')
     school_year = models.ForeignKey(SchoolYear, verbose_name='所属学年', on_delete=models.CASCADE)
+    name = models.CharField(max_length=20, choices=TERM, verbose_name='学期名')
+    school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='对应的学校')
+    begin_date = models.DateField(auto_now=True, verbose_name='当前学期起始日期')
 
     def __str__(self):
         return '%s%s' % (self.school_year, self.name)

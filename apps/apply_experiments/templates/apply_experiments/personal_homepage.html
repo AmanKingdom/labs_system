@@ -5,34 +5,116 @@
 {% block add_css %}{% endblock %}
 
 {% block body_block %}
-    <div class="col-md-6 col-md-offset-3">
-        <div class="widget-head-color-box navy-bg p-lg text-center">
-            <div class="m-b-md">
-                <h2 class="font-bold no-margins">
-                    {% if superuser %}
+    <div class="row">
+        {% if superuser %}
+            <div {% if teacher %}class="col-md-6"{% else %}class="col-md-6 col-md-offset-3"{% endif %}>
+                <div class="widget-head-color-box navy-bg p-lg text-center">
+                    <div class="m-b-md">
+                        <h2 class="font-bold no-margins">
+                            超级管理员 · 名片
+                        </h2><br>
+                        <small>
+                            {% if superuser.school %}
+                                负责管理：{{ superuser.school }} 实验室
+                            {% else %}
+                                <a href="{% url 'super_manage:school_manage' %}">还没有学校信息，前往设置学校信息 >>></a>
+                            {% endif %}
+                        </small>
+                    </div>
+                    <img alt="头像" class="img-circle circle-border m-b-md" src="/static/image/default/dog.jpg" style="width: 100px"/>
+                    <h2 class="font-bold no-margins">
                         {{ superuser.name }}
-                    {% else %}
+                    </h2><br><br>
+                </div>
+                <div class="widget-text-box">
+                    <div align="center">
                         {% if teacher %}
-                            {{ teacher.name }}
+                        {% else %}
+                            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#become_a_teacher_modal_table">把自己设置为一名教师</button>
+                            <br>
                         {% endif %}
-                    {% endif%}
-                </h2><br>
-                <small>{% if teacher %}{{ teacher.department }}{% endif %}</small>
+                    </div>
+                </div>
             </div>
-            <img alt="头像" class="img-circle circle-border m-b-md" src="/static/image/default/dog.jpg" style="width: 100px"/>
-            <div>
-                <span>{{ term.school_year }}{{ term.name }}</span> |
-                <span>执教课程数：{{ course_amount }}</span> 门
+        {% endif %}
+
+        {% if teacher %}
+            <div class="col-md-6 {% if superuser %}{% else %}col-md-offset-3{% endif %}">
+                <div class="widget-head-color-box navy-bg p-lg text-center">
+                    <div class="m-b-md">
+                        <h2 class="font-bold no-margins">
+                            教师 · 名片
+                        </h2><br>
+                        <small>{% if teacher %}{{ teacher.department }}{% endif %}</small>
+                    </div>
+                    <img alt="头像" class="img-circle circle-border m-b-md" src="/static/image/default/dog.jpg" style="width: 100px"/>
+                    <div>
+                        <h2 class="font-bold no-margins">
+                            {{ teacher.name }}
+                        </h2><br>
+                        <span>{{ term.school_year }}{{ term.name }}</span> |
+                        <span>执教课程数：{{ course_amount }}</span> 门
+                    </div>
+                </div>
+                <div class="widget-text-box">
+                    <h4 class="media-heading">{% if teacher %}{{ teacher.name }}{% endif %}</h4>
+                    <p>给自己点个赞，生活会因此而发光。</p>
+                    <div class="text-right">
+                        <a class="btn btn-xs btn-white"><i class="fa fa-thumbs-up"></i> 赞 </a>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="widget-text-box">
-            <h4 class="media-heading">{% if teacher %}{{ teacher.name }}{% endif %}</h4>
-            <p>给自己点个赞，生活会因此而发光。</p>
-            <div class="text-right">
-                <a class="btn btn-xs btn-white"><i class="fa fa-thumbs-up"></i> 赞 </a>
+        {% endif%}
+    </div>
+
+    <!--设置管理员为教师的模态表格-->
+    <div id="become_a_teacher_modal_table" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">设置教师信息</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="ibox-content no-padding">
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <label for="from_department">所属系别：</label>
+                            <a id="from_department"></a>
+                        </li>
+                        <li class="list-group-item">
+                            <label for="name">姓名（同超级管理员）：</label>
+                            <a id="name"></a>
+                        </li>
+                        <li class="list-group-item">
+                            <label for="account">账号（工号）：</label>
+                            <a id="account"></a>
+                        </li>
+                        <li class="list-group-item">
+                            <label for="password">密码（同超级管理员）：</label>
+                            <a id="password"></a>
+                        </li>
+                        <li class="list-group-item">
+                            <label for="phone">手机号码（同超级管理员）：</label>
+                            <a id="phone"></a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" data-dismiss="modal" id="become_a_teacher_button">确定</button>
+                </div>
             </div>
         </div>
     </div>
 {% endblock %}
 
-{% block add_js %}{% endblock %}
+{% block add_js %}
+    <script>
+        $(function() {
+            $('become_a_teacher_modal_table').on('shown.bs.modal', function () {
+            })
+        });
+    </script>
+{% endblock %}

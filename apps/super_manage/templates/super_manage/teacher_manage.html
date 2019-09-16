@@ -1,4 +1,4 @@
-<!--super_user/classes_manage.html-->
+<!--super_user/teacher_manage.html-->
 
 {% extends 'apply_experiments/base.html' %}
 
@@ -11,22 +11,22 @@
 {% endblock %}
 
 {% block body_block %}
-    {% if grades %}
+    {% if departments %}
         <div class="row">
             <div class="col-md-12">
                 <br>
                 <div class="ibox float-e-margins">
                     <div class="ibox-title">
-                        <h5>班级信息表</h5>
+                        <h5>教师信息表</h5>
                         <div class="ibox-tools">
-                            <button id="add_classes_button" class="btn btn-primary">添加班级</button>
-                            <button id="save_classes_button" class="btn btn-primary">保存修改</button> |
-                            <button id="remove_classes_button" class="btn btn-danger" disabled>删除班级</button>
+                            <button id="add_teacher_button" class="btn btn-primary">添加教师</button>
+                            <button id="save_teacher_button" class="btn btn-primary">保存修改</button> |
+                            <button id="remove_teacher_button" class="btn btn-danger" disabled>删除教师</button>
                             <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                         </div>
                     </div>
                     <div class="ibox-content">
-                        <table id="classes_table"
+                        <table id="teacher_table"
                                class="table-responsive"
                                data-id-field="id"
                                data-response-handler="responseHandler"
@@ -38,7 +38,7 @@
         </div>
     {% else %}
         <hr>
-        请先添加年级信息，有年级信息后可进行下一步设置 <a href="{% url 'super_manage:school_manage' %}">>>>前往添加</a>
+        请先添加系别信息，有系别信息后可进行下一步设置 <a href="{% url 'super_manage:school_manage' %}">>>>前往添加</a>
     {% endif %}
 {% endblock %}
 
@@ -62,7 +62,7 @@
                     console.log(data);
                     if(data.status){
                         console.log('提交成功！');
-                        window.location.href="{% url 'super_manage:classes_manage' %}"
+                        window.location.href="{% url 'super_manage:teacher_manage' %}"
                     }else{
                         console.log('提交信息有问题：'+data.message)
                     }
@@ -136,6 +136,8 @@
                     model_name = '年级'
                 }else if(model == 'classes'){
                     model_name = '班级'
+                }else if(model == 'teachers'){
+                    model_name = '教师'
                 }
                 var remove_flag = confirm('您正在删除'+model_name+ids+'，将会连同该'+model_name+'下的所有子关联表都删除（如果有的话），确定删除吗？');
 
@@ -154,15 +156,15 @@
     </script>
 
 
-    <!--班级表设置相关  开始-->
+    <!--教师信息表设置相关  开始-->
     <script>
-        var classes_table = $('#classes_table');
-        var remove_classes_button = $('#remove_classes_button');
+        var teacher_table = $('#teacher_table');
+        var remove_teacher_button = $('#remove_teacher_button');
         var selections = [];
 
-        function init_classes_table() {
-            console.log('init_classes_table()执行');
-            classes_table.bootstrapTable('destroy').bootstrapTable({
+        function init_teacher_table() {
+            console.log('init_teacher_table()执行');
+            teacher_table.bootstrapTable('destroy').bootstrapTable({
                 locale: $('#locale').val(),
                 columns: [
                     [{
@@ -172,21 +174,39 @@
                         title: '序号',
                         field: 'id',
                     },{
-                        field:'grade',
-                        title: '所属年级<span class="need">*</span>',
+                        field:'department',
+                        title: '所属系别<span class="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
-                                {% for grade in grades %}
-                                    { value: {{ grade.id }}, text: '{{ grade }}'},
+                                {% for department in departments %}
+                                    { value: {{ department.id }}, text: '{{ department }}'},
                                 {% empty %}
                                     { value:"", text: not_found_data},
                                 {% endfor %}
                             ]
                         },
                     },{
-                        field: 'classes_name',
-                        title: '班级名称(建议直接填班级数字)<span class="need">*</span>',
+                        field: 'teacher_name',
+                        title: '教师姓名<span class="need">*</span>',
+                        editable:{
+                            type:'text',
+                        },
+                    },{
+                        field: 'account',
+                        title: '账号（工号）<span class="need">*</span>',
+                        editable:{
+                            type:'text',
+                        },
+                    },{
+                        field: 'password',
+                        title: '密码（默认为123456）<span class="need">*</span>',
+                        editable:{
+                            type:'text',
+                        },
+                    },{
+                        field: 'phone',
+                        title: '预留手机号码',
                         editable:{
                             type:'text',
                         },
@@ -196,21 +216,24 @@
                 ]
             });
 
-            set_a_table(classes_table, remove_classes_button, 'classes');
+            set_a_table(teacher_table, remove_teacher_button, 'teachers');
         }
 
-        function load_classes(){
-            console.log('load_classes()执行');
+        function load_teacher(){
+            console.log('load_teacher()执行');
             var index = 0;
-            {% for classes_item in classes %}
+            {% for teacher in teachers %}
                 var new_row = {
                     "id": index,
-                    'grade': '{{ classes_item.grade.id }}',
-                    'classes_name': '{{ classes_item.name }}',
-                    "id_in_database": '{{ classes_item.id }}',
+                    'department': '{{ teacher.department.id }}',
+                    'teacher_name': '{{ teacher.name }}',
+                    'account': '{{ teacher.account }}',
+                    'password': '{{ teacher.password }}',
+                    'phone': {% if teacher.phone %}'{{ teacher.phone }}'{% else %}''{% endif %},
+                    "id_in_database": '{{ teacher.id }}',
                 };
                 // 插入该行
-                classes_table.bootstrapTable('insertRow', {
+                teacher_table.bootstrapTable('insertRow', {
                     index: index,
                     row: new_row
                 });
@@ -220,18 +243,18 @@
         }
 
         $(function() {
-            init_classes_table();
-            load_classes();
-            $('#locale').change(init_classes_table);
+            init_teacher_table();
+            load_teacher();
+            $('#locale').change(init_teacher_table);
         })
     </script>
-    <!--班级表设置相关  结束-->
+    <!--教师信息表设置相关  结束-->
 
-    <!--动态添加班级表格行 事件 开始-->
+    <!--动态添加教师信息表格行 事件 开始-->
     <script>
-        $("#add_classes_button").click(function () {
+        $("#add_teacher_button").click(function () {
             // 用index实现编号自增
-            var data = classes_table.bootstrapTable('getData');
+            var data = teacher_table.bootstrapTable('getData');
             var index = data.length;
 
             var new_row = null;
@@ -239,53 +262,71 @@
             if(index == 0){
                 new_row = {
                     "id": index,
-                    "grade": "",
-                    "classes_name": ""
+                    "department": "",
+                    "teacher_name": "",
+                    "account": "",
+                    "password": "123456",
+                    "phone": "",
                 };
             }else{
                 new_row = {
                     "id": index,
-                    "grade": data[index-1].grade,
-                    "classes_name": data[index-1].classes_name,
+                    "department": data[index-1].department,
+                    "teacher_name": "",
+                    "account": "",
+                    "password": "123456",
+                    "phone": "",
                 };
             }
 
             // 最后插入该行
-            classes_table.bootstrapTable('insertRow', {
+            teacher_table.bootstrapTable('insertRow', {
                 index: index,
                 row: new_row
             });
         });
     </script>
-    <!--动态添加班级表格行 事件 结束-->
+    <!--动态添加教师信息表格行 事件 结束-->
 
-    <!--保存修改或增加班级信息后的表格 事件 开始 -->
+    <!--保存修改或增加教师信息后的表格 事件 开始 -->
     <script>
-        $('#save_classes_button').click(function () {
-            var classes = classes_table.bootstrapTable('getData');
+        $('#save_teacher_button').click(function () {
+            var teachers = teacher_table.bootstrapTable('getData');
 
-            if(classes.length !== 0){
+            if(teachers.length !== 0){
                 var pass = true;
-                $.each(classes, function (index, value) {
+                $.each(teachers, function (index, value) {
                     console.log(index, value);
 
-                    if(value['classes_name'] === empty_text || value['classes_name'] == ""){
+                    if(value['department'] === empty_text || value['department'] == ""){
                         pass = false;
-                        window.alert('提交失败，班级 '+index+'的名称不可以为空');
+                        window.alert('提交失败，请选择教师'+index+'所属系别');
                         return pass
                     }
 
-                    if(value['grade'] === empty_text || value['grade'] == ""){
+                    if(value['teacher_name'] === empty_text || value['teacher_name'] == ""){
                         pass = false;
-                        window.alert('提交失败，请选择班级'+index+'所属年级');
+                        window.alert('提交失败，教师 '+index+'的姓名不可以为空');
+                        return pass
+                    }
+
+                    if(value['account'] === empty_text || value['account'] == ""){
+                        pass = false;
+                        window.alert('提交失败，请填上教师'+index+'的账号');
+                        return pass
+                    }
+
+                    if(value['password'] === empty_text || value['password'] == ""){
+                        pass = false;
+                        window.alert('提交失败，请填上教师'+index+'密码');
                         return pass
                     }
                 });
                 if(pass){
-                    save_ajax('classes', classes, '{{ school.id }}')
+                    save_ajax('teachers', teachers, '{{ school.id }}')
                 }
             }
         })
     </script>
-    <!--保存修改或增加班级信息后的表格 事件 结束 -->
+    <!--保存修改或增加教师信息后的表格 事件 结束 -->
 {% endblock %}

@@ -61,13 +61,15 @@ def personal_homepage(request):
         'personal_homepage_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
+
         'course_amount': None,
-        'term': Term.objects.all()[0]
+        'term': None,
     }
 
     user = set_user_for_context(request.session['user_account'], context)
     if user == 'superuser_is_teacher' or user == 'teacher':
         context['course_amount'] = len(Course.objects.filter(teachers__account=context['teacher'].account))
+        context['term'] = Term.objects.filter(school=context['superuser'].school)
 
     return render(request, 'apply_experiments/personal_homepage.html', context)
 
@@ -87,6 +89,7 @@ def apply(request):
         'apply_experiments_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
+
         'courses': [],  # 默认筛选出当前学期的课程，因为只能申请当前学期的课程实验
         'classes': None,
 
@@ -252,6 +255,7 @@ def manage_application(request):
         'apply_info_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
+
         'courses': [],
     }
     user = set_user_for_context(request.session['user_account'], context)

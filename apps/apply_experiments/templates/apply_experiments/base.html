@@ -128,8 +128,8 @@
                         <ul class="nav nav-second-level collapse">
                             <li {% if school_active %}class="active"{% endif %}><a href="{% url 'super_manage:school_manage' %}">学校管理</a></li>
                             <li {% if classes_active %}class="active"{% endif %}><a href="{% url 'super_manage:classes_manage' %}">班级管理</a></li>
-                            <li {% if teachers_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">教师管理</a></li>
-                            <li {% if courses_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">课程管理</a></li>
+                            <li {% if teacher_active %}class="active"{% endif %}><a href="{% url 'super_manage:teacher_manage' %}">教师管理</a></li>
+                            <li {% if course_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">课程管理</a></li>
                         </ul>
                     </li>
                     <li class="active">

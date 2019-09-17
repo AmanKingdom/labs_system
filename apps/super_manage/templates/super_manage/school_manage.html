@@ -1,8 +1,8 @@
 <!--super_user/school_manage.html-->
 
-{% extends 'apply_experiments/base.html' %}
+{% extends 'super_manage/base.html' %}
 
-{% block add_css %}
+{% block add_css_to_super_manage %}
     <style>
         #school_name{
             width:15%;
@@ -18,16 +18,10 @@
             margin-bottom: 0;
             margin-top: 0;
         }
-        .table, .ibox{
-            margin-bottom: 0;
-        }
-        #body_div, #page-wrapper{
-            height: auto;
-        }
     </style>
 {% endblock %}
 
-{% block body_block %}
+{% block super_manage_body %}
     <div class="row">
         <div class="col-md-4 col-sm-10 col-xs-10">
             &nbsp;&nbsp;&nbsp;&nbsp;
@@ -169,8 +163,13 @@
 
 {% endblock %}
 
-{% block add_js %}
+{% block add_js_to_super_manage %}
     <script src="/static/css_js/js/moment.js"></script>
+
+    <!--当前页面的全局设置-->
+    <script>
+        var from_url = "{% url 'super_manage:school_manage' %}";
+    </script>
 
     <!--学校信息设置相关  开始-->
     <script>
@@ -178,6 +177,7 @@
             $('#school_name').editable({
                 type: 'text',
                 placeholder:'请设置您的学校',
+                emptytext: '请设置您的学校',
             });
 
             $('#term').editable({
@@ -212,9 +212,9 @@
             var begin_date = $('#begin_date').html();
             var term_name = $('#term').html();
             console.log('保存学期开始时间：', begin_date, '保存学期：', term_name);
-            var url = "{% url 'super_manage:save_term_ajax' %}";
-            var data = JSON.stringify({'term_id':'{{ term.id }}', 'term_name': term_name, 'begin_date': begin_date});
-            my_ajax(url, data);
+            var to_url = "{% url 'super_manage:save_term_ajax' %}";
+            var data = {'term_id':'{{ term.id }}', 'term_name': term_name, 'begin_date': begin_date};
+            base_ajax(from_url, to_url, data);
         }
 
         // 提交学校信息
@@ -237,133 +237,13 @@
             }
         }
         function create_or_modify_school(old_school_name, new_school_name) {
-            $.ajax({
-                cache:true,//保留缓存数据
-                type:"POST",
-                url:"{% url 'super_manage:create_or_modify_school_ajax' %}",
-                data:JSON.stringify({"old_school_name":old_school_name, "new_school_name":new_school_name}),
-                dataType:'JSON',
-                headers:{'X-CSRFToken':'{{ csrf_token }}'},
-                async:false, //异步为真，ajax提交的过程中，同时可以做其他的操作
-                error:function(request){
-                    console.log("无法提交", request);
-                },
-                success:function(data){
-                    console.log("已提交");
-                    if(data.status){
-                        console.log('创建学校or修改学校名称成功！');
-                        window.location.href="{% url 'super_manage:school_manage' %}"
-                    }
-                    else{
-                        alert(data.message);
-                    }
-                }
-            });
+            var to_url = "{% url 'super_manage:create_or_modify_school_ajax' %}";
+            var data = {"old_school_name":old_school_name, "new_school_name":new_school_name};
+            base_ajax(from_url, to_url, data);
         }
     </script>
     <!--学校信息设置相关  结束-->
 
-    <!--通用的ajax提交-->
-    <script>
-        function my_ajax(url, data) {
-            $.ajax({
-                cache:true,//保留缓存数据
-                type:"POST",
-                url:url,
-                data:data,
-                dataType:'JSON',
-                async:true,
-                headers:{'X-CSRFToken':'{{ csrf_token }}'},
-                error:function(request){
-                    console.log("无法提交", request);
-                },
-                success:function(data){
-                    console.log("已提交");
-                    console.log(data);
-                    if(data.status){
-                        console.log('提交成功！');
-                        window.location.href="{% url 'super_manage:school_manage' %}"
-                    }else{
-                        console.log('提交信息有问题：'+data.message)
-                    }
-                }
-            });
-        }
-    </script>
-
-    <!--通用的保存方法-->
-    <script>
-        function save_ajax(save_objects_model, save_objects_data, school_id){
-            var url = "{% url 'super_manage:save_ajax' %}";
-            var data = JSON.stringify({'save_objects_model': save_objects_model, 'save_objects_data':save_objects_data, 'school_id': school_id});
-
-            my_ajax(url, data);
-        }
-    </script>
-
-    <!--通用的删除方法-->
-    <script>
-        function remove_ajax(remove_json){
-            var url = "{% url 'super_manage:remove_ajax' %}";
-            var data = JSON.stringify(remove_json);
-            my_ajax(url, data);
-        }
-    </script>
-
-    <!--通用的设置表信息和动态事件方法-->
-    <script>
-        // 此处的model传入字符串，用于标识对象是什么类型的模型
-        function set_a_table(table, remove_button, model){
-            function get_id_selections(table) {
-                return $.map(table.bootstrapTable('getSelections'), function (row) {
-                    return row.id
-                })
-            }
-
-            function get_id_in_database_selections(table) {
-                return $.map(table.bootstrapTable('getSelections'), function (row) {
-                    return row.id_in_database
-                })
-            }
-
-            // 隐藏数据库id列
-            table.bootstrapTable('hideColumn', 'id_in_database');
-
-            table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table',
-                function () {
-                    remove_button.prop('disabled', !table.bootstrapTable('getSelections').length);
-
-                    // save your data, here just save the current page
-                    selections = get_id_selections(table)
-                    // push or splice the selections if you want to save all data selections
-                }
-            );
-            table.on('all.bs.table', function (e, name, args) {
-                console.log(name, args)
-            });
-
-            remove_button.click(function () {
-                var ids = get_id_selections(table);
-                var ids_in_database = get_id_in_database_selections(table);
-                var model_name = "";
-                if(model == 'school_areas'){
-                    model_name = '校区'
-                }
-                var remove_flag = confirm('您正在删除'+model_name+ids+'，将会连同该'+model_name+'下的所有子关联表都删除（如果有的话），确定删除吗？');
-
-                if(remove_flag) {
-                    var remove_json = {
-                        "remove_objects_model": model,
-                        "remove_ids": ids_in_database,
-                    };
-
-                    remove_ajax(remove_json);
-                }else{
-                    alert('我就知道你不想删除她的')
-                }
-            })
-        }
-    </script>
 
 
     <!--学校校区表设置相关  开始-->
@@ -395,7 +275,7 @@
                 ]
             });
 
-            set_a_table(school_area_table, remove_school_area_button, 'school_areas');
+            set_a_table(from_url, school_area_table, remove_school_area_button, 'school_areas');
         }
 
         function load_school_area(){
@@ -461,7 +341,7 @@
                     }
                 });
                 if(pass){
-                    save_ajax('school_areas', school_areas, '{{ school.id }}');
+                    save_ajax(from_url, 'school_areas', school_areas, '{{ school.id }}');
                 }
             }
         })
@@ -513,7 +393,7 @@
                 ]
             });
 
-            set_a_table(institute_table, remove_institute_button, 'institutes');
+            set_a_table(from_url, institute_table, remove_institute_button, 'institutes');
         }
 
         function load_institute(){
@@ -599,7 +479,7 @@
                     }
                 });
                 if(pass){
-                    save_ajax('institutes', institutes, '{{ school.id }}')
+                    save_ajax(from_url, 'institutes', institutes, '{{ school.id }}')
                 }
             }
         })
@@ -651,7 +531,7 @@
                 ]
             });
 
-            set_a_table(department_table, remove_department_button, 'departments');
+            set_a_table(from_url, department_table, remove_department_button, 'departments');
         }
 
         function load_department(){
@@ -737,7 +617,7 @@
                     }
                 });
                 if(pass){
-                    save_ajax('departments', departments, '{{ school.id }}')
+                    save_ajax(from_url, 'departments', departments, '{{ school.id }}')
                 }
             }
         })
@@ -789,7 +669,7 @@
                 ]
             });
 
-            set_a_table(grade_table, remove_grade_button, 'grades');
+            set_a_table(from_url, grade_table, remove_grade_button, 'grades');
         }
 
         function load_grade(){
@@ -875,7 +755,7 @@
                     }
                 });
                 if(pass){
-                    save_ajax('grades', grades, '{{ school.id }}')
+                    save_ajax(from_url, 'grades', grades, '{{ school.id }}')
                 }
             }
         })

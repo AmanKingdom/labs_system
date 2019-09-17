@@ -63,13 +63,28 @@ def personal_homepage(request):
         'teacher': None,
 
         'course_amount': None,
+        'departments': [],
         'term': None,
     }
 
     user = set_user_for_context(request.session['user_account'], context)
     if user == 'superuser_is_teacher' or user == 'teacher':
         context['course_amount'] = len(Course.objects.filter(teachers__account=context['teacher'].account))
-        context['term'] = Term.objects.filter(school=context['superuser'].school)
+        context['term'] = Term.objects.filter(school=context['superuser'].school)[0]
+
+    if context['superuser']:
+        school = context['superuser'].school
+        if school:
+            school_areas = school.school_areas.all()
+            if school_areas:
+                for school_area in school_areas:
+                    institutes = school_area.institutes.all()
+                    if institutes:
+                        for institute in institutes:
+                            departments = institute.departments.all()
+                            if departments:
+                                for department in departments:
+                                    context['departments'].append(department)
 
     return render(request, 'apply_experiments/personal_homepage.html', context)
 

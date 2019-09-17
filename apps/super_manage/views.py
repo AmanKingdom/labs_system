@@ -34,6 +34,56 @@ def set_system_school_year():
         SchoolYear.objects.create(since=year_now, to=year_now+1)
 
 
+def get_all_school_areas(school):
+    if school:
+        return school.school_areas.all()
+
+
+def get_all_institutes(school):
+    institutes = []
+    school_areas = get_all_school_areas(school)
+    if school_areas:
+        for school_area in school_areas:
+            institutes.append(school_area.institutes.all())
+    return institutes
+
+
+def get_all_departments(school):
+    departments = []
+    institutes = get_all_institutes(school)
+    if institutes:
+        for institute in institutes:
+            departments.append(institute.departments.all())
+    return departments
+
+
+def get_all_grades(school):
+    grades = []
+    departments = get_all_departments(school)
+    if departments:
+        for department in departments:
+            grades.append(department.grades.all())
+    return grades
+
+
+def get_all_classes(school):
+    classes = []
+    grades = get_all_grades(school)
+    if grades:
+        for grade in grades:
+            classes.append(grade.classes.all())
+    return classes
+
+
+def get_all_teachers(school):
+    teachers = []
+    departments = get_all_departments(school)
+    if departments:
+        for department in departments:
+            teachers.append(department.teachers.all())
+    return teachers
+
+
 def school_manage(request):
     context = {
         'title': '学校管理',
@@ -98,24 +148,8 @@ def classes_manage(request):
     set_user_for_context(request.session['user_account'], context)
 
     school = context['superuser'].school
-    if school:
-        school_areas = school.school_areas.all()
-        if school_areas:
-            for school_area in school_areas:
-                institutes = school_area.institutes.all()
-                if institutes:
-                    for institute in institutes:
-                        departments = institute.departments.all()
-                        if departments:
-                            for department in departments:
-                                grades = department.grades.all()
-                                if grades:
-                                    for grade in grades:
-                                        context['grades'].append(grade)
-                                        classes = grade.classes.all()
-                                        if classes:
-                                            for class_item in classes:
-                                                context['classes'].append(class_item)
+    context['grades'] = get_all_grades(school)
+    context['classes'] = get_all_classes(school)
 
     return render(request, 'super_manage/classes_manage.html', context)
 
@@ -128,6 +162,27 @@ def teacher_manage(request):
         'teacher': None,
 
         'departments': [],
+        'teachers': [],
+    }
+
+    set_user_for_context(request.session['user_account'], context)
+
+    school = context['superuser'].school
+    context['departments'] = get_all_departments(school)
+    context['teachers'] = get_all_teachers(school)
+
+    return render(request, 'super_manage/teacher_manage.html', context)
+
+
+def course_manage(request):
+    context = {
+        'title': '课程管理',
+        'course_active': True,  # 激活导航
+        'superuser': None,
+        'teacher': None,
+
+        'institutes': [],
+        'classes': [],
         'teachers': [],
     }
 
@@ -306,6 +361,52 @@ def save_term_ajax(request):
             begin_date = data['begin_date']
 
             Term.objects.filter(id=term_id).update(name=term_name, begin_date=begin_date)
+
+        except:
+            context['status'] = False
+            context['message'] = '修改失败，请重试'
+
+        return JsonResponse(context)
+
+
+def become_a_teacher(request):
+    data = json.loads(list(request.POST.keys())[0])
+
+    context = {
+        'status': True,
+        'message': None,
+    }
+
+    if request.is_ajax():
+        try:
+            from_department_id = data['from_department_id']
+            superuser = SuperUser.objects.get(account=request.session['user_account'])
+            teacher = Teacher.objects.create(department_id=from_department_id,
+                                             name=superuser.name,
+                                             account=superuser.account,
+                                             password=superuser.password,
+                                             phone=superuser.account)
+            superuser.is_teacher = teacher
+            superuser.save()
+
+        except:
+            context['status'] = False
+            context['message'] = '修改失败，请重试'
+
+        return JsonResponse(context)
+
+
+def cancel_the_teacher(request):
+    data = json.loads(list(request.POST.keys())[0])
+
+    context = {
+        'status': True,
+        'message': None,
+    }
+
+    if request.is_ajax():
+        try:
+            SuperUser.objects.filter(id=data['superuser_id'])[0].is_teacher.delete()
 
         except:
             context['status'] = False

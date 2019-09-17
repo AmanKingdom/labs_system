@@ -1,16 +1,10 @@
 <!--super_user/classes_manage.html-->
 
-{% extends 'apply_experiments/base.html' %}
+{% extends 'super_manage/base.html' %}
 
-{% block add_css %}
-    <style>
-        .table, .ibox{
-            margin-bottom: 0;
-        }
-    </style>
-{% endblock %}
+{% block add_css_to_super_manage %}{% endblock %}
 
-{% block body_block %}
+{% block super_manage_body %}
     {% if grades %}
         <div class="row">
             <div class="col-md-12">
@@ -42,115 +36,10 @@
     {% endif %}
 {% endblock %}
 
-{% block add_js %}
-    <!--通用的ajax提交-->
+{% block add_js_to_super_manage %}
+    <!--当前页面的全局设置-->
     <script>
-        function my_ajax(url, data) {
-            $.ajax({
-                cache:true,//保留缓存数据
-                type:"POST",
-                url:url,
-                data:data,
-                dataType:'JSON',
-                async:true,
-                headers:{'X-CSRFToken':'{{ csrf_token }}'},
-                error:function(request){
-                    console.log("无法提交", request);
-                },
-                success:function(data){
-                    console.log("已提交");
-                    console.log(data);
-                    if(data.status){
-                        console.log('提交成功！');
-                        window.location.href="{% url 'super_manage:classes_manage' %}"
-                    }else{
-                        console.log('提交信息有问题：'+data.message)
-                    }
-                }
-            });
-        }
-    </script>
-
-    <!--通用的保存方法-->
-    <script>
-        function save_ajax(save_objects_model, save_objects_data, school_id){
-            var url = "{% url 'super_manage:save_ajax' %}";
-            var data = JSON.stringify({'save_objects_model': save_objects_model, 'save_objects_data':save_objects_data, 'school_id': school_id});
-
-            my_ajax(url, data);
-        }
-    </script>
-
-    <!--通用的删除方法-->
-    <script>
-        function remove_ajax(remove_json){
-            var url = "{% url 'super_manage:remove_ajax' %}";
-            var data = JSON.stringify(remove_json);
-            my_ajax(url, data);
-        }
-    </script>
-
-    <!--通用的设置表信息和动态事件方法-->
-    <script>
-        // 此处的model传入字符串，用于标识对象是什么类型的模型
-        function set_a_table(table, remove_button, model){
-            function get_id_selections(table) {
-                return $.map(table.bootstrapTable('getSelections'), function (row) {
-                    return row.id
-                })
-            }
-
-            function get_id_in_database_selections(table) {
-                return $.map(table.bootstrapTable('getSelections'), function (row) {
-                    return row.id_in_database
-                })
-            }
-
-            // 隐藏数据库id列
-            table.bootstrapTable('hideColumn', 'id_in_database');
-
-            table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table',
-                function () {
-                    remove_button.prop('disabled', !table.bootstrapTable('getSelections').length);
-
-                    // save your data, here just save the current page
-                    selections = get_id_selections(table)
-                    // push or splice the selections if you want to save all data selections
-                }
-            );
-            table.on('all.bs.table', function (e, name, args) {
-                console.log(name, args)
-            });
-
-            remove_button.click(function () {
-                var ids = get_id_selections(table);
-                var ids_in_database = get_id_in_database_selections(table);
-                var model_name = "";
-                if(model == 'school_areas'){
-                    model_name = '校区'
-                }else if(model == 'institutes'){
-                    model_name = '学院'
-                }else if(model == 'departments'){
-                    model_name = '系别'
-                }else if(model == 'grades'){
-                    model_name = '年级'
-                }else if(model == 'classes'){
-                    model_name = '班级'
-                }
-                var remove_flag = confirm('您正在删除'+model_name+ids+'，将会连同该'+model_name+'下的所有子关联表都删除（如果有的话），确定删除吗？');
-
-                if(remove_flag) {
-                    var remove_json = {
-                        "remove_objects_model": model,
-                        "remove_ids": ids_in_database,
-                    };
-
-                    remove_ajax(remove_json);
-                }else{
-                    alert('我就知道你不想删除她的')
-                }
-            })
-        }
+        var from_url = "{% url 'super_manage:classes_manage' %}";
     </script>
 
 
@@ -196,7 +85,7 @@
                 ]
             });
 
-            set_a_table(classes_table, remove_classes_button, 'classes');
+            set_a_table(from_url, classes_table, remove_classes_button, 'classes');
         }
 
         function load_classes(){
@@ -282,7 +171,7 @@
                     }
                 });
                 if(pass){
-                    save_ajax('classes', classes, '{{ school.id }}')
+                    save_ajax(from_url, 'classes', classes, '{{ school.id }}')
                 }
             }
         })

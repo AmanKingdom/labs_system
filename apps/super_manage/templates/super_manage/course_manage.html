@@ -1,0 +1,226 @@
+<!--super_user/course_manage.html-->
+
+{% extends 'super_manage/base.html' %}
+
+{% block add_css_to_super_manage %}
+    <!--多项选择的css依赖-->
+    <link href="/static/css_js/css/plugins/select2/select2.min.css" rel="stylesheet" type="text/css">
+    <link href="/static/css_js/css/plugins/select2/select2-bootstrap.css" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block super_manage_body %}
+    {% if classes %}
+        <div class="row">
+            <div class="col-md-12">
+                <br>
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>课程信息表<small class="need">（不是当前学期的课程会在新学期开始后被删除）</small></h5>
+                        <div class="ibox-tools">
+                            <button id="add_course_button" class="btn btn-primary">添加课程</button>
+                            <button id="save_course_button" class="btn btn-primary">保存修改</button> |
+                            <button id="remove_course_button" class="btn btn-danger" disabled>删除课程</button>
+                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                        <table id="course_table"
+                               class="table-responsive"
+                               data-id-field="id"
+                               data-response-handler="responseHandler"
+                               data-click-to-select="true">
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <hr>
+        请先添加班级信息，有班级信息后可进行下一步设置 <a href="{% url 'super_manage:classes_manage' %}">>>>前往添加</a>
+    {% endif %}
+{% endblock %}
+
+{% block add_js_to_super_manage %}
+    <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
+    <!--当前页面的全局设置-->
+    <script>
+        var from_url = "{% url 'super_manage:course_manage' %}";
+    </script>
+
+
+
+    <!--课程信息表设置相关  开始-->
+    <script>
+        var course_table = $('#course_table');
+        var remove_course_button = $('#remove_course_button');
+        var selections = [];
+
+        function init_course_table() {
+            console.log('init_course_table()执行');
+            course_table.bootstrapTable('destroy').bootstrapTable({
+                locale: $('#locale').val(),
+                columns: [
+                    [{
+                        field: 'state',
+                        checkbox: true,
+                    }, {
+                        title: '序号',
+                        field: 'id',
+                    },{
+                        field:'institute',
+                        title: '开课单位（学院）<span class="need">*</span>',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% for institute in institutes %}
+                                    { value: {{ institute.id }}, text: '{{ institute }}'},
+                                {% empty %}
+                                    { value:"", text: not_found_data},
+                                {% endfor %}
+                            ]
+                        },
+                    },{
+                        field: 'course_name',
+                        title: '课程名称<span class="need">*</span>',
+                        editable:{
+                            type:'text',
+                        },
+                    },{
+                        field:'classes',
+                        title: '授课班级<span class="need">*</span>',
+                        editable:{
+                            type:'select2',
+                            source: [
+                                {% for classes_item in classes %}
+                                    { value: {{ classes_item.id }}, text: '{{ classes_item }}'},
+                                {% empty %}
+                                    { value:"", text: not_found_data},
+                                {% endfor %}
+                            ],
+                            select2 : {
+                                multiple : true,
+                                width : '100px'//设置宽，这个一定要，不然显示框很窄
+                            }
+                        },
+                    },{
+                        field:'teachers',
+                        title: '授课教师<span class="need">*</span>',
+                        editable:{
+                            type:'select2',
+                            source: [
+                                {% for teacher in teachers %}
+                                    { value: {{ teacher.id }}, text: '{{ teacher }}'},
+                                {% empty %}
+                                    { value:"", text: not_found_data},
+                                {% endfor %}
+                            ],
+                            select2 : {
+                                multiple : true,
+                                width : '100px'//设置宽，这个一定要，不然显示框很窄
+                            }
+                        },
+                    },{
+                        field:'id_in_database',
+                    }]
+                ]
+            });
+
+            set_a_table(from_url, course_table, remove_course_button, 'courses');
+        }
+
+        function load_course(){
+            console.log('load_courses()执行');
+            var index = 0;
+            {% for c in courses %}
+                var new_row = {
+                    "id": index,
+                    'institute': '{{ c.course.institute.id }}',
+                    'course_name': '{{ c.course.name }}',
+                    'classes': {% if c.classes.id %}'{{ c.classes.id }}'{% else %}''{% endif %},
+                    'teachers': {% if c.teachers.id %}'{{ c.teachers.id }}'{% else %}''{% endif %},
+                    "id_in_database": '{{ c.course.id }}',
+                };
+                // 插入该行
+                classes_table.bootstrapTable('insertRow', {
+                    index: index,
+                    row: new_row
+                });
+                index = index + 1;
+            {% empty %}
+            {% endfor %}
+        }
+
+        $(function() {
+            init_course_table();
+            load_course();
+            $('#locale').change(init_course_table);
+        })
+    </script>
+    <!--课程信息表设置相关  结束-->
+
+    <!--动态添加课程信息表格行 事件 开始-->
+    <script>
+        $("#add_classes_button").click(function () {
+            // 用index实现编号自增
+            var data = classes_table.bootstrapTable('getData');
+            var index = data.length;
+
+            var new_row = null;
+
+            if(index == 0){
+                new_row = {
+                    "id": index,
+                    "institute": "",
+                    "course_name": "",
+                    "classes": "",
+                    "teachers": "",
+                };
+            }else{
+                new_row = {
+                    "id": index,
+                    "institute": data[index-1].institute,
+                    "course_name": "",
+                    "classes": "",
+                    "teachers": data[index-1].teachers,
+                };
+            }
+
+            // 最后插入该行
+            classes_table.bootstrapTable('insertRow', {
+                index: index,
+                row: new_row
+            });
+        });
+    </script>
+    <!--动态添加课程信息表格行 事件 结束-->
+
+    <!--保存修改或增加课程信息后的表格 事件 开始 -->
+    <script>
+        $('#save_course_button').click(function () {
+            var courses = course_table.bootstrapTable('getData');
+
+            if(courses.length !== 0){
+                var pass = true;
+                $.each(courses, function (index, value) {
+                    console.log(index, value);
+
+                    if(value['course_name'] === empty_text || value['course_name'] == ""){
+                        pass = false;
+                        window.alert('提交失败，课程 '+index+'的名称不可以为空');
+                        return pass
+                    }
+
+                    if(value['grade'] === empty_text || value['grade'] == ""){
+                        pass = false;
+                        window.alert('提交失败，请选择班级'+index+'所属年级');
+                        return pass
+                    }
+                });
+                if(pass){
+                    save_ajax(from_url, 'courses', courses, '{{ school.id }}')
+                }
+            }
+        })
+    </script>
+    <!--保存修改或增加课程信息后的表格 事件 结束 -->
+{% endblock %}

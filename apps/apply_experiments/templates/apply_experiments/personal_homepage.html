@@ -29,6 +29,8 @@
                 <div class="widget-text-box">
                     <div align="center">
                         {% if teacher %}
+                            <button class="btn btn-primary btn-sm" id="cancel_the_teacher_button">我不想当教师了</button>
+                            <br>
                         {% else %}
                             <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#become_a_teacher_modal_table">把自己设置为一名教师</button>
                             <br>
@@ -69,41 +71,63 @@
 
     <!--设置管理员为教师的模态表格-->
     <div id="become_a_teacher_modal_table" class="modal fade" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">设置教师信息</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="ibox-content no-padding">
-                    <ul class="list-group">
-                        <li class="list-group-item">
-                            <label for="from_department">所属系别：</label>
-                            <a id="from_department"></a>
-                        </li>
-                        <li class="list-group-item">
-                            <label for="name">姓名（同超级管理员）：</label>
-                            <a id="name"></a>
-                        </li>
-                        <li class="list-group-item">
-                            <label for="account">账号（工号）：</label>
-                            <a id="account"></a>
-                        </li>
-                        <li class="list-group-item">
-                            <label for="password">密码（同超级管理员）：</label>
-                            <a id="password"></a>
-                        </li>
-                        <li class="list-group-item">
-                            <label for="phone">手机号码（同超级管理员）：</label>
-                            <a id="phone"></a>
-                        </li>
-                    </ul>
+        <div class="modal-dialog" role="document" style="width: 800px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">设置教师信息</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-primary" data-dismiss="modal" id="become_a_teacher_button">确定</button>
+                <div class="modal-body">
+                    <div class="ibox-content no-padding">
+                        {% if departments %}
+                            <ul class="list-group">
+                                <li class="list-group-item form-inline">
+                                    <label for="from_department">所属系别：</label>
+                                    <select id="from_department" class="form-control">
+                                        {% for department in departments %}
+                                            {% if forloop.first %}
+                                                <option value={{ department.id }} selected>{{ department }}</option>
+                                            {% else %}
+                                                <option value={{ department.id }}>{{ department }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                    {#<a id="from_department"></a>#}
+                                </li>
+                                <li class="list-group-item">
+                                    <label for="name">姓 名（默认同超级管理员）：</label>
+{#                                    <a id="teacher_name">#}
+                                        {{ superuser.name }}
+{#                                    </a>#}
+                                </li>
+                                <li class="list-group-item">
+                                    <label for="account">账 号（默认同超级管理员）：</label>
+{#                                    <a id="teacher_account">#}
+                                        {{ superuser.account }}
+{#                                    </a>#}
+                                </li>
+                                <li class="list-group-item">
+                                    <label for="password">密 码（默认同超级管理员）：</label>
+{#                                    <a id="teacher_password">#}
+                                        {{ superuser.password }}
+{#                                    </a>#}
+                                </li>
+                                <li class="list-group-item">
+                                    <label for="phone">手机号码（默认同超级管理员）：</label>
+{#                                    <a id="teacher_phone">#}
+                                        {{ superuser.account }}
+{#                                    </a>#}
+                                </li>
+                            </ul>
+                        {% else %}
+                            <a href="{% url 'super_manage:school_manage' %}">没有系别数据，请前往添加 >>></a>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" data-dismiss="modal" id="become_a_teacher_button">确定</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -112,9 +136,44 @@
 
 {% block add_js %}
     <script>
-        $(function() {
-            $('become_a_teacher_modal_table').on('shown.bs.modal', function () {
-            })
+        function personal_homepage_ajax(url, data){
+            $.ajax({
+                cache:true,//保留缓存数据
+                type:"POST",
+                url:url,
+                data:data,
+                dataType:'JSON',
+                async:true,
+                headers:{'X-CSRFToken':'{{ csrf_token }}'},
+                error:function(request){
+                    console.log("无法提交", request);
+                },
+                success:function(data){
+                    console.log("已提交");
+                    console.log(data);
+                    if(data.status){
+                        console.log('提交成功！');
+                        window.location.href="{% url 'apply_experiments:personal_homepage' %}"
+                    }else{
+                        console.log('错误信息：'+data.message);
+                        alert(data.message)
+                    }
+                }
+            });
+        }
+
+        $('#become_a_teacher_button').click(function () {
+            var from_department_id = document.getElementById('from_department').value;
+
+            personal_homepage_ajax('{% url "super_manage:become_a_teacher" %}', JSON.stringify({'from_department_id': from_department_id}))
         });
+
+        $('#cancel_the_teacher_button').click(function () {
+            personal_homepage_ajax('{% url "super_manage:cancel_the_teacher" %}', JSON.stringify({'superuser_id': {{ superuser.id }} }))
+        });
+
+        /*$(function() {
+            $('become_a_teacher_modal_table').on('shown.bs.modal', function () {})
+        });*/
     </script>
 {% endblock %}

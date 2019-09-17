@@ -178,7 +178,7 @@ class Course(models.Model):
     # 一个班级选择多个课程，一个课程可以被多个班级选择
     classes = models.ManyToManyField(Classes, verbose_name='授课班级')
     # 一个课程可以多个老师讲授，一个老师也可以讲授多个课程
-    teachers = models.ManyToManyField(Teacher, verbose_name='授课老师')
+    teachers = models.ManyToManyField(Teacher, verbose_name='授课教师')
     total_requirements = models.ForeignKey(TotalRequirements, on_delete=models.SET_NULL,
                                            verbose_name='总体实验需求', blank=True, null=True)
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')

@@ -184,27 +184,17 @@ def course_manage(request):
         'institutes': [],
         'classes': [],
         'teachers': [],
+
+        'courses': [],
     }
 
     set_user_for_context(request.session['user_account'], context)
 
     school = context['superuser'].school
-    if school:
-        school_areas = school.school_areas.all()
-        if school_areas:
-            for school_area in school_areas:
-                institutes = school_area.institutes.all()
-                if institutes:
-                    for institute in institutes:
-                        departments = institute.departments.all()
-                        if departments:
-                            for department in departments:
-                                context['departments'].append(department)
-                                teachers = department.teachers.all()
-                                if teachers:
-                                    for teacher in teachers:
-                                        context['teachers'].append(teacher)
-
+    context['institutes'] = get_all_institutes(school)
+    context['classes'] = get_all_classes(school)
+    context['teachers'] = get_all_teachers(school)
+    
     return render(request, 'super_manage/teacher_manage.html', context)
 
 

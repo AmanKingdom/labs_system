@@ -59,7 +59,7 @@ class LabsAttribute(models.Model):
         db_table = 'labs_attribute'
 
     name = models.CharField(max_length=50, verbose_name='属性名称')
-    school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='对应的学校')
+    school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='对应的学校', related_name='labs_attributes')
 
     def __str__(self):
         return self.name
@@ -71,11 +71,12 @@ class Labs(models.Model):
         # 该数据库表名自定义为如下：
         db_table = 'labs'
 
+    institute = models.ForeignKey(Institute, on_delete=models.CASCADE, verbose_name='所属学院', related_name='labs')
     name = models.CharField(max_length=30, verbose_name='实验室名称')
-    institute = models.ForeignKey(Institute, on_delete=models.CASCADE, verbose_name='所属学院')
-    number_of_people = models.IntegerField(verbose_name='容纳人数', default=40)
+    number_of_people = models.CharField(max_length=10, verbose_name='容纳人数', default=40, blank=True, null=True)
     dispark = models.BooleanField(verbose_name='开放情况', default=True)
     attributes = models.ManyToManyField(LabsAttribute, verbose_name='实验室属性')
+    equipments = models.TextField(verbose_name='实验室设备信息', blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -100,7 +101,7 @@ class Classes(models.Model):
         # 该数据库表名自定义为如下：
         db_table = 'classes'
 
-    name = models.IntegerField(verbose_name='班级')
+    name = models.CharField(max_length=30, verbose_name='班级')
     grade = models.ForeignKey(Grade, on_delete=models.CASCADE, verbose_name='所属年级', related_name='classes')
 
     def __str__(self):
@@ -173,7 +174,7 @@ class Course(models.Model):
         # 该数据库表名自定义为如下：
         db_table = 'course'
 
-    institute = models.ForeignKey(Institute, on_delete=models.CASCADE, verbose_name='开课单位')
+    institute = models.ForeignKey(Institute, on_delete=models.CASCADE, verbose_name='开课单位', related_name='courses')
     name = models.CharField(max_length=50, verbose_name='课程名称')
     # 一个班级选择多个课程，一个课程可以被多个班级选择
     classes = models.ManyToManyField(Classes, verbose_name='授课班级')

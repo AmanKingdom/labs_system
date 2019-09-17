@@ -49,7 +49,6 @@ class LabsAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'institute', 'number_of_people', 'dispark')  # 设置展示的列
     search_fields = ('name', 'institute__name')  # 设置可对校区名称或学校名称进行搜索
     list_filter = ('institute', 'dispark')  # 对学院和开放情况设置可筛选
-    fields = ('institute', 'name', 'number_of_people', 'dispark', 'attributes')  # 设置详情信息页面所能显示的字段及其顺序
     filter_horizontal = ('attributes',)  # 多对多选项的更好界面，也可垂直排列：filter_vertical
 
 
@@ -57,7 +56,8 @@ admin.site.register(Labs, LabsAdmin)
 
 
 class LabsAttributeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name')  # 设置展示的列
+    list_display = ('id', 'name', 'school')  # 设置展示的列
+    list_editable = ['name', 'school']  # 设置可行内编辑
 
 
 admin.site.register(LabsAttribute, LabsAttributeAdmin)

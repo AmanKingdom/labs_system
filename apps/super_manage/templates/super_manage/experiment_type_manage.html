@@ -1,0 +1,145 @@
+<!--super_user/experiment_type_manage.html-->
+
+{% extends 'super_manage/base.html' %}
+
+{% block add_css_to_super_manage %}{% endblock %}
+
+{% block super_manage_body %}
+    <div class="row">
+        <div class="col-md-12">
+            <br>
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5>实验类型信息表</h5>
+                    <div class="ibox-tools">
+                        <button id="add_experiment_type_button" class="btn btn-primary">添加实验类型</button>
+                        <button id="save_experiment_type_button" class="btn btn-primary">保存修改</button> |
+                        <button id="remove_experiment_type_button" class="btn btn-danger" disabled>删除实验类型</button>
+                        <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                    </div>
+                </div>
+                <div class="ibox-content">
+                    <table id="experiment_type_table"
+                           class="table-responsive"
+                           data-id-field="id"
+                           data-response-handler="responseHandler"
+                           data-click-to-select="true">
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block add_js_to_super_manage %}
+    <!--当前页面的全局设置-->
+    <script>
+        var from_url = "{% url 'super_manage:experiment_type_manage' %}";
+    </script>
+
+
+
+    <!--实验类型信息表设置相关  开始-->
+    <script>
+        var experiment_type_table = $('#experiment_type_table');
+        var remove_experiment_type_button = $('#remove_experiment_type_button');
+        var selections = [];
+
+        function init_experiment_type_table() {
+            console.log('init_experiment_type_table()执行');
+            experiment_type_table.bootstrapTable('destroy').bootstrapTable({
+                locale: $('#locale').val(),
+                columns: [
+                    [{
+                        field: 'state',
+                        checkbox: true,
+                    }, {
+                        title: '序号',
+                        field: 'id',
+                    },{
+                        field: 'experiment_type_name',
+                        title: '实验类型名称<span class="need">*</span>',
+                        editable:{
+                            type:'text',
+                        },
+                    },{
+                        field:'id_in_database',
+                    }]
+                ]
+            });
+
+            set_a_table(from_url, experiment_type_table, remove_experiment_type_button, 'experiment_types');
+        }
+
+        function load_experiment_type(){
+            console.log('load_experiment_type()执行');
+            var index = 0;
+            {% for experiment_type in experiment_types %}
+                var new_row = {
+                    "id": index,
+                    'experiment_type_name': '{{ experiment_type.name }}',
+                    "id_in_database": '{{ experiment_type.id }}',
+                };
+                // 插入该行
+                experiment_type_table.bootstrapTable('insertRow', {
+                    index: index,
+                    row: new_row
+                });
+                index = index + 1;
+            {% empty %}
+            {% endfor %}
+        }
+
+        $(function() {
+            init_experiment_type_table();
+            load_experiment_type();
+            $('#locale').change(init_experiment_type_table);
+        })
+    </script>
+    <!--实验类型信息表设置相关  结束-->
+
+    <!--动态添加实验类型信息表格行 事件 开始-->
+    <script>
+        $("#add_experiment_type_button").click(function () {
+            // 用index实现编号自增
+            var data = experiment_type_table.bootstrapTable('getData');
+            var index = data.length;
+
+            var new_row = {
+                "id": index,
+                "experiment_type_name": "",
+            };
+
+            // 最后插入该行
+            experiment_type_table.bootstrapTable('insertRow', {
+                index: index,
+                row: new_row
+            });
+        });
+    </script>
+    <!--动态添加实验类型信息表格行 事件 结束-->
+
+    <!--保存修改或增加实验类型信息后的表格 事件 开始 -->
+    <script>
+        $('#save_experiment_type_button').click(function () {
+            var experiment_types = experiment_type_table.bootstrapTable('getData');
+
+            if(experiment_types.length !== 0){
+                var pass = true;
+                $.each(experiment_types, function (index, value) {
+                    console.log(index, value);
+
+                    if(value['experiment_type_name'] === empty_text || value['experiment_type_name'] == ""){
+                        pass = false;
+                        window.alert('提交失败，实验类型 '+index+'的名称不可以为空');
+                        return pass
+                    }
+                });
+                if(pass){
+                    save_ajax(from_url, 'experiment_types', experiment_types, '{{ school.id }}')
+                }
+            }
+        })
+    </script>
+    <!--保存修改或增加实验类型信息后的表格 事件 结束 -->
+{% endblock %}

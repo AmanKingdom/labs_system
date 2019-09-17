@@ -73,7 +73,7 @@
                             type:'select',
                             source: [
                                 {% for institute in institutes %}
-                                    { value: {{ institute.id }}, text: '{{ institute }}'},
+                                    { value: {{ institute.id }}, text: '{{ institute.name }}'},
                                 {% empty %}
                                     { value:"", text: not_found_data},
                                 {% endfor %}
@@ -92,14 +92,14 @@
                             type:'select2',
                             source: [
                                 {% for classes_item in classes %}
-                                    { value: {{ classes_item.id }}, text: '{{ classes_item }}'},
+                                    { value: {{ classes_item.id }}, text: '{{ classes_item.grade.department.name }}{{ classes_item.grade.name }}级{{ classes_item.name }}班'},
                                 {% empty %}
                                     { value:"", text: not_found_data},
                                 {% endfor %}
                             ],
                             select2 : {
                                 multiple : true,
-                                width : '100px'//设置宽，这个一定要，不然显示框很窄
+                                width : '200px'//设置宽，这个一定要，不然显示框很窄
                             }
                         },
                     },{
@@ -136,12 +136,12 @@
                     "id": index,
                     'institute': '{{ c.course.institute.id }}',
                     'course_name': '{{ c.course.name }}',
-                    'classes': {% if c.classes.id %}'{{ c.classes.id }}'{% else %}''{% endif %},
-                    'teachers': {% if c.teachers.id %}'{{ c.teachers.id }}'{% else %}''{% endif %},
+                    'classes': {% if c.classes %}'{{ c.classes }}'{% else %}''{% endif %},
+                    'teachers': {% if c.teachers %}'{{ c.teachers }}'{% else %}''{% endif %},
                     "id_in_database": '{{ c.course.id }}',
                 };
                 // 插入该行
-                classes_table.bootstrapTable('insertRow', {
+                course_table.bootstrapTable('insertRow', {
                     index: index,
                     row: new_row
                 });
@@ -160,9 +160,9 @@
 
     <!--动态添加课程信息表格行 事件 开始-->
     <script>
-        $("#add_classes_button").click(function () {
+        $("#add_course_button").click(function () {
             // 用index实现编号自增
-            var data = classes_table.bootstrapTable('getData');
+            var data = course_table.bootstrapTable('getData');
             var index = data.length;
 
             var new_row = null;
@@ -186,7 +186,7 @@
             }
 
             // 最后插入该行
-            classes_table.bootstrapTable('insertRow', {
+            course_table.bootstrapTable('insertRow', {
                 index: index,
                 row: new_row
             });

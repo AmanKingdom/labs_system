@@ -1,7 +1,8 @@
 from django.urls import path
 
 from apps.super_manage.views import school_manage, create_or_modify_school_ajax, remove_ajax, \
-    save_ajax, classes_manage, teacher_manage, save_term_ajax, become_a_teacher, cancel_the_teacher
+    save_ajax, classes_manage, teacher_manage, save_term_ajax, become_a_teacher, cancel_the_teacher, course_manage, \
+    labs_attribute_manage, experiment_type_manage, lab_manage
 from apps.browse.views import require_login
 
 app_name = 'super_manage'
@@ -10,6 +11,11 @@ urlpatterns = [
     path('school_manage', require_login(school_manage), name='school_manage'),
     path('classes_manage', require_login(classes_manage), name='classes_manage'),
     path('teacher_manage', require_login(teacher_manage), name='teacher_manage'),
+    path('course_manage', require_login(course_manage), name='course_manage'),
+    path('experiment_type_manage', require_login(experiment_type_manage), name='experiment_type_manage'),
+    path('labs_attribute_manage', require_login(labs_attribute_manage), name='labs_attribute_manage'),
+    path('lab_manage', require_login(lab_manage), name='lab_manage'),
+
     path('create_or_modify_school_ajax', create_or_modify_school_ajax, name='create_or_modify_school_ajax'),
     path('remove_ajax', remove_ajax, name='remove_ajax'),
     path('save_ajax', save_ajax, name='save_ajax'),

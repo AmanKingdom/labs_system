@@ -4,7 +4,8 @@ from apps.apply_experiments.models import ExperimentType, SpecialRequirements, E
 
 
 class ExperimentTypeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name')
+    list_display = ('id', 'name', 'school')
+    list_editable = ['name', 'school']  # 设置可行内编辑
 
 
 admin.site.register(ExperimentType, ExperimentTypeAdmin)

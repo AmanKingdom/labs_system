@@ -1,0 +1,240 @@
+<!--super_user/lab_manage.html-->
+
+{% extends 'super_manage/base.html' %}
+
+{% block add_css_to_super_manage %}
+    <!--多项选择的css依赖-->
+    <link href="/static/css_js/css/plugins/select2/select2.min.css" rel="stylesheet" type="text/css">
+    <link href="/static/css_js/css/plugins/select2/select2-bootstrap.css" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block super_manage_body %}
+    {% if institutes %}
+        <div class="row">
+            <div class="col-md-12">
+                <br>
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>实验室信息表</h5>
+                        <div class="ibox-tools">
+                            <button id="add_lab_button" class="btn btn-primary">添加实验室</button>
+                            <button id="save_lab_button" class="btn btn-primary">保存修改</button> |
+                            <button id="remove_lab_button" class="btn btn-danger" disabled>删除实验室</button>
+                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                        <table id="lab_table"
+                               class="table-responsive"
+                               data-id-field="id"
+                               data-response-handler="responseHandler"
+                               data-click-to-select="true">
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        请先添加学院信息，有学院信息后可进行下一步设置 <a href="{% url 'super_manage:school_manage' %}">>>>前往添加</a>
+    {% endif %}
+{% endblock %}
+
+{% block add_js_to_super_manage %}
+    <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
+    <!--当前页面的全局设置-->
+    <script>
+        var from_url = "{% url 'super_manage:lab_manage' %}";
+    </script>
+
+
+
+    <!--实验室信息表设置相关  开始-->
+    <script>
+        var lab_table = $('#lab_table');
+        var remove_lab_button = $('#remove_lab_button');
+        var selections = [];
+
+        function init_lab_table() {
+            console.log('init_lab_table()执行');
+            lab_table.bootstrapTable('destroy').bootstrapTable({
+                locale: $('#locale').val(),
+                columns: [
+                    [{
+                        field: 'state',
+                        checkbox: true,
+                    }, {
+                        title: '序号',
+                        field: 'id',
+                    },{
+                        field:'institute',
+                        title: '所属学院<span class="need">*</span>',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% for institute in institutes %}
+                                    { value: {{ institute.id }}, text: '{{ institute.name }}'},
+                                {% empty %}
+                                    { value:"", text: not_found_data},
+                                {% endfor %}
+                            ]
+                        },
+                    },{
+                        field: 'lab_name',
+                        title: '实验室名称<span class="need">*</span>',
+                        editable:{
+                            type:'text',
+                        },
+                    },{
+                        field: 'number_of_people',
+                        title: '容纳人数',
+                        editable:{
+                            type:'text',
+                        },
+                    },{
+                        field:'dispark',
+                        title: '开放情况<span class="need">*</span>',
+                        editable:{
+                            type:'select',
+                            value: 1,
+                            source: [
+                                { value: 1, text: '开放'},
+                                { value: 0, text: '不开放'},
+                            ]
+                        },
+                    },{
+                        field:'labs_attributes',
+                        title: '实验室属性',
+                        editable:{
+                            type:'select2',
+                            source: [
+                                {% for labs_attribute in labs_attributes %}
+                                    { value: {{ labs_attribute.id }}, text: '{{ labs_attribute.name }}'},
+                                {% empty %}
+                                    { value:"", text: not_found_data},
+                                {% endfor %}
+                            ],
+                            select2 : {
+                                multiple : true,
+                                width : '100px'//设置宽，这个一定要，不然显示框很窄
+                            }
+                        },
+                    },{
+                        field: 'equipments',
+                        title: '设备情况（建议填写方式为：设备+数量）',
+                        editable:{
+                            type:'textarea',
+                            rows:5,
+                            mode:"popup",
+                        },
+                    },{
+                        field:'id_in_database',
+                    }]
+                ]
+            });
+
+            set_a_table(from_url, lab_table, remove_lab_button, 'labs');
+        }
+
+        function load_lab(){
+            console.log('load_labs()执行');
+            var index = 0;
+            {% for l in labs %}
+                var new_row = {
+                    "id": index,
+                    'institute': '{{ l.lab.institute.id }}',
+                    'lab_name': '{{ l.lab.name }}',
+                    'number_of_people': '{{ l.lab.number_of_people }}',
+                    'dispark': {% if l.lab.dispark %}1{% else %}0{% endif %},
+                    'labs_attributes': '{{ l.labs_attributes }}',
+                    'equipments': '{{ l.lab.equipments }}',
+                    "id_in_database": '{{ l.lab.id }}',
+                };
+                console.log('实验室开放：{{ l.lab.dispark }}');
+                // 插入该行
+                lab_table.bootstrapTable('insertRow', {
+                    index: index,
+                    row: new_row
+                });
+                index = index + 1;
+            {% empty %}
+            {% endfor %}
+        }
+
+        $(function() {
+            init_lab_table();
+            load_lab();
+            $('#locale').change(init_lab_table);
+        })
+    </script>
+    <!--实验室信息表设置相关  结束-->
+
+    <!--动态添加实验室信息表格行 事件 开始-->
+    <script>
+        $("#add_lab_button").click(function () {
+            // 用index实现编号自增
+            var data = lab_table.bootstrapTable('getData');
+            var index = data.length;
+
+            var new_row = null;
+
+            if(index == 0){
+                new_row = {
+                    "id": index,
+                    "institute": "",
+                    "lab_name": "",
+                    "number_of_people": "",
+                    "dispark": "",
+                    "labs_attributes": "",
+                    "equipments": "",
+                };
+            }else{
+                new_row = {
+                    "id": index,
+                    "institute": data[index-1].institute,
+                    "lab_name": "",
+                    "number_of_people": data[index-1].number_of_people,
+                    "dispark": data[index-1].dispark,
+                    "labs_attributes": data[index-1].labs_attributes,
+                    "equipments": "",
+                };
+            }
+
+            // 最后插入该行
+            lab_table.bootstrapTable('insertRow', {
+                index: index,
+                row: new_row
+            });
+        });
+    </script>
+    <!--动态添加实验室信息表格行 事件 结束-->
+
+    <!--保存修改或增加实验室信息后的表格 事件 开始 -->
+    <script>
+        $('#save_lab_button').click(function () {
+            var labs = lab_table.bootstrapTable('getData');
+
+            if(labs.length !== 0){
+                var pass = true;
+                $.each(labs, function (index, value) {
+                    console.log(index, value);
+
+                    if(value['lab_name'] === empty_text || value['lab_name'] == ""){
+                        pass = false;
+                        window.alert('提交失败，实验室 '+index+'的名称不可以为空');
+                        return pass
+                    }
+
+                    if(value['institute'] === empty_text || value['institute'] == "" || value['institute'] == null){
+                        pass = false;
+                        window.alert('提交失败，请选择实验室'+index+'所属学院');
+                        return pass
+                    }
+                });
+                if(pass){
+                    save_ajax(from_url, 'labs', labs, '{{ school.id }}')
+                }
+            }
+        })
+    </script>
+    <!--保存修改或增加实验室信息后的表格 事件 结束 -->
+{% endblock %}

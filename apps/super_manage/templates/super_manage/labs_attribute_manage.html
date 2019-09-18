@@ -5,6 +5,7 @@
 {% block add_css_to_super_manage %}{% endblock %}
 
 {% block super_manage_body %}
+    {% if superuser.school %}
     <div class="row">
         <div class="col-md-12">
             <br>
@@ -29,6 +30,9 @@
             </div>
         </div>
     </div>
+    {% else %}
+        <a href="{% url 'super_manage:school_manage' %}">还没有学校信息，请先添加学校信息 >>> </a>
+    {% endif %}
 {% endblock %}
 
 {% block add_js_to_super_manage %}

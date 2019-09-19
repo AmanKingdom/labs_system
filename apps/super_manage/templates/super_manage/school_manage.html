@@ -6,13 +6,8 @@
     <style>
         #school_name{
             width:15%;
-        }
-        #school_name, #term{
             height: 40px;
             position: absolute;
-        }
-        #begin_date{
-            width: 60%;
         }
         hr{
             margin-bottom: 0;
@@ -28,19 +23,6 @@
             <label for="school_name">学校名称<span class="need">*</span>：</label> <a id="school_name">{{ school.name }}</a>
             <a onclick="submit_school()" title="保存修改" class="pull-right"><i class="fa fa-save"></i></a>
         </div>
-        {% if school.name %}
-            <div class="col-md-8">
-                <div class="row">
-                    <div class="col-md-5">
-                        <label>当前学年学期：</label>{{ school_year }} &nbsp;<a id="term"></a>
-                    </div>
-                    <div class="col-md-6">
-                        <label>设置本学期开始时间：</label><a id="begin_date"></a>
-                        <a onclick="save_term()" title="保存修改" class="pull-right"><i class="fa fa-save"></i></a>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
     </div>
     <hr>
 
@@ -167,8 +149,6 @@
 {% endblock %}
 
 {% block add_js_to_super_manage %}
-    <script src="/static/css_js/js/moment.js"></script>
-
     <!--当前页面的全局设置-->
     <script>
         var from_url = "{% url 'super_manage:school_manage' %}";
@@ -182,43 +162,7 @@
                 placeholder:'请设置您的学校',
                 emptytext: '请设置您的学校',
             });
-
-            $('#term').editable({
-                type: 'select',
-                value: {% if term.name %}'{{ term.name }}'{% else %}'第一学期'{% endif %},
-                source: [
-                    {value: '第一学期', text: '第一学期'},
-                    {value: '第二学期', text: '第二学期'},
-                ],
-            });
-
-            $('#begin_date').editable({
-                type: 'combodate',
-                title: '建议直接设置开学第一天',
-                format: 'YYYY-MM-DD',   // 向服务器发送值的格式
-                viewformat: 'YYYY-MM-DD',   // 页面上显示日期的格式
-                template: 'YYYY 年 MMMM 月 D 日',    // 显示下拉列表的模板
-                emptytext:"----/--/--",
-                combodate: {
-                    minYear: 2019,
-                    maxYear: 2025,
-                    minuteStep: 1,
-                },
-                value: '{{ term_begin_date }}', // 要求后台传入的term_begin_date格式为YYYY-MM-DD
-                mode:"popup",   // 设置为弹出方式
-                placement: 'bottom',    // 设置弹出框的位置
-            });
         });
-
-        // 保存学期信息
-        function save_term() {
-            var begin_date = $('#begin_date').html();
-            var term_name = $('#term').html();
-            console.log('保存学期开始时间：', begin_date, '保存学期：', term_name);
-            var to_url = "{% url 'super_manage:save_term_ajax' %}";
-            var data = {'term_id':'{{ term.id }}', 'term_name': term_name, 'begin_date': begin_date};
-            base_ajax(from_url, to_url, data);
-        }
 
         // 提交学校信息
         function submit_school(){

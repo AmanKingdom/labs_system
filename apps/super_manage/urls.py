@@ -2,12 +2,14 @@ from django.urls import path
 
 from apps.super_manage.views import school_manage, create_or_modify_school_ajax, remove_ajax, \
     save_ajax, classes_manage, teacher_manage, save_term_ajax, become_a_teacher, cancel_the_teacher, course_manage, \
-    labs_attribute_manage, experiment_type_manage, lab_manage
+    labs_attribute_manage, experiment_type_manage, lab_manage, system_settings, personal_info
 from apps.browse.views import require_login
 
 app_name = 'super_manage'
 
 urlpatterns = [
+    path('personal_info', require_login(personal_info), name='personal_info'),
+    path('system_settings', require_login(system_settings), name='system_settings'),
     path('school_manage', require_login(school_manage), name='school_manage'),
     path('classes_manage', require_login(classes_manage), name='classes_manage'),
     path('teacher_manage', require_login(teacher_manage), name='teacher_manage'),

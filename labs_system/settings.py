@@ -91,7 +91,7 @@ DATABASES = {
         'USER': 'root',
         'PASSWORD': 'dgut520!',
         'HOST': 'localhost',
-        'PORT': '3307',
+        'PORT': '3306',
 
         # 'OPTIONS': {
         #     'read_default_file': '/path/to/my.cnf',

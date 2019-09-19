@@ -1,10 +1,10 @@
-<!--personal_homepage.html-->
+<!--super_manage/personal_info.html-->
 
-{% extends 'apply_experiments/base.html' %}
+{% extends 'super_manage/base.html' %}
 
-{% block add_css %}{% endblock %}
+{% block add_css_to_super_manage %}{% endblock %}
 
-{% block body_block %}
+{% block super_manage_body %}
     <div class="row">
         {% if superuser %}
             <div {% if teacher %}class="col-md-6"{% else %}class="col-md-6 col-md-offset-3"{% endif %}>
@@ -134,7 +134,7 @@
     </div>
 {% endblock %}
 
-{% block add_js %}
+{% block add_js_to_super_manage %}
     <script>
         function personal_homepage_ajax(url, data){
             $.ajax({
@@ -153,7 +153,7 @@
                     console.log(data);
                     if(data.status){
                         console.log('提交成功！');
-                        window.location.href="{% url 'apply_experiments:personal_homepage' %}"
+                        window.location.href="{% url 'super_manage:personal_info' %}"
                     }else{
                         console.log('错误信息：'+data.message);
                         alert(data.message)

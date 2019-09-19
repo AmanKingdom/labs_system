@@ -1,13 +1,13 @@
-<!--change_experiments.html-->
+<!--apply_experiments/change_experiments.html-->
 
 {% extends 'apply_experiments/base.html' %}
-{% block add_css %}
+{% block add_css_to_apply_experiments %}
     <!--多项选择的css依赖-->
     <link href="/static/css_js/css/plugins/select2/select2.min.css" rel="stylesheet" type="text/css">
     <link href="/static/css_js/css/plugins/select2/select2-bootstrap.css" rel="stylesheet" type="text/css">
 {% endblock %}
 
-{% block body_block %}
+{% block apply_experiments_body %}
     {% if status %}
         <div class="ibox float-e-margins">
             <div class="ibox-title row">
@@ -94,7 +94,7 @@
 {% endblock %}
 
 <!--子html文件用这个填充块添加js样式-->
-{% block add_js %}
+{% block add_js_to_apply_experiments %}
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
 
     <!--实验对应课程可修改信息的配置 开始-->

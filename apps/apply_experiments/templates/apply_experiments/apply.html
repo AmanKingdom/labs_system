@@ -2,13 +2,13 @@
 
 {% extends 'apply_experiments/base.html' %}
 
-{% block add_css %}
+{% block add_css_to_apply_experiments %}
     <!--多项选择的css依赖-->
     <link href="/static/css_js/css/plugins/select2/select2.min.css" rel="stylesheet" type="text/css">
     <link href="/static/css_js/css/plugins/select2/select2-bootstrap.css" rel="stylesheet" type="text/css">
 {% endblock %}
 
-{% block body_block %}
+{% block apply_experiments_body %}
     <div class="ibox float-e-margins">
         <div class="ibox-title">
             <h5>实验对应的课程信息</h5>
@@ -19,7 +19,7 @@
             </div>
         </div>
         <div class="ibox-content">
-            <table data-toggle="table" id="course_info_table" class="table-hover table-responsive">
+            <table data-toggle="table" id="course_info_table" class="table-hover" style="table-layout:fixed;word-break:break-all;">
                 <thead><tr>
                     <th data-field="department">教师所属系<span class="need">*</span></th>
                     <th data-field="teacher_name">教师姓名<span class="need">*</span></th>
@@ -68,10 +68,10 @@
                             {% endif %}
                         </div>
                     </td>
-                    <td><a href="#" id="teaching_materials" data-type="textarea"></a></td>
-                    <td><a href="#" id="consume_requirements" data-type="textarea"></a></td>
-                    <td><a href="#" id="system_requirements" data-type="textarea"></a></td>
-                    <td><a href="#" id="soft_requirements" data-type="textarea"></a></td>
+                    <td><a id="teaching_materials" data-type="textarea"></a></td>
+                    <td><a id="consume_requirements" data-type="textarea"></a></td>
+                    <td><a id="system_requirements" data-type="textarea"></a></td>
+                    <td><a id="soft_requirements" data-type="textarea"></a></td>
                 </tr></tbody>
             </table>
         </div>
@@ -195,8 +195,13 @@
 
 {% endblock %}
 
-{% block add_js %}
+{% block add_js_to_apply_experiments %}
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
+
+    <!--本页面的一些全局配置-->
+    <script>
+        var global_current_special_requirements_row = null;  // 临时存放当前行的特殊需求数据
+    </script>
 
     <!--课程信息表配置 开始-->
     <script>

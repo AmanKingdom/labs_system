@@ -131,6 +131,68 @@ def get_all_labs(school):
     return labs
 
 
+# 个人主页
+def personal_info(request):
+    context = {
+        'title': '个人主页',
+        'personal_info_active': True,  # 激活导航
+        'superuser': None,
+        'teacher': None,
+
+        'course_amount': None,
+        'departments': [],
+        'term': None,
+    }
+
+    user = set_user_for_context(request.session['user_account'], context)
+    if user == 'superuser_is_teacher' or user == 'teacher':
+        context['course_amount'] = len(Course.objects.filter(teachers__account=context['teacher'].account))
+        context['term'] = Term.objects.filter(school=context['superuser'].school)[0]
+
+    if context['superuser']:
+        school = context['superuser'].school
+        if school:
+            school_areas = school.school_areas.all()
+            if school_areas:
+                for school_area in school_areas:
+                    institutes = school_area.institutes.all()
+                    if institutes:
+                        for institute in institutes:
+                            departments = institute.departments.all()
+                            if departments:
+                                for department in departments:
+                                    context['departments'].append(department)
+
+    return render(request, 'super_manage/personal_info.html', context)
+
+
+def system_settings(request):
+    context = {
+        'title': '系统设置',
+        'system_settings_active': True,  # 激活导航
+        'superuser': None,
+        'teacher': None,
+        'school': None,
+
+        'school_year': None,
+        'term': None,
+        'term_begin_date': None,
+    }
+
+    set_user_for_context(request.session['user_account'], context)
+    if context['superuser'].school:
+        context['school'] = context['superuser'].school
+
+    # 学年学期数据要在判断设置完系统学年信息后才能获取
+    context['school_year'] = SchoolYear.objects.all()[0]
+
+    if context['school']:
+        context['term'] = Term.objects.filter(school=context['school'])[0]
+        context['term_begin_date'] = context['term'].begin_date
+
+    return render(request, 'super_manage/system_settings.html', context)
+
+
 def school_manage(request):
     context = {
         'title': '学校管理',
@@ -143,10 +205,6 @@ def school_manage(request):
         'institutes': [],
         'departments': [],
         'grades': [],
-
-        'school_year': None,
-        'term': None,
-        'term_begin_date': None,
     }
 
     set_user_for_context(request.session['user_account'], context)
@@ -155,13 +213,9 @@ def school_manage(request):
         context['school'] = context['superuser'].school
 
     set_system_school_year()
-    # 学年学期数据要在判断设置完系统学年信息后才能获取
-    context['school_year'] = SchoolYear.objects.all()[0]
 
     if context['school']:
         context['school_areas'] = context['school'].school_areas.all()
-        context['term'] = Term.objects.filter(school=context['school'])[0]
-        context['term_begin_date'] = context['term'].begin_date
 
     if context['school_areas']:
         for school_area in context['school_areas']:

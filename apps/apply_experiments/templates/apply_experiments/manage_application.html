@@ -1,9 +1,9 @@
-<!--manage_application.html-->
+<!--apply_experiments/manage_application.html-->
 
 {% extends 'apply_experiments/base.html' %}
-{% block add_css %}{% endblock %}
+{% block add_css_to_apply_experiments %}{% endblock %}
 
-{% block body_block %}
+{% block apply_experiments_body %}
     <div class="ibox float-e-margins">
         <div class="ibox-title row">
             {#                <div class="col-md-9">#}
@@ -62,7 +62,7 @@
 {% endblock %}
 
 <!--子html文件用这个填充块添加js样式-->
-{% block add_js %}
+{% block add_js_to_apply_experiments %}
     <script>
         $("#all_applications_table").bootstrapTable({
             height:550,

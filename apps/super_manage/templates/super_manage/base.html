@@ -1,141 +1,416 @@
-<!--super_user/base.html-->
+<!--super_manage/base.html-->
 
-{% extends 'apply_experiments/base.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-{% block add_css %}
-    <style>
-        .table, .ibox{
-            margin-bottom: 0;
+    <link rel="icon" href="/static/image/default/logo.svg">
+
+    <title>{% if title %}{{ title }}{% else %}实验室管理系统{% endif %}</title>
+
+    <link href="/static/css_js/css/bootstrap.min.css" rel="stylesheet">
+
+    <link href="/static/css_js/font-awesome/css/font-awesome.css" rel="stylesheet">
+    <link href="/static/css_js/css/style.css" rel="stylesheet">
+
+    <!--bootstrap-table的依赖-->
+    <link rel="stylesheet" href="/static/css_js/css/bootstrap-table.css">
+
+    <!--editable的依赖-->
+    <link href="/static/css_js/css/bootstrap-editable.css" rel="stylesheet">
+
+    <style type="text/css">
+        .need{
+            color: #ff0000;
         }
+
+        a.editable-empty,a.editable,a.editable-click{
+            width: 90%;
+            height: 25px;
+            display: inline-block;
+        }
+
+        .editable-click,
+        a.editable-click,
+        a.editable-click:hover {
+            {#text-decoration: none;#}
+            border-bottom: dashed 0px #0088cc;
+            {#white-space: nowrap;#}
+            /* 重写去除下边框 */
+        }
+
+        /* 设置input的样式
+            bootstrap table padding为8px,加上左border为1px
+            editable input 的样式中padding:6 24 6 2;border 1px;
+        */
+        {#.inputclass{#}
+        {#    width:100% !important;min-width:87px;#}
+        {#height:30px;#}
+        {#    padding-left: 2px;#}
+        {#}#}
+
         #body_div, #page-wrapper{
             height: auto;
         }
     </style>
+
+    <!--子html文件用这个填充块添加css样式-->
     {% block add_css_to_super_manage %}{% endblock %}
-{% endblock %}
+</head>
 
-{% block body_block %}
-    {% block super_manage_body %}{% endblock %}
-{% endblock %}
+<body>
+<div id="wrapper">
+    <nav class="navbar-default navbar-static-side" role="navigation">
+        <div class="sidebar-collapse">
+            <ul class="nav metismenu" id="side-menu">
+                <li class="nav-header">
+                    <div class="dropdown profile-element text-center">
+                        <span>
+                            <img alt="image" class="img-circle" src="/static/image/default/dog.jpg" style="width: 80px"/>
+                        </span>
+                        <a data-toggle="dropdown" class="dropdown-toggle" href="#">
+                            <span class="clear">
+                                <span class="block m-t-xs">
+                                    <strong class="font-bold">
+                                        {% if superuser %}
+                                            {{ superuser.name }}
+                                        {% endif %} &nbsp
+                                        {% if teacher %}
+                                            {{ teacher.name }}
+                                        {% endif%}
+                                    </strong>
+                                </span>
+                                <span class="text-muted text-xs block">
+                                    {% if superuser %}
+                                        超级管理员
+                                    {% endif %} &nbsp
+                                    {% if teacher %}
+                                        教师
+                                    {% endif %}
+                                    <b class="caret"></b>
+                                </span>
+                            </span>
+                        </a>
+                        <ul class="dropdown-menu animated fadeInRight m-t-xs">
+                            <li><a href="{% url 'browse:logout' %}">退出账号</a></li>
+                        </ul>
+                    </div>
+                    <div class="logo-element">
+                        <img alt="image" class="img-circle" src="/static/image/default/head.svg" style="width: 40px"/>
+                    </div>
+                </li>
 
-{% block add_js %}
-    <!--通用的ajax提交 from_url为刷新返回地址，to_url为提交地址，接收的data为json即可，在函数内会序列化处理-->
-    <script>
-        function base_ajax(from_url, to_url, data) {
-            $.ajax({
-                cache:true,//保留缓存数据
-                type:"POST",
-                url:to_url,
-                data:JSON.stringify(data),
-                dataType:'JSON',
-                async:true,
-                headers:{'X-CSRFToken':'{{ csrf_token }}'},
-                error:function(request){
-                    console.log("提交失败", request);
-                    alert('提交失败'+request.toString());
-                },
-                success:function(data){
-                    console.log("已提交");
-                    console.log(data);
-                    if(data.status){
-                        console.log('提交成功！');
-                        window.location.href=from_url;
-                    }else{
-                        console.log('提交失败：'+data.message);
-                        alert(data.message);
-                    }
-                }
-            });
-        }
-    </script>
+                <li {% if personal_info_active %}class="active"{% endif %}>
+                    <a href="{% url 'super_manage:personal_info' %}">
+                        <i class="fa fa-user-circle-o"></i><span class="nav-label">个人信息</span>
+                    </a>
+                </li>
+                {% if superuser %}
+                    <li {% if system_settings_active %}class="active"{% endif %}>
+                        <a href="{% url 'super_manage:system_settings' %}">
+                            <i class="fa fa-cog"></i><span class="nav-label">系统设置</span>
+                        </a>
+                    </li>
+                {% endif %}
 
-    <!--通用的保存方法-->
-    <script>
-        //  传入数据为：保存后返回的地址，保存对象的模型类型字符串，保存对象数据，保存对象所在学校的id
-        function save_ajax(from_url, save_objects_model, save_objects_data, school_id){
-            var to_url = "{% url 'super_manage:save_ajax' %}";
-            var data = {'save_objects_model': save_objects_model, 'save_objects_data':save_objects_data, 'school_id': school_id};
+                <li class="active">
+                    <a href="#"><i class="fa fa-edit"></i> <span class="nav-label">申请实验室</span><span class="fa arrow"></span></a>
+                    <ul class="nav nav-second-level collapse">
+                        <li {% if apply_experiments_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:apply' %}">实验课申请</a></li>
+                        <li {% if apply_info_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:manage_application' %}">申请信息管理</a></li>
+                    </ul>
+                </li>
 
-            base_ajax(from_url, to_url, data);
-        }
-    </script>
+                <!--超级管理员所使用的导航块-->
+                {% if superuser %}
+                    <li class="active">
+                        <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">教学信息管理</span><span class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            <li {% if school_active %}class="active"{% endif %}><a href="{% url 'super_manage:school_manage' %}">学校管理</a></li>
+                            <li {% if classes_active %}class="active"{% endif %}><a href="{% url 'super_manage:classes_manage' %}">班级管理</a></li>
+                            <li {% if teacher_active %}class="active"{% endif %}><a href="{% url 'super_manage:teacher_manage' %}">教师管理</a></li>
+                            <li {% if course_active %}class="active"{% endif %}><a href="{% url 'super_manage:course_manage' %}">课程管理</a></li>
+                        </ul>
+                    </li>
+                    <li class="active">
+                        <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">实验室信息管理</span><span class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            <li {% if lab_active %}class="active"{% endif %}><a href="{% url 'super_manage:lab_manage' %}">实验室管理</a></li>
+                            <li {% if labs_attribute_active %}class="active"{% endif %}><a href="{% url 'super_manage:labs_attribute_manage' %}">实验室属性</a></li>
+                        </ul>
+                    </li>
+                    <li class="active">
+                        <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">实验课管理</span><span class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            <li {% if experiment_type_active %}class="active"{% endif %}><a href="{% url 'super_manage:experiment_type_manage' %}">实验类型管理</a></li>
+                            <li {% if school_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:weeks_analyze' %}">实验课管理</a></li>
+                            <li {% if classes_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">智能排课</a></li>
+                            <li {% if teachers_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">发布公告</a></li>
+                        </ul>
+                    </li>
+                {% endif %}
 
-    <!--通用的删除方法-->
-    <script>
-        function remove_ajax(from_url, remove_json){
-            var url = "{% url 'super_manage:remove_ajax' %}";
-            var data = remove_json;
-            base_ajax(from_url, url, data);
-        }
-    </script>
+                <!--统计分析页面是不论用户是超级管理员还是教师都会展示的，但应该放在最后-->
+                <li class="active">
+                    <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">统计分析</span><span class="fa arrow"></span></a>
+                    <ul class="nav nav-second-level collapse">
+                        <li {% if weeks_analyze_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:weeks_analyze' %}">周次安排表</a></li>
+                        <li {% if rooms_analyze_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">实验室安排表</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
 
-    <!--通用的设置表信息和动态事件方法-->
-    <script>
-        // 此处的model传入字符串，用于标识对象是什么类型的模型
-        function set_a_table(from_url, table, remove_button, model){
-            function get_id_selections(table) {
-                return $.map(table.bootstrapTable('getSelections'), function (row) {
-                    return row.id
-                })
-            }
+    <div id="page-wrapper" class="gray-bg dashbard-1">
+        <div class="row border-bottom">
+            <nav class="navbar navbar-static-top" role="navigation" style="margin-bottom: 0">
+                <div class="navbar-header">
+                    <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i> </a>
+                </div>
+                <ul class="nav navbar-top-links navbar-right">
+                    <li class="dropdown">
+                        <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
+                            <i class="fa fa-envelope"></i>  <span class="label label-warning">16</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-messages">
+                            <li>
+                                <div class="dropdown-messages-box">
+                                    <div class="media-body">
+                                        <a href="#">
+                                            <small class="pull-right text-navy">1小时前</small>
+                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>
+                                            <small class="text-muted">2019.05.21 16:58</small>
+                                        </a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="divider"></li>
+                            <li>
+                                <div class="dropdown-messages-box">
+                                    <div class="media-body">
+                                        <a href="#">
+                                            <small class="pull-right">6小时前</small>
+                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>
+                                            <small class="text-muted">2019.05.21 16:58</small>
+                                        </a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="divider"></li>
+                            <li>
+                                <div class="dropdown-messages-box">
+                                    <div class="media-body">
+                                        <a href="#">
+                                            <small class="pull-right">8小时前</small>
+                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>
+                                            <small class="text-muted">2019.05.21 16:58</small>
+                                        </a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="divider"></li>
+                            <li>
+                                <div class="text-center link-block">
+                                    <a href="#">
+                                        <i class="fa fa-envelope"></i> <strong>阅读所有消息</strong>
+                                    </a>
+                                </div>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="{% url 'browse:logout' %}">
+                            <i class="fa fa-sign-out"></i> 退出账户
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="row border-bottom white-bg dashboard-header">
+            {% block super_manage_body %}{% endblock %}
+        </div>
+    </div>
+</div>
 
-            function get_id_in_database_selections(table) {
-                return $.map(table.bootstrapTable('getSelections'), function (row) {
-                    return row.id_in_database
-                })
-            }
+<!-- Mainly scripts -->
+<script src="/static/css_js/js/jquery-3.1.1.min.js"></script>
+<script src="/static/css_js/js/bootstrap.min.js"></script>
+<script src="/static/css_js/js/plugins/metisMenu/jquery.metisMenu.js"></script>
+<script src="/static/css_js/js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
 
-            // 隐藏数据库id列
-            table.bootstrapTable('hideColumn', 'id_in_database');
+<!-- Custom and plugin javascript 和左侧主导航栏有关 -->
+<script src="/static/css_js/js/inspinia.js"></script>
+<script src="/static/css_js/js/plugins/pace/pace.min.js"></script>
 
-            table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table',
-                function () {
-                    remove_button.prop('disabled', !table.bootstrapTable('getSelections').length);
+<!-- jQuery UI -->
+<script src="/static/css_js/js/plugins/jquery-ui/jquery-ui.min.js"></script>
 
-                    // save your data, here just save the current page
-                    selections = get_id_selections(table)
-                    // push or splice the selections if you want to save all data selections
-                }
-            );
-            table.on('all.bs.table', function (e, name, args) {
-                console.log(name, args)
-            });
+<!-- add bootstrap table的js依赖-->
+<script type="text/javascript" src="/static/css_js/js/bootstrap-table.js"></script>
+<!-- add bootstrap table的中文js依赖-->
+<script type="text/javascript" src="/static/css_js/js/bootstrap-table-zh-CN.js"></script>
+<script type="text/javascript" src="/static/css_js/js/bootstrap-table-export.js"></script>
 
-            remove_button.click(function () {
-                var ids = get_id_selections(table);
-                var ids_in_database = get_id_in_database_selections(table);
-                var model_name = "";
-                if(model == 'school_areas'){
-                    model_name = '校区'
-                }else if(model == 'institutes'){
-                    model_name = '学院'
-                }else if(model == 'departments'){
-                    model_name = '系别'
-                }else if(model == 'grades'){
-                    model_name = '年级'
-                }else if(model == 'classes'){
-                    model_name = '班级'
-                }else if(model == 'teachers'){
-                    model_name = '教师'
-                }else if(model == 'courses'){
-                    model_name = '课程'
-                }
+<!-- editable 依赖 -->
+<script src="/static/css_js/js/bootstrap-editable.js"></script>
+<!-- editable和table 结合的依赖 -->
+<script src="/static/css_js/js/bootstrap-table-editable.js"></script>
 
-                var remove_flag = confirm('您正在删除'+model_name+ids+'，将会连同该'+model_name+'下的所有子关联表都删除（如果有的话），确定删除吗？');
+<script>
+    /* window.onload = function(){
+         var h=document.documentElement.clientHeight-40;//可见区域高度
+         ss=document.getElementById("base_div");
+         ss.style.height=h+"px";
+     }*/
+</script>
 
-                if(remove_flag) {
-                    var remove_json = {
-                        "remove_objects_model": model,
-                        "remove_ids": ids_in_database,
-                    };
+<!--全局的bootstrap table 和 X-editable 配置 开始-->
+<script>
+    var empty_text = '       ';    // 全局性的空文本
+    var not_found_data = '暂无数据';    // 全局性的找不到数据提示文本
 
-                    remove_ajax(from_url, remove_json);
+    $.fn.editable.defaults.mode = 'inline';//设置行内编辑模式
+    $.fn.editable.defaults.showbuttons = false;//设置所有的元素不显示按钮
+    $.fn.editable.defaults.emptytext = empty_text;//设置默认的空文本
+    $.fn.editable.defaults.onblur= "submit"; //表示鼠标离开输入框即进行提交保存操作
+    $.fn.editable.defaults.autotext = "always";
+    $.fn.editable.defaults.inputclass="inputclass";
+    //上面这句很重要，作用为是否显示select的文本。当select中source中的value和text均为文本时，需要声明，不然select框会直接显示值
+
+    $.fn.bootstrapTable.columnDefaults.valign = 'middle';//垂直居中
+    $.fn.bootstrapTable.columnDefaults.align = 'center';//水平居中
+    {#$.fn.bootstrapTable.columnDefaults.class='not-wrap';#}
+    $.fn.bootstrapTable.columnDefaults.undefinedText = empty_text;//当表格项没有数据时显示的内容
+    $.fn.bootstrapTable.defaults.striped = true;
+</script>
+<!--全局的bootstrap table 和 X-editable 配置 结束-->
+
+
+<!--通用的ajax提交 from_url为刷新返回地址，to_url为提交地址，接收的data为json即可，在函数内会序列化处理-->
+<script>
+    function base_ajax(from_url, to_url, data) {
+        $.ajax({
+            cache:true,//保留缓存数据
+            type:"POST",
+            url:to_url,
+            data:JSON.stringify(data),
+            dataType:'JSON',
+            async:true,
+            headers:{'X-CSRFToken':'{{ csrf_token }}'},
+            error:function(request){
+                console.log("提交失败", request);
+                alert('提交失败'+request.toString());
+            },
+            success:function(data){
+                console.log("已提交");
+                console.log(data);
+                if(data.status){
+                    console.log('提交成功！');
+                    window.location.href=from_url;
                 }else{
-                    alert('我就知道你不想删除她的')
+                    console.log('提交失败：'+data.message);
+                    alert(data.message);
                 }
+            }
+        });
+    }
+</script>
+
+<!--通用的保存方法-->
+<script>
+    //  传入数据为：保存后返回的地址，保存对象的模型类型字符串，保存对象数据，保存对象所在学校的id
+    function save_ajax(from_url, save_objects_model, save_objects_data, school_id){
+        var to_url = "{% url 'super_manage:save_ajax' %}";
+        var data = {'save_objects_model': save_objects_model, 'save_objects_data':save_objects_data, 'school_id': school_id};
+
+        base_ajax(from_url, to_url, data);
+    }
+</script>
+
+<!--通用的删除方法-->
+<script>
+    function remove_ajax(from_url, remove_json){
+        var url = "{% url 'super_manage:remove_ajax' %}";
+        var data = remove_json;
+        base_ajax(from_url, url, data);
+    }
+</script>
+
+<!--通用的设置表信息和动态事件方法-->
+<script>
+    // 此处的model传入字符串，用于标识对象是什么类型的模型
+    function set_a_table(from_url, table, remove_button, model){
+        function get_id_selections(table) {
+            return $.map(table.bootstrapTable('getSelections'), function (row) {
+                return row.id
             })
         }
-    </script>
 
-    {% block add_js_to_super_manage %}{% endblock %}
-{% endblock %}
+        function get_id_in_database_selections(table) {
+            return $.map(table.bootstrapTable('getSelections'), function (row) {
+                return row.id_in_database
+            })
+        }
+
+        // 隐藏数据库id列
+        table.bootstrapTable('hideColumn', 'id_in_database');
+
+        table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table',
+            function () {
+                remove_button.prop('disabled', !table.bootstrapTable('getSelections').length);
+
+                // save your data, here just save the current page
+                selections = get_id_selections(table)
+                // push or splice the selections if you want to save all data selections
+            }
+        );
+        table.on('all.bs.table', function (e, name, args) {
+            console.log(name, args)
+        });
+
+        remove_button.click(function () {
+            var ids = get_id_selections(table);
+            var ids_in_database = get_id_in_database_selections(table);
+            var model_name = "";
+            if(model == 'school_areas'){
+                model_name = '校区'
+            }else if(model == 'institutes'){
+                model_name = '学院'
+            }else if(model == 'departments'){
+                model_name = '系别'
+            }else if(model == 'grades'){
+                model_name = '年级'
+            }else if(model == 'classes'){
+                model_name = '班级'
+            }else if(model == 'teachers'){
+                model_name = '教师'
+            }else if(model == 'courses'){
+                model_name = '课程'
+            }
+
+            var remove_flag = confirm('您正在删除'+model_name+ids+'，将会连同该'+model_name+'下的所有子关联表都删除（如果有的话），确定删除吗？');
+
+            if(remove_flag) {
+                var remove_json = {
+                    "remove_objects_model": model,
+                    "remove_ids": ids_in_database,
+                };
+
+                remove_ajax(from_url, remove_json);
+            }else{
+                alert('我就知道你不想删除她的')
+            }
+        })
+    }
+</script>
+
+
+<!--子html文件用这个填充块添加js样式-->
+{% block add_js_to_super_manage %}{% endblock %}
+</body>
+
+</html>

@@ -84,26 +84,26 @@ def apply(request):
     }
     user = set_user_for_context(request.session['user_account'], context)
 
-    if user == 'superuser_is_teacher' or user == 'teacher':
-        temp_courses = Course.objects.filter(teachers=context['teacher'])
+    # if user == 'superuser_is_teacher' or user == 'teacher':
+    temp_courses = Course.objects.filter(teachers=context['teacher'])
 
-        # 实验项目为空则证明该门课没有申请过，可以显示
-        for course in temp_courses:
-            experiments_amount = Experiment.objects.filter(course=course)
-            if len(experiments_amount) == 0:
-                context['courses'].append(course)
+    # 实验项目为空则证明该门课没有申请过，可以显示
+    for course in temp_courses:
+        experiments_amount = Experiment.objects.filter(course=course)
+        if len(experiments_amount) == 0:
+            context['courses'].append(course)
 
-        if len(context['courses']) != 0:
-            # 初次打开页面如果有对应课程，则根据第一门课程先提供班级数据
-            context['classes'] = Classes.objects.filter(course=context['courses'][0]).values('id',
-                                                                                             'name',
-                                                                                             'grade__name',
-                                                                                             'grade__department__name')
+    if len(context['courses']) != 0:
+        # 初次打开页面如果有对应课程，则根据第一门课程先提供班级数据
+        context['classes'] = Classes.objects.filter(course=context['courses'][0]).values('id',
+                                                                                         'name',
+                                                                                         'grade__name',
+                                                                                         'grade__department__name')
 
-        set_choices_context(context)
-        return render(request, 'apply_experiments/apply.html', context)
-    else:
-        return HttpResponseRedirect('/browse/login')
+    set_choices_context(context)
+    return render(request, 'apply_experiments/apply.html', context)
+    # else:
+    #     return HttpResponseRedirect('/browse/login')
 
 
 def submit_experiments(request):
@@ -239,52 +239,52 @@ def manage_application(request):
         'courses': [],
     }
     user = set_user_for_context(request.session['user_account'], context)
-    if user == 'superuser_is_teacher' or user == 'teacher':
-        try:
-            courses_of_the_user = Course.objects.filter(teachers__account__contains=context['teacher'].account)
-            this_logger.info('获取到课程：' + str(courses_of_the_user))
+    # if user == 'superuser_is_teacher' or user == 'teacher':
+    try:
+        courses_of_the_user = Course.objects.filter(teachers__account__contains=context['teacher'].account)
+        this_logger.info('获取到课程：' + str(courses_of_the_user))
 
-            if courses_of_the_user:
-                i = 1
-                for course in courses_of_the_user:
-                    experiments_of_the_course = Experiment.objects.filter(course=course)
-                    if experiments_of_the_course:
-                        experiments_amount = len(experiments_of_the_course)
+        if courses_of_the_user:
+            i = 1
+            for course in courses_of_the_user:
+                experiments_of_the_course = Experiment.objects.filter(course=course)
+                if experiments_of_the_course:
+                    experiments_amount = len(experiments_of_the_course)
 
-                        classes_name = ""
-                        for class_item in course.classes.all():
-                            classes_name = classes_name + '<br>' + class_item.grade.name + "级" + class_item.grade.department.name + str(
-                                class_item.name)
+                    classes_name = ""
+                    for class_item in course.classes.all():
+                        classes_name = classes_name + '<br>' + class_item.grade.name + "级" + class_item.grade.department.name + str(
+                            class_item.name)
 
-                        teaching_materials = ""
-                        if course.total_requirements:
-                            teaching_materials = course.total_requirements.teaching_materials
+                    teaching_materials = ""
+                    if course.total_requirements:
+                        teaching_materials = course.total_requirements.teaching_materials
 
-                        # 或许不止一个老师上一门课
-                        teachers = ""
-                        for teacher in course.teachers.all():
-                            teachers = teachers + ',' + teacher.name
+                    # 或许不止一个老师上一门课
+                    teachers = ""
+                    for teacher in course.teachers.all():
+                        teachers = teachers + ',' + teacher.name
 
-                        course_item = {
-                            "no": i,
-                            "teachers": teachers[1:],
-                            "term": course.term if course.term else "",
-                            "course": course.name,
-                            "teaching_materials": teaching_materials,
-                            "experiments_amount": experiments_amount,
-                            "classes": classes_name[4:],
-                            "create_time": course.modify_time,
-                            "status": STATUS['%d' % experiments_of_the_course[0].status]
-                        }
-                        context['courses'].append(course_item)
-                        i = i + 1
+                    course_item = {
+                        "no": i,
+                        "teachers": teachers[1:],
+                        "term": course.term if course.term else "",
+                        "course": course.name,
+                        "teaching_materials": teaching_materials,
+                        "experiments_amount": experiments_amount,
+                        "classes": classes_name[4:],
+                        "create_time": course.modify_time,
+                        "status": STATUS['%d' % experiments_of_the_course[0].status]
+                    }
+                    context['courses'].append(course_item)
+                    i = i + 1
 
-        except (Exception) as e:
-            print('获取实验申请信息时出错', e)
+    except (Exception) as e:
+        print('获取实验申请信息时出错', e)
 
-        return render(request, 'apply_experiments/manage_application.html', context)
-    else:
-        return HttpResponseRedirect('/browse/login')
+    return render(request, 'apply_experiments/manage_application.html', context)
+    # else:
+    #     return HttpResponseRedirect('/browse/login')
 
 
 def change_experiments(request, term=None, course_name=None):
@@ -312,68 +312,68 @@ def change_experiments(request, term=None, course_name=None):
     }
 
     user = set_user_for_context(request.session['user_account'], context)
-    if user == 'superuser_is_teacher' or user == 'teacher':
-        course = Course.objects.filter(teachers__account=context['teacher'].account, name=course_name)
-        if len(course) == 1:
-            course = course[0]
+    # if user == 'superuser_is_teacher' or user == 'teacher':
+    course = Course.objects.filter(teachers__account=context['teacher'].account, name=course_name)
+    if len(course) == 1:
+        course = course[0]
 
-            experiments_origin = Experiment.objects.filter(course=course).order_by('-no')
-            if len(experiments_origin) > 0:
+        experiments_origin = Experiment.objects.filter(course=course).order_by('-no')
+        if len(experiments_origin) > 0:
 
-                experiments = []
-                for experiment in experiments_origin:
+            experiments = []
+            for experiment in experiments_origin:
 
-                    labs = experiment.labs.all()
-                    labs_of_institute = ""
-                    if len(labs) > 0:
-                        labs_of_institute = labs[0].institute
+                labs = experiment.labs.all()
+                labs_of_institute = ""
+                if len(labs) > 0:
+                    labs_of_institute = labs[0].institute
 
-                    labs_attributes_of_experiment = experiment.labs_attribute.all()
-                    labs_attributes = ""
-                    for labs_attribute in labs_attributes_of_experiment:
-                        labs_attributes = labs_attributes + ',%d' % labs_attribute.id
+                labs_attributes_of_experiment = experiment.labs_attribute.all()
+                labs_attributes = ""
+                for labs_attribute in labs_attributes_of_experiment:
+                    labs_attributes = labs_attributes + ',%d' % labs_attribute.id
 
-                    labs_ids = ""
-                    for lab in labs:
-                        labs_ids = labs_ids + ',%d' % lab.id
+                labs_ids = ""
+                for lab in labs:
+                    labs_ids = labs_ids + ',%d' % lab.id
 
-                    temp_experiment = {
-                        'experiment': experiment,
-                        'labs_of_institute': labs_of_institute,
-                        'labs_attribute': labs_attributes[1:],
-                        'labs': labs_ids[1:]
-                    }
-                    experiments.append(temp_experiment)
-
-                context['experiments'] = experiments
-
-                teachers = ""
-                for teacher in course.teachers.all():
-                    teachers = teachers + ',' + teacher.name
-
-                classes_name = ""
-                for class_item in course.classes.all():
-                    classes_name = classes_name + '<br>' + class_item.grade.name + "级" + class_item.grade.department.name + \
-                                   str(class_item.name)
-
-                context['course'] = {
-                    'course': course,
-                    'teachers': teachers[1:],
-                    'classes': classes_name[4:],
-                    'status': STATUS['%d' % experiments_origin[0].status],
+                temp_experiment = {
+                    'experiment': experiment,
+                    'labs_of_institute': labs_of_institute,
+                    'labs_attribute': labs_attributes[1:],
+                    'labs': labs_ids[1:]
                 }
-            else:
-                context['status'] = False
-                context['message'] = '出错，实验项目数据为空'
+                experiments.append(temp_experiment)
+
+            context['experiments'] = experiments
+
+            teachers = ""
+            for teacher in course.teachers.all():
+                teachers = teachers + ',' + teacher.name
+
+            classes_name = ""
+            for class_item in course.classes.all():
+                classes_name = classes_name + '<br>' + class_item.grade.name + "级" + class_item.grade.department.name + \
+                               str(class_item.name)
+
+            context['course'] = {
+                'course': course,
+                'teachers': teachers[1:],
+                'classes': classes_name[4:],
+                'status': STATUS['%d' % experiments_origin[0].status],
+            }
         else:
             context['status'] = False
-            context['message'] = '出错，该课程存在异常'
-
-        set_choices_context(context)
-
-        return render(request, 'apply_experiments/change_experiments.html', context)
+            context['message'] = '出错，实验项目数据为空'
     else:
-        return HttpResponseRedirect('/browse/login')
+        context['status'] = False
+        context['message'] = '出错，该课程存在异常'
+
+    set_choices_context(context)
+
+    return render(request, 'apply_experiments/change_experiments.html', context)
+    # else:
+    #     return HttpResponseRedirect('/browse/login')
 
 
 # 删除课程所有实验项目的视图

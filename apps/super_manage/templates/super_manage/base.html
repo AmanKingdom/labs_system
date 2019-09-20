@@ -286,6 +286,8 @@
     {#$.fn.bootstrapTable.columnDefaults.class='not-wrap';#}
     $.fn.bootstrapTable.columnDefaults.undefinedText = empty_text;//当表格项没有数据时显示的内容
     $.fn.bootstrapTable.defaults.striped = true;
+
+    var delete_ids_in_database = [];
 </script>
 <!--全局的bootstrap table 和 X-editable 配置 结束-->
 
@@ -325,8 +327,10 @@
     //  传入数据为：保存后返回的地址，保存对象的模型类型字符串，保存对象数据，保存对象所在学校的id
     function save_ajax(from_url, save_objects_model, save_objects_data, school_id){
         var to_url = "{% url 'super_manage:save_ajax' %}";
-        var data = {'save_objects_model': save_objects_model, 'save_objects_data':save_objects_data, 'school_id': school_id};
-
+        var data = {'save_objects_model': save_objects_model, 'save_objects_data':save_objects_data, 'school_id': school_id, 'delete_ids_in_database':delete_ids_in_database};
+        if(delete_ids_in_database){
+            console.log('将要删除的对象在数据库中的ids为：', delete_ids_in_database)
+        }
         base_ajax(from_url, to_url, data);
     }
 </script>
@@ -395,12 +399,20 @@
             var remove_flag = confirm('您正在删除'+model_name+ids+'，将会连同该'+model_name+'下的所有子关联表都删除（如果有的话），确定删除吗？');
 
             if(remove_flag) {
-                var remove_json = {
+                /*var remove_json = {
                     "remove_objects_model": model,
                     "remove_ids": ids_in_database,
                 };
 
-                remove_ajax(from_url, remove_json);
+                remove_ajax(from_url, remove_json);*/
+
+                table.bootstrapTable('remove', {
+                    field: 'id',
+                    values: ids
+                });
+                delete_ids_in_database = ids_in_database;
+                remove_button.prop('disabled', true)
+
             }else{
                 alert('我就知道你不想删除她的')
             }

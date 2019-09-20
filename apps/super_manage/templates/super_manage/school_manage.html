@@ -5,7 +5,6 @@
 {% block add_css_to_super_manage %}
     <style>
         #school_name{
-            width:15%;
             height: 40px;
             position: absolute;
         }
@@ -24,7 +23,6 @@
             <a onclick="submit_school()" title="保存修改" class="pull-right"><i class="fa fa-save"></i></a>
         </div>
     </div>
-    <hr>
 
     {% if school.name %}
         <div class="row">
@@ -35,8 +33,8 @@
                         <h5>校区信息表</h5>
                         <div class="ibox-tools">
                             <button id="add_school_area_button" class="btn btn-primary">添加校区</button>
-                            <button id="save_school_area_button" class="btn btn-primary">保存修改</button> |
                             <button id="remove_school_area_button" class="btn btn-danger" disabled>删除校区</button>
+                            <button id="save_school_area_button" class="btn btn-primary">保存修改</button>
                             <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                         </div>
                     </div>
@@ -60,8 +58,8 @@
                             <h5>学院信息表</h5>
                             <div class="ibox-tools">
                                 <button id="add_institute_button" class="btn btn-primary">添加学院</button>
-                                <button id="save_institute_button" class="btn btn-primary">保存修改</button> |
                                 <button id="remove_institute_button" class="btn btn-danger" disabled>删除学院</button>
+                                <button id="save_institute_button" class="btn btn-primary">保存修改</button>
                                 <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                             </div>
                         </div>
@@ -85,8 +83,8 @@
                                 <h5>系 信息表</h5>
                                 <div class="ibox-tools">
                                     <button id="add_department_button" class="btn btn-primary">添加 系</button>
-                                    <button id="save_department_button" class="btn btn-primary">保存修改</button> |
                                     <button id="remove_department_button" class="btn btn-danger" disabled>删除 系</button>
+                                    <button id="save_department_button" class="btn btn-primary">保存修改</button>
                                     <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                                 </div>
                             </div>
@@ -110,8 +108,8 @@
                                     <h5>年级信息表</h5>
                                     <div class="ibox-tools">
                                         <button id="add_grade_button" class="btn btn-primary">添加年级</button>
-                                        <button id="save_grade_button" class="btn btn-primary">保存修改</button> |
                                         <button id="remove_grade_button" class="btn btn-danger" disabled>删除年级</button>
+                                        <button id="save_grade_button" class="btn btn-primary">保存修改</button>
                                         <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                                     </div>
                                 </div>
@@ -276,20 +274,18 @@
         $('#save_school_area_button').click(function () {
             var school_areas = school_area_table.bootstrapTable('getData');
 
-            if(school_areas.length !== 0){
-                var pass = true;
-                $.each(school_areas, function (index, value) {
-                    console.log(index, value);
+            var pass = true;
+            $.each(school_areas, function (index, value) {
+                console.log(index, value);
 
-                    if(value['school_area_name'] === empty_text || value['school_area_name'] == ""){
-                        pass = false;
-                        window.alert('提交失败，校区'+index+'的名称不可以为空');
-                        return pass
-                    }
-                });
-                if(pass){
-                    save_ajax(from_url, 'school_areas', school_areas, '{{ school.id }}');
+                if(value['school_area_name'] === empty_text || value['school_area_name'] == ""){
+                    pass = false;
+                    window.alert('提交失败，校区'+index+'的名称不可以为空');
+                    return pass
                 }
+            });
+            if(pass){
+                save_ajax(from_url, 'school_areas', school_areas, '{{ school.id }}');
             }
         })
     </script>

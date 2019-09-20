@@ -31,8 +31,8 @@
                     <th data-field="soft_requirements">总体软件需求</th>
                 </tr></thead>
                 <tbody><tr>
-                    <td id="department">{{ teacher.department.name }}</td>
-                    <td id="teacher_name">{{ teacher.name }}</td>
+                    <td id="department">{% if teacher %}{{ teacher.department.name }}{% else %}无{% endif %}</td>
+                    <td id="teacher_name">{% if teacher %}{{ teacher.name }}{% else %}{{ superuser.name }}{% endif %}</td>
                     <td>
                         {#<a href="#" id="course" data-type="select" data-title="Select status"></a>#}
                         <select id="course" class="form-control">

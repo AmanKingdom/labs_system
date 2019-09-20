@@ -479,58 +479,27 @@ def save_ajax(request):
             this_logger.info('将要删除：'+str(data['delete_ids_in_database']))
 
             # 删除情况
-            if data['save_objects_model'] == 'school_areas':
-                for id in data['delete_ids_in_database']:
+            for id in data['delete_ids_in_database']:
+                if data['save_objects_model'] == 'school_areas':
                     SchoolArea.objects.get(id=id).delete()
-            # elif data['save_objects_model'] == 'institutes':
-            #     i = Institute.objects.filter(id=int(save_object['id_in_database']))
-            #     i.update(name=save_object['institute_name'],
-            #              school_area=SchoolArea.objects.get(id=save_object['school_area']))
-            # elif data['save_objects_model'] == 'departments':
-            #     d = Department.objects.filter(id=int(save_object['id_in_database']))
-            #     d.update(name=save_object['department_name'],
-            #              institute=Institute.objects.get(id=save_object['institute']))
-            # elif data['save_objects_model'] == 'grades':
-            #     g = Grade.objects.filter(id=int(save_object['id_in_database']))
-            #     g.update(name=save_object['grade_name'],
-            #              department=Department.objects.get(id=save_object['department']))
-            # elif data['save_objects_model'] == 'classes':
-            #     c = Classes.objects.filter(id=int(save_object['id_in_database']))
-            #     c.update(name=save_object['classes_name'],
-            #              grade=Grade.objects.get(id=save_object['grade']))
-            # elif data['save_objects_model'] == 'teachers':
-            #     t = Teacher.objects.filter(id=int(save_object['id_in_database']))
-            #     t.update(name=save_object['teacher_name'],
-            #              account=save_object['account'],
-            #              password=save_object['password'],
-            #              phone=save_object['phone'],
-            #              department=Department.objects.get(id=save_object['department']))
-            # elif data['save_objects_model'] == 'courses':
-            #     term = Term.objects.filter(
-            #         school=SuperUser.objects.get(account=request.session.get('user_account')).school)[0]
-            #     c = Course.objects.filter(id=int(save_object['id_in_database']))
-            #     c.update(name=save_object['course_name'],
-            #              institute=Institute.objects.get(id=save_object['institute']),
-            #              term=term)
-            #     add_teachers_classes_to_course(c[0], save_object)
-            # elif data['save_objects_model'] == 'labs_attributes':
-            #     l = LabsAttribute.objects.filter(id=int(save_object['id_in_database']))
-            #     l.update(name=save_object['labs_attribute_name'])
-            # elif data['save_objects_model'] == 'experiment_types':
-            #     et = ExperimentType.objects.filter(id=int(save_object['id_in_database']))
-            #     et.update(name=save_object['experiment_type_name'])
-            # elif data['save_objects_model'] == 'labs':
-            #     lab = Labs.objects.filter(id=int(save_object['id_in_database']))
-            #     if str(save_object['dispark']) == '1':
-            #         dispark = True
-            #     else:
-            #         dispark = False
-            #     lab.update(name=save_object['lab_name'],
-            #                institute=Institute.objects.get(id=save_object['institute']),
-            #                number_of_people=save_object['number_of_people'],
-            #                dispark=dispark,
-            #                equipments=save_object['equipments'])
-            #     add_labs_attributes_to_lab(lab[0], save_object)
+                elif data['save_objects_model'] == 'institutes':
+                    Institute.objects.get(id=id).delete()
+                elif data['save_objects_model'] == 'departments':
+                    Department.objects.get(id=id).delete()
+                elif data['save_objects_model'] == 'grades':
+                    Grade.objects.get(id=id).delete()
+                elif data['save_objects_model'] == 'classes':
+                    Classes.objects.get(id=id).delete()
+                elif data['save_objects_model'] == 'teachers':
+                    Teacher.objects.get(id=id).delete()
+                elif data['save_objects_model'] == 'courses':
+                    Course.objects.get(id=id).delete()
+                elif data['save_objects_model'] == 'labs_attributes':
+                    LabsAttribute.objects.get(id=id).delete()
+                elif data['save_objects_model'] == 'experiment_types':
+                    ExperimentType.objects.get(id=id).delete()
+                elif data['save_objects_model'] == 'labs':
+                    Labs.objects.get(id=id).delete()
 
 
         # try:

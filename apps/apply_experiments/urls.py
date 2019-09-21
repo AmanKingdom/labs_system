@@ -12,7 +12,7 @@ urlpatterns = [
     path('submit_experiments', require_login(submit_experiments), name='submit_experiments'),
     path('manage_application', require_login(manage_application), name='manage_application'),
     path('remove_all_experiments', require_login(remove_all_experiments), name='remove_all_experiments'),
-    path('change_experiments/<term>/<course_name>/', require_login(change_experiments), name='change_experiments'),
+    path('change_experiments/<course_id>/', require_login(change_experiments), name='change_experiments'),
 
     path('weeks_analyze', require_login(weeks_analyze), name='weeks_analyze'),
     path('rooms_analyze', require_login(rooms_analyze), name='rooms_analyze'),

@@ -58,7 +58,7 @@ class Experiment(models.Model):
     section = models.CharField(max_length=10, verbose_name='节次')
     labs = models.ManyToManyField(Labs, verbose_name='实验室')
     special_requirements = models.ForeignKey(SpecialRequirements, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='特殊需求')
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, verbose_name='所属课程')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, verbose_name='所属课程', related_name='experiments')
     status = models.IntegerField(verbose_name='状态：1-已提交但未审核，2-审核未通过，3-审核通过', default=1)
     labs_attribute = models.ManyToManyField(LabsAttribute, verbose_name='实验室属性，用于筛选实验室，可以多个属性，也可不选')
 

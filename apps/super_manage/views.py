@@ -1,11 +1,11 @@
 import json
 from datetime import datetime
 
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import render
 
 from apps.apply_experiments.models import Experiment, ExperimentType
-from apps.apply_experiments.views import set_user_for_context
+from apps.apply_experiments.views import set_user_for_context, STATUS
 from apps.super_manage.models import School, SchoolArea, Institute, Department, Grade, SuperUser, Classes, Teacher, \
     SchoolYear, Term, Course, LabsAttribute, Labs
 
@@ -399,6 +399,71 @@ def lab_manage(request):
             context['labs'].append(temp)
 
     return render(request, 'super_manage/lab_manage.html', context)
+
+
+def application_manage(request):
+    context = {
+        'title': '实验课管理',
+        'application_active': True,  # 激活导航
+        'superuser': None,
+        'teacher': None,
+
+        'courses': [],
+    }
+
+    set_user_for_context(request.session['user_account'], context)
+
+    all_courses = Course.objects.all()
+
+    if all_courses:
+        i = 1
+        for course in all_courses:
+            experiments_of_the_course = Experiment.objects.filter(course=course)
+            if experiments_of_the_course:
+                experiments_amount = len(experiments_of_the_course)
+
+                classes_name = ""
+                for class_item in course.classes.all():
+                    classes_name = classes_name + '<br>' + class_item.grade.name + "级" + class_item.grade.department.name + str(
+                        class_item.name)
+
+                teaching_materials = ""
+                if course.total_requirements:
+                    teaching_materials = course.total_requirements.teaching_materials
+
+                # 或许不止一个老师上一门课
+                teachers = ""
+                for teacher in course.teachers.all():
+                    teachers = teachers + ',' + teacher.name
+
+                course_item = {
+                    "id": course.id,
+                    "no": i,
+                    "teachers": teachers[1:],
+                    "term": course.term if course.term else "",
+                    "course": course.name,
+                    "teaching_materials": teaching_materials,
+                    "experiments_amount": experiments_amount,
+                    "classes": classes_name[4:],
+                    "create_time": course.modify_time,
+                    "status": STATUS['%d' % experiments_of_the_course[0].status]
+                }
+                context['courses'].append(course_item)
+                i = i + 1
+
+    return render(request, 'super_manage/application_manage.html', context)
+
+
+def application_check(request, course_id=None, status=None):
+    this_logger.info('审核，接收到id：'+str(course_id)+'和status：'+str(status))
+
+    course = Course.objects.get(id=course_id)
+    experiments = course.experiments.all()
+    for experiment in experiments:
+        experiment.status = status
+        experiment.save()
+
+    return HttpResponseRedirect('/super_manage/application_manage')
 
 
 # 如果传入的旧名称和新名称一样就是要创建新学校

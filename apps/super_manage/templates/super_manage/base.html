@@ -146,7 +146,7 @@
                         <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">实验课管理</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
                             <li {% if experiment_type_active %}class="active"{% endif %}><a href="{% url 'super_manage:experiment_type_manage' %}">实验类型管理</a></li>
-                            <li {% if school_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:weeks_analyze' %}">实验课管理</a></li>
+                            <li {% if application_active %}class="active"{% endif %}><a href="{% url 'super_manage:application_manage' %}">实验课管理</a></li>
                             <li {% if classes_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">智能排课</a></li>
                             <li {% if teachers_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">发布公告</a></li>
                         </ul>

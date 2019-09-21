@@ -1,101 +1,114 @@
-<!--apply_experiments/change_experiments.html-->
+<!--super_manage/experiment_manage.html-->
 
-{% extends 'apply_experiments/base.html' %}
-{% block add_css_to_apply_experiments %}
+{% extends 'super_manage/base.html' %}
+{% block add_css_to_super_manage %}
     <!--多项选择的css依赖-->
     <link href="/static/css_js/css/plugins/select2/select2.min.css" rel="stylesheet" type="text/css">
     <link href="/static/css_js/css/plugins/select2/select2-bootstrap.css" rel="stylesheet" type="text/css">
 {% endblock %}
 
-{% block apply_experiments_body %}
-    {% if status %}
-        <div class="ibox float-e-margins">
-            <div class="ibox-title row">
-                <h5>实验室申请信息管理</h5>/ 课程《{{ course.course.name }}》 的实验项目信息
-            </div>
-            <div class="ibox-content">
-                <table id="course_table"
-                       class="table-hover table-responsive"
-                       data-toggle="table"
-                       data-minimum-count-columns="2"
-                       data-id-field="id">
-                    <thead><tr>
-                        <th data-field="term">学年学期</th>
-                        <th data-field="course">课程</th>
-                        <th data-field="teacher">教师</th>
-                        <th data-field="classes">教学班级</th>
-                        <th data-field="teaching_materials">实验教材</th>
-                        <th data-field="total_consume_requirements">总体耗材需求</th>
-                        <th data-field="total_system_requirements">总体系统需求</th>
-                        <th data-field="total_soft_requirements">总体软件需求</th>
-                        <th data-field="modify_time">修改时间</th>
-                        <th data-field="status">状态</th>
-                    </tr></thead>
-                    <tbody>
-                    <tr>
-                        <td>{{ course.course.term }}</td>
-                        <td>{{ course.course.name }}</td>
-                        <td>{{ course.teachers }}</td>
-                        <td>{{ course.classes | safe}}</td>
-                        <td><a id="teaching_materials" data-type="textarea"></a></td>
-                        <td><a id="total_consume_requirements" data-type="textarea"></a></td>
-                        <td><a id="total_system_requirements" data-type="textarea"></a></td>
-                        <td><a id="total_soft_requirements" data-type="textarea"></a></td>
-                        <td>{{ course.course.modify_time }}</td>
-                        <td>{{ course.status }}</td>
-                    </tr>
-                    </tbody>
-                </table>
+{% block super_manage_body %}
+    <div class="ibox float-e-margins">
+        <div class="ibox-title row">
+            <h5>实验室申请信息管理</h5>/ 课程《{{ course.course.name }}》 的实验项目信息
+        </div>
+        <div class="ibox-content">
+            <table id="course_table"
+                   class="table-hover table-responsive"
+                   data-toggle="table"
+                   data-minimum-count-columns="2"
+                   data-id-field="id">
+                <thead><tr>
+                    <th data-field="term">学年学期</th>
+                    <th data-field="course">课程</th>
+                    <th data-field="teacher">教师</th>
+                    <th data-field="classes">教学班级</th>
+                    <th data-field="teaching_materials">实验教材</th>
+                    <th data-field="total_consume_requirements">总体耗材需求</th>
+                    <th data-field="total_system_requirements">总体系统需求</th>
+                    <th data-field="total_soft_requirements">总体软件需求</th>
+                    <th data-field="modify_time">修改时间</th>
+                    <th data-field="status">状态</th>
+                </tr></thead>
+                <tbody>
+                <tr>
+                    <td>{{ course.course.term }}</td>
+                    <td>{{ course.course.name }}</td>
+                    <td>{{ course.teachers }}</td>
+                    <td>{{ course.classes | safe}}</td>
+                    <td><a id="teaching_materials" data-type="textarea"></a></td>
+                    <td><a id="total_consume_requirements" data-type="textarea"></a></td>
+                    <td><a id="total_system_requirements" data-type="textarea"></a></td>
+                    <td><a id="total_soft_requirements" data-type="textarea"></a></td>
+                    <td>{{ course.course.modify_time }}</td>
+                    <td>{{ course.status }}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="ibox float-e-margins">
+        <div class="ibox-title">
+            <h5>实验项目申请表</h5>
+            <div class="ibox-tools">
+                <button id="add_experiment_button" class="btn btn-primary">添加实验项目</button>
+                <button id="remove_experiment_button" class="btn btn-danger" disabled>批量删除</button>
+                <a class="collapse-link">
+                    <i class="fa fa-chevron-up"></i>
+                </a>
             </div>
         </div>
-        <div class="ibox float-e-margins">
-            <div class="ibox-title">
-                <h5>实验项目申请表</h5>
-                <div class="ibox-tools">
-                    <button id="add_experiment_button" class="btn btn-primary">添加实验项目</button>
-                    <button id="remove_experiment_button" class="btn btn-danger" disabled>批量删除</button>
-                    <a class="collapse-link">
-                        <i class="fa fa-chevron-up"></i>
-                    </a>
-                </div>
-            </div>
-            <div class="ibox-content">
-                <table
-                        id="experiments_table"
-                        data-id-field="id"
-                        data-side-pagination="server"
-                        data-response-handler="responseHandler"
-                        data-click-to-select="true">
-                </table>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div align="left">
-                            <br>
-                            <a href="#" onClick="history.back(-1);">
-                                <button id="back" class="btn btn-primary" title="返回上一页">
-                                    返回上一页
-                                </button>
-                            </a>
-                        </div>
+        <div class="ibox-content">
+            <table
+                    id="experiments_table"
+                    data-id-field="id"
+                    data-side-pagination="server"
+                    data-response-handler="responseHandler"
+                    data-click-to-select="true">
+            </table>
+            <div class="row">
+                <div class="col-md-6">
+                    <div align="left">
+                        <br>
+                        <a href="#" onClick="history.back(-1);">
+                            <button id="back" class="btn btn-primary" title="返回上一页">
+                                返回上一页
+                            </button>
+                        </a>
                     </div>
-                    <div class="col-md-6">
-                        <div align="right">
-                            <br>
-                            <button id="remove_all_experiment" class="btn btn-primary" title="取消所有实验">取消所有实验</button>
-                            <button id="submit" class="btn btn-primary" title="申请修改">确认修改</button>
-                        </div>
+                </div>
+                <div class="col-md-6">
+                    <div align="right">
+                        <br>
+                        {% if superuser %}
+                            <td>
+                                <button id="pass_button" class="btn btn-primary">通过</button>
+                                <button id="not_pass_button" class="btn btn-primary">不通过</button>
+                            </td>
+                        {% endif %}
+                        <button id="remove_all_experiment" class="btn btn-primary" title="取消所有实验">取消所有实验</button>
+                        <button id="submit" class="btn btn-primary" title="申请修改">确认修改</button>
                     </div>
                 </div>
             </div>
         </div>
-    {% else %}
-        {{ message }}
-    {% endif %}
+    </div>
 {% endblock %}
 
 <!--子html文件用这个填充块添加js样式-->
-{% block add_js_to_apply_experiments %}
+{% block add_js_to_super_manage %}
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
+
+    <script>
+        {% if superuser %}
+            $.fn.editable.defaults.disabled = true;
+            $('#remove_experiment_button').prop('disabled', true);
+            $('#add_experiment_button').prop('disabled', true);
+            $('#remove_all_experiment').prop('disabled', true);
+            $('#submit').prop('disabled', true);
+        {% endif %}
+    </script>
+
 
     <!--实验对应课程可修改信息的配置 开始-->
     <script>
@@ -124,6 +137,18 @@
                 value: '{{ course.course.total_requirements.total_soft_requirements }}',
                 rows:5,
                 mode:"popup",
+            });
+
+
+            $('#pass_button').click(function () {
+                var url = "{% url 'super_manage:application_check' 'course_id' '3' %}";
+                url = url.replace('course_id', {{ course.course.id }});
+                window.location.href=url;
+            });
+            $('#not_pass_button').click(function () {
+                var url = "{% url 'super_manage:application_check' 'course_id' '2' %}";
+                url = url.replace('course_id', {{ course.course.id }});
+                window.location.href=url;
             });
         })
     </script>
@@ -323,7 +348,10 @@
 
             $experiments_table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table',
                 function () {
-                    $remove.prop('disabled', !$experiments_table.bootstrapTable('getSelections').length);
+                    {% if superuser %}
+                    {% else %}
+                        $remove.prop('disabled', !$experiments_table.bootstrapTable('getSelections').length);
+                    {% endif %}
 
                     // save your data, here just save the current page
                     selections = getIdSelections()

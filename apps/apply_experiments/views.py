@@ -266,6 +266,7 @@ def manage_application(request):
                         teachers = teachers + ',' + teacher.name
 
                     course_item = {
+                        "id": course.id,
                         "no": i,
                         "teachers": teachers[1:],
                         "term": course.term if course.term else "",
@@ -282,13 +283,13 @@ def manage_application(request):
     except (Exception) as e:
         print('获取实验申请信息时出错', e)
 
-    return render(request, 'apply_experiments/manage_application.html', context)
+    return render(request, 'super_manage/application_manage.html', context)
     # else:
     #     return HttpResponseRedirect('/browse/login')
 
 
-def change_experiments(request, term=None, course_name=None):
-    this_logger.info('实验项目申请信息管理页面视图，接收到学年学期：' + str(term) + ' 课程：' + str(course_name))
+def change_experiments(request, course_id=None):
+    this_logger.info('实验项目申请信息管理页面视图，接收到课程id：' + str(course_id))
 
     context = {
         'title': '申请信息管理',
@@ -313,7 +314,9 @@ def change_experiments(request, term=None, course_name=None):
 
     user = set_user_for_context(request.session['user_account'], context)
     # if user == 'superuser_is_teacher' or user == 'teacher':
-    course = Course.objects.filter(teachers__account=context['teacher'].account, name=course_name)
+    course = Course.objects.filter(id=course_id)
+
+    # 这里这样做的原因是防止恶意用户修改js提交错误的 course_id ，我这样值得吗？
     if len(course) == 1:
         course = course[0]
 
@@ -371,7 +374,7 @@ def change_experiments(request, term=None, course_name=None):
 
     set_choices_context(context)
 
-    return render(request, 'apply_experiments/change_experiments.html', context)
+    return render(request, 'super_manage/experiment_manage.html', context)
     # else:
     #     return HttpResponseRedirect('/browse/login')
 

@@ -95,10 +95,10 @@
                         title: '开放情况<span class="need">*</span>',
                         editable:{
                             type:'select',
-                            value: 1,
+                            value: '1',
                             source: [
-                                { value: 1, text: '开放'},
-                                { value: 0, text: '不开放'},
+                                { value: '1', text: '开放'},
+                                { value: '0', text: '不开放'},
                             ]
                         },
                     },{
@@ -144,7 +144,7 @@
                     'institute': '{{ l.lab.institute.id }}',
                     'lab_name': '{{ l.lab.name }}',
                     'number_of_people': '{{ l.lab.number_of_people }}',
-                    'dispark': {% if l.lab.dispark %}1{% else %}0{% endif %},
+                    'dispark': {% if l.lab.dispark %}'1'{% else %}'0'{% endif %},
                     'labs_attributes': '{{ l.labs_attributes }}',
                     'equipments': '{{ l.lab.equipments }}',
                     "id_in_database": '{{ l.lab.id }}',
@@ -183,7 +183,7 @@
                     "institute": {% if institutes %}{{ institutes.0.id }}{% else %}""{% endif %},
                     "lab_name": "",
                     "number_of_people": "",
-                    "dispark": 1,
+                    "dispark": '1',
                     "labs_attributes": "",
                     "equipments": "",
                 };

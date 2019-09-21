@@ -8,10 +8,6 @@
             height: 40px;
             position: absolute;
         }
-        hr{
-            margin-bottom: 0;
-            margin-top: 0;
-        }
     </style>
 {% endblock %}
 
@@ -272,20 +268,23 @@
     <!--保存 修改或增加校区信息 后的表格 事件 开始 -->
     <script>
         $('#save_school_area_button').click(function () {
-            var school_areas = school_area_table.bootstrapTable('getData');
+            var school_areas_origin = school_area_table.bootstrapTable('getData');
+            var school_areas = [];
 
             var pass = true;
-            $.each(school_areas, function (index, value) {
+
+            $('.not_null').remove();	 // 清除掉以前的错误信息
+
+            $.each(school_areas_origin, function (index, value) {
                 console.log(index, value);
 
                 if(value['school_area_name'] === empty_text || value['school_area_name'] == ""){
                     pass = false;
-                    window.alert('提交失败，校区'+index+'的名称不可以为空');
-                    return pass
+                    add_tip('school_area_table', index, 2)
                 }
             });
             if(pass){
-                save_ajax(from_url, 'school_areas', school_areas, '{{ school.id }}');
+                save_ajax(from_url, 'school_areas', school_areas_origin, '{{ school.id }}');
             }
         })
     </script>
@@ -379,7 +378,7 @@
             if(index == 0){
                 new_row = {
                     "id": index,
-                    "school_area": "",
+                    "school_area": {% if school_areas %}{{ school_areas.0.id }}{% else %}""{% endif %},
                     "institute_name": ""
                 };
             }else{
@@ -406,19 +405,20 @@
 
             if(institutes.length !== 0){
                 var pass = true;
+
+                $('.not_null').remove();	 // 清除掉以前的错误信息
+
                 $.each(institutes, function (index, value) {
                     console.log(index, value);
 
-                    if(value['institute_name'] === empty_text || value['institute_name'] == ""){
-                        pass = false;
-                        window.alert('提交失败，学院'+index+'的名称不可以为空');
-                        return pass
-                    }
-
                     if(value['school_area'] === empty_text || value['school_area'] == ""){
                         pass = false;
-                        window.alert('提交失败，请选择学院'+index+'的校区');
-                        return pass
+                        add_tip('institute_table', index, 2)
+                    }
+
+                    if(value['institute_name'] === empty_text || value['institute_name'] == ""){
+                        pass = false;
+                        add_tip('institute_table', index, 3)
                     }
                 });
                 if(pass){
@@ -428,7 +428,6 @@
         })
     </script>
     <!--保存修改或增加学院信息后的表格 事件 结束 -->
-
 
 
 
@@ -517,7 +516,7 @@
             if(index == 0){
                 new_row = {
                     "id": index,
-                    "institute": "",
+                    "institute": {% if institutes %}{{ institutes.0.id }}{% else %}""{% endif %},
                     "department_name": ""
                 };
             }else{
@@ -544,19 +543,20 @@
 
             if(departments.length !== 0){
                 var pass = true;
+
+                $('.not_null').remove();	 // 清除掉以前的错误信息
+
                 $.each(departments, function (index, value) {
                     console.log(index, value);
 
-                    if(value['department_name'] === empty_text || value['department_name'] == ""){
-                        pass = false;
-                        window.alert('提交失败，系 '+index+'的名称不可以为空');
-                        return pass
-                    }
-
                     if(value['institute'] === empty_text || value['institute'] == ""){
                         pass = false;
-                        window.alert('提交失败，请选择系'+index+'的学院');
-                        return pass
+                        add_tip('department_table', index, 2)
+                    }
+
+                    if(value['department_name'] === empty_text || value['department_name'] == ""){
+                        pass = false;
+                        add_tip('department_table', index, 3)
                     }
                 });
                 if(pass){
@@ -655,7 +655,7 @@
             if(index == 0){
                 new_row = {
                     "id": index,
-                    "department": "",
+                    "department": {% if departments %}{{ departments.0.id }}{% else %}""{% endif %},
                     "grade_name": ""
                 };
             }else{
@@ -682,19 +682,20 @@
 
             if(grades.length !== 0){
                 var pass = true;
+
+                $('.not_null').remove();	 // 清除掉以前的错误信息
+
                 $.each(grades, function (index, value) {
                     console.log(index, value);
 
-                    if(value['grade_name'] === empty_text || value['grade_name'] == ""){
-                        pass = false;
-                        window.alert('提交失败，年级 '+index+'的名称不可以为空');
-                        return pass
-                    }
-
                     if(value['department'] === empty_text || value['department'] == ""){
                         pass = false;
-                        window.alert('提交失败，请选择年级'+index+'所属系别');
-                        return pass
+                        add_tip('grade_table', index, 2)
+                    }
+
+                    if(value['grade_name'] === empty_text || value['grade_name'] == ""){
+                        pass = false;
+                        add_tip('grade_table', index, 3)
                     }
                 });
                 if(pass){

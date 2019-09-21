@@ -8,7 +8,6 @@ from apps.apply_experiments.models import Experiment, ExperimentType
 from apps.apply_experiments.views import set_user_for_context
 from apps.super_manage.models import School, SchoolArea, Institute, Department, Grade, SuperUser, Classes, Teacher, \
     SchoolYear, Term, Course, LabsAttribute, Labs
-from apps.browse.views import create_default_term_for_school
 
 from logging_setting import ThisLogger
 
@@ -33,6 +32,17 @@ def set_system_school_year():
                 SchoolYear.objects.filter(id=school_year.id).update(since=year_now - 1, to=year_now)
     else:
         SchoolYear.objects.create(since=year_now, to=year_now + 1)
+
+
+def create_default_term_for_school(school):
+    school_year = SchoolYear.objects.all()
+    if not school_year:
+        set_system_school_year()
+        school_year = SchoolYear.objects.all()[0]
+    else:
+        school_year = school_year[0]
+    Term.objects.create(name='第一学期', school_year=school_year, school=school)
+    return True
 
 
 def get_all_school_areas(school):
@@ -212,6 +222,7 @@ def school_manage(request):
     if context['superuser']:
         context['school'] = context['superuser'].school
 
+    # 放在这里的作用是使得每次管理员登录就自动更新一下数据库的学年信息
     set_system_school_year()
 
     if context['school']:

@@ -11,6 +11,9 @@ class ExperimentType(models.Model):
 
     name = models.CharField(max_length=30, verbose_name='实验类型')
     school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='对应的学校', related_name='experiment_types')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         return self.name
@@ -25,6 +28,9 @@ class SpecialRequirements(models.Model):
     special_consume_requirements = models.CharField(max_length=100, verbose_name='特殊耗材需求', null=True, blank=True)
     special_system_requirements = models.CharField(max_length=100, verbose_name='特殊系统需求', null=True, blank=True)
     special_soft_requirements = models.CharField(max_length=100, verbose_name='特殊软件需求', null=True, blank=True)
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         show_me = ''
@@ -57,7 +63,8 @@ class Experiment(models.Model):
     labs_attribute = models.ManyToManyField(LabsAttribute, verbose_name='实验室属性，用于筛选实验室，可以多个属性，也可不选')
 
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-    modify_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         return self.name

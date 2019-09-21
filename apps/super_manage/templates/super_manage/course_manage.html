@@ -170,7 +170,7 @@
             if(index == 0){
                 new_row = {
                     "id": index,
-                    "institute": "",
+                    "institute": {% if institutes %}{{ institutes.0.id }}{% else %}""{% endif %},
                     "course_name": "",
                     "classes": "",
                     "teachers": "",
@@ -201,19 +201,20 @@
 
             if(courses.length !== 0){
                 var pass = true;
+
+                $('.not_null').remove();	 // 清除掉以前的错误信息
+
                 $.each(courses, function (index, value) {
                     console.log(index, value);
 
-                    if(value['course_name'] === empty_text || value['course_name'] == ""){
-                        pass = false;
-                        window.alert('提交失败，课程 '+index+'的名称不可以为空');
-                        return pass
-                    }
-
                     if(value['grade'] === empty_text || value['grade'] == ""){
                         pass = false;
-                        window.alert('提交失败，请选择班级'+index+'所属年级');
-                        return pass
+                        add_tip('course_table', index, 2)
+                    }
+
+                    if(value['course_name'] === empty_text || value['course_name'] == ""){
+                        pass = false;
+                        add_tip('course_table', index, 3)
                     }
                 });
                 if(pass){

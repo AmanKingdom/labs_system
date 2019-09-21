@@ -6,17 +6,9 @@ from apps.browse.models import Assistant
 from apps.super_manage.models import Teacher, SuperUser, School, Term, SchoolYear
 
 from logging_setting import ThisLogger
+from super_manage.views import create_default_term_for_school
 
 this_logger = ThisLogger().logger
-
-
-def create_default_term_for_school(school):
-    school_year = SchoolYear.objects.all()
-    if school_year:
-        school_year = school_year[0]
-        Term.objects.create(name='第一学期', school_year=school_year, school=school)
-        return True
-    return False
 
 
 # 基础视图，检查登录

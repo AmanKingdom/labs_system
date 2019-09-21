@@ -19,8 +19,8 @@
                         <div class="ibox-tools">
                             <button id="add_lab_button" class="btn btn-primary">添加实验室</button>
                             <button id="remove_lab_button" class="btn btn-danger" disabled>删除实验室</button>
-                                                        <button id="save_lab_button" class="btn btn-primary">保存修改</button>
-<a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                            <button id="save_lab_button" class="btn btn-primary">保存修改</button>
+                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                         </div>
                     </div>
                     <div class="ibox-content">
@@ -180,7 +180,7 @@
             if(index == 0){
                 new_row = {
                     "id": index,
-                    "institute": "",
+                    "institute": {% if institutes %}{{ institutes.0.id }}{% else %}""{% endif %},
                     "lab_name": "",
                     "number_of_people": "",
                     "dispark": 1,
@@ -215,19 +215,25 @@
 
             if(labs.length !== 0){
                 var pass = true;
+
+                $('.not_null').remove();	 // 清除掉以前的错误信息
+
                 $.each(labs, function (index, value) {
                     console.log(index, value);
 
-                    if(value['lab_name'] === empty_text || value['lab_name'] == ""){
-                        pass = false;
-                        window.alert('提交失败，实验室 '+index+'的名称不可以为空');
-                        return pass
-                    }
-
                     if(value['institute'] === empty_text || value['institute'] == "" || value['institute'] == null){
                         pass = false;
-                        window.alert('提交失败，请选择实验室'+index+'所属学院');
-                        return pass
+                        add_tip('lab_table', index, 2)
+                    }
+
+                    if(value['lab_name'] === empty_text || value['lab_name'] == ""){
+                        pass = false;
+                        add_tip('lab_table', index, 3)
+                    }
+
+                    if(value['dispark'] === empty_text || value['dispark'] == ""){
+                        pass = false;
+                        add_tip('lab_table', index, 5)
                     }
                 });
                 if(pass){

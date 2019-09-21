@@ -8,6 +8,9 @@ class School(models.Model):
         db_table = 'school'
 
     name = models.CharField(max_length=30, verbose_name='学校名称')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         return self.name
@@ -21,6 +24,9 @@ class SchoolArea(models.Model):
 
     name = models.CharField(max_length=30, verbose_name='校区名称')
     school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='所属学校', related_name='school_areas')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         return '%s-%s' % (self.school.name, self.name)
@@ -34,6 +40,9 @@ class Institute(models.Model):
 
     name = models.CharField(max_length=30, verbose_name='学院名称')
     school_area = models.ForeignKey(SchoolArea, on_delete=models.CASCADE, verbose_name='所属学校与校区', related_name='institutes')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         return '%s-%s' % (self.school_area, self.name)
@@ -47,6 +56,9 @@ class Department(models.Model):
 
     name = models.CharField(max_length=30, verbose_name='系名称')
     institute = models.ForeignKey(Institute, on_delete=models.CASCADE, verbose_name='所属学院', related_name='departments')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         return '%s-%s' % (self.institute, self.name)
@@ -60,6 +72,9 @@ class LabsAttribute(models.Model):
 
     name = models.CharField(max_length=50, verbose_name='属性名称')
     school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='对应的学校', related_name='labs_attributes')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         return self.name
@@ -77,6 +92,9 @@ class Labs(models.Model):
     dispark = models.BooleanField(verbose_name='开放情况', default=True)
     attributes = models.ManyToManyField(LabsAttribute, verbose_name='实验室属性')
     equipments = models.TextField(verbose_name='实验室设备信息', blank=True, null=True)
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         return self.name
@@ -90,6 +108,9 @@ class Grade(models.Model):
 
     name = models.CharField(max_length=30, verbose_name='年级名称')
     department = models.ForeignKey(Department, on_delete=models.CASCADE, verbose_name='所属系', related_name='grades')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         return '%s-%s级' % (self.department, self.name)
@@ -103,6 +124,9 @@ class Classes(models.Model):
 
     name = models.CharField(max_length=30, verbose_name='班级')
     grade = models.ForeignKey(Grade, on_delete=models.CASCADE, verbose_name='所属年级', related_name='classes')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         return '%s %s班' % (self.grade, self.name)
@@ -119,6 +143,9 @@ class Teacher(models.Model):
     account = models.CharField(max_length=100, verbose_name='登录账号，通常为教师工号')
     password = models.CharField(max_length=18, verbose_name='登录密码', default='123456')
     phone = models.CharField(max_length=11, verbose_name='手机号码（用于找回密码，非必填）', null=True, blank=True)
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         return self.name
@@ -134,6 +161,9 @@ class TotalRequirements(models.Model):
     total_consume_requirements = models.CharField(max_length=100, verbose_name='总体耗材需求', null=True, blank=True)
     total_system_requirements = models.CharField(max_length=100, verbose_name='总体系统需求', null=True, blank=True)
     total_soft_requirements = models.CharField(max_length=100, verbose_name='总体软件需求', null=True, blank=True)
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
 
 # 学年
@@ -144,6 +174,9 @@ class SchoolYear(models.Model):
 
     since = models.IntegerField(default=2019, verbose_name='起始年份')
     to = models.IntegerField(default=2020, verbose_name='终止年份')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         return '%s-%s学年' % (self.since, self.to)
@@ -163,6 +196,9 @@ class Term(models.Model):
     name = models.CharField(max_length=20, choices=TERM, verbose_name='学期名')
     school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='对应的学校')
     begin_date = models.DateField(auto_now=True, verbose_name='当前学期起始日期')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         return '%s%s' % (self.school_year, self.name)
@@ -183,7 +219,8 @@ class Course(models.Model):
     total_requirements = models.ForeignKey(TotalRequirements, on_delete=models.SET_NULL,
                                            verbose_name='总体实验需求', blank=True, null=True)
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-    modify_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
     term = models.ForeignKey(Term, on_delete=models.CASCADE, verbose_name='学年学期')
 
     def __str__(self):
@@ -201,6 +238,9 @@ class SuperUser(models.Model):
     password = models.CharField(max_length=18, verbose_name='登录密码', default='123456')
     school = models.ForeignKey(School, on_delete=models.SET_NULL, verbose_name='所管理的学校', blank=True, null=True)
     is_teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, verbose_name='是否是教师，是则外键到对应教师', blank=True, null=True)
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
         return self.name

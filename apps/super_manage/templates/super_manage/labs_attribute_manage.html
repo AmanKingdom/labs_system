@@ -130,13 +130,15 @@
 
             if(labs_attributes.length !== 0){
                 var pass = true;
+
+                $('.not_null').remove();	 // 清除掉以前的错误信息
+
                 $.each(labs_attributes, function (index, value) {
                     console.log(index, value);
 
                     if(value['labs_attribute_name'] === empty_text || value['labs_attribute_name'] == ""){
                         pass = false;
-                        window.alert('提交失败，实验室属性 '+index+'的名称不可以为空');
-                        return pass
+                        add_tip('labs_attribute_table', index, 2)
                     }
                 });
                 if(pass){

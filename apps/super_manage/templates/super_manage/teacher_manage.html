@@ -150,7 +150,7 @@
             if(index == 0){
                 new_row = {
                     "id": index,
-                    "department": "",
+                    "department": {% if departments %}{{ departments.0.id }}{% else %}""{% endif %},
                     "teacher_name": "",
                     "account": "",
                     "password": "123456",
@@ -183,31 +183,30 @@
 
             if(teachers.length !== 0){
                 var pass = true;
+
+                $('.not_null').remove();	 // 清除掉以前的错误信息
+
                 $.each(teachers, function (index, value) {
                     console.log(index, value);
 
                     if(value['department'] === empty_text || value['department'] == ""){
                         pass = false;
-                        window.alert('提交失败，请选择教师'+index+'所属系别');
-                        return pass
+                        add_tip('teacher_table', index, 2)
                     }
 
                     if(value['teacher_name'] === empty_text || value['teacher_name'] == ""){
                         pass = false;
-                        window.alert('提交失败，教师 '+index+'的姓名不可以为空');
-                        return pass
+                        add_tip('teacher_table', index, 3)
                     }
 
                     if(value['account'] === empty_text || value['account'] == ""){
                         pass = false;
-                        window.alert('提交失败，请填上教师'+index+'的账号');
-                        return pass
+                        add_tip('teacher_table', index, 4)
                     }
 
                     if(value['password'] === empty_text || value['password'] == ""){
                         pass = false;
-                        window.alert('提交失败，请填上教师'+index+'密码');
-                        return pass
+                        add_tip('teacher_table', index, 5)
                     }
                 });
                 if(pass){

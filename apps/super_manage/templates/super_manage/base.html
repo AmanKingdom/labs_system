@@ -23,12 +23,12 @@
     <link href="/static/css_js/css/bootstrap-editable.css" rel="stylesheet">
 
     <style type="text/css">
-        .need{
+        .not_null, .need{
             color: #ff0000;
         }
 
         a.editable-empty,a.editable,a.editable-click{
-            width: 90%;
+            width: 80%;
             height: 25px;
             display: inline-block;
         }
@@ -36,9 +36,9 @@
         .editable-click,
         a.editable-click,
         a.editable-click:hover {
-            {#text-decoration: none;#}
+        {#text-decoration: none;#}
             border-bottom: dashed 0px #0088cc;
-            {#white-space: nowrap;#}
+        {#white-space: nowrap;#}
             /* 重写去除下边框 */
         }
 
@@ -272,6 +272,7 @@
 <script>
     var empty_text = '       ';    // 全局性的空文本
     var not_found_data = '暂无数据';    // 全局性的找不到数据提示文本
+    var can_not_be_null = '不可为空';   // 全局性的不可为空提醒文本
 
     $.fn.editable.defaults.mode = 'inline';//设置行内编辑模式
     $.fn.editable.defaults.showbuttons = false;//设置所有的元素不显示按钮
@@ -290,6 +291,20 @@
     var delete_ids_in_database = [];
 </script>
 <!--全局的bootstrap table 和 X-editable 配置 结束-->
+
+<!--通用的为表格添加提示信息的方法 开始-->
+<script>
+    function add_tip(table_str, index, cells) {
+        var tag = document.createElement('span');
+        var br = document.createElement('br');
+        tag.innerText = can_not_be_null;
+        tag.className = 'not_null';
+        br.className = 'not_null';
+        document.getElementById(table_str).rows[index+1].cells[cells].appendChild(br);
+        document.getElementById(table_str).rows[index+1].cells[cells].appendChild(tag);
+    }
+</script>
+<!--通用的为表格添加提示信息的方法 结束-->
 
 
 <!--通用的ajax提交 from_url为刷新返回地址，to_url为提交地址，接收的data为json即可，在函数内会序列化处理-->
@@ -339,8 +354,7 @@
 <script>
     function remove_ajax(from_url, remove_json){
         var url = "{% url 'super_manage:remove_ajax' %}";
-        var data = remove_json;
-        base_ajax(from_url, url, data);
+        base_ajax(from_url, url, remove_json);
     }
 </script>
 

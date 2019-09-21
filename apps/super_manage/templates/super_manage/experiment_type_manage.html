@@ -130,13 +130,15 @@
 
             if(experiment_types.length !== 0){
                 var pass = true;
+
+                $('.not_null').remove();	 // 清除掉以前的错误信息
+
                 $.each(experiment_types, function (index, value) {
                     console.log(index, value);
 
                     if(value['experiment_type_name'] === empty_text || value['experiment_type_name'] == ""){
                         pass = false;
-                        window.alert('提交失败，实验类型 '+index+'的名称不可以为空');
-                        return pass
+                        add_tip('experiment_type_table', index, 2)
                     }
                 });
                 if(pass){

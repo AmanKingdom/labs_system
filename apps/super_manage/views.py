@@ -788,3 +788,30 @@ def cancel_the_teacher(request):
             context['message'] = '修改失败，请重试'
 
         return JsonResponse(context)
+
+
+def get_schedule(request):
+    data = json.loads(list(request.POST.keys())[0])
+
+    context = {
+        "data": [{
+            "days_of_the_week": '1',
+            "section": '1'
+        }, {
+            "days_of_the_week": '1',
+            "section": '2'
+        }, {
+            "days_of_the_week": '1',
+            "section": "3",
+            "8b308": "<button>do</button>"
+        }]
+    }
+
+    school = School.objects.get(id=data['school_id'])
+
+    courses = get_all_courses(school)
+
+    # for course in courses:
+
+    return JsonResponse(context)
+

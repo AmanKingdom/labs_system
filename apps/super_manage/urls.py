@@ -3,7 +3,7 @@ from django.urls import path
 from apps.super_manage.views import school_manage, create_or_modify_school_ajax, remove_ajax, \
     save_ajax, classes_manage, teacher_manage, save_term_ajax, become_a_teacher, cancel_the_teacher, course_manage, \
     labs_attribute_manage, experiment_type_manage, lab_manage, system_settings, personal_info, application_manage, \
-    application_check
+    application_check, get_schedule
 from apps.browse.views import require_login
 
 app_name = 'super_manage'
@@ -27,5 +27,7 @@ urlpatterns = [
     path('become_a_teacher', become_a_teacher, name='become_a_teacher'),
     path('cancel_the_teacher', cancel_the_teacher, name='cancel_the_teacher'),
 
-    path('application_check/<course_id>/<status>/', require_login(application_check), name='application_check'),
+    path('application_check/<course_id>/<status>/', application_check, name='application_check'),
+
+    path('get_schedule', get_schedule, name='get_schedule')
 ]

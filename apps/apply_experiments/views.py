@@ -406,9 +406,17 @@ def weeks_analyze(request):
         'weeks_analyze_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
+        'school': None,
     }
 
     set_user_for_context(request.session['user_account'], context)
+
+    if context['superuser']:
+        if context['superuser'].school:
+            context['school'] = context['superuser'].school
+    elif context['teacher']:
+        if context['teacher'].department.institute.school_area.school:
+            context['school'] = context['teacher'].department.institute.school_area.school
 
     return render(request, 'apply_experiments/weeks_analyze.html', context)
 

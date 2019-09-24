@@ -29,5 +29,5 @@ urlpatterns = [
 
     path('application_check/<course_id>/<status>/', application_check, name='application_check'),
 
-    path('get_schedule', get_schedule, name='get_schedule')
+    path('get_schedule/<school_id>/', get_schedule, name='get_schedule')
 ]

@@ -7,14 +7,9 @@ from apps.super_manage.models import Teacher, Course, Classes, Institute, Labs, 
     TotalRequirements, Term, SuperUser
 
 from logging_setting import ThisLogger
+from apps.super_manage.views import get_all_labs, set_user_for_context, STATUS
 
 this_logger = ThisLogger().logger
-
-STATUS = {
-    '1': '已提交待审核',
-    '2': '审核不通过',
-    '3': '审核通过'
-}
 
 
 def set_choices_context(context):
@@ -34,24 +29,6 @@ def set_choices_context(context):
     context['labs_attribute'] = LabsAttribute.objects.all() if LabsAttribute.objects.all() else ""
     # 因为找不到联动数据的解决方案，暂时用所有实验室来代替
     context['all_labs'] = Labs.objects.filter(dispark=True)
-
-
-def set_user_for_context(user_account, context):
-    context['superuser'] = SuperUser.objects.filter(account=user_account)
-    if context['superuser']:
-        context['superuser'] = context['superuser'][0]
-        context['teacher'] = context['superuser'].is_teacher
-        if context['teacher']:
-            return 'superuser_is_teacher'
-        else:
-            return 'superuser'
-    else:
-        context['teacher'] = Teacher.objects.filter(account=user_account)
-        if context['teacher']:
-            context['teacher'] = context['teacher'][0]
-            return 'teacher'
-        else:
-            return None
 
 
 # 数据联动，动态加载班级数据
@@ -407,6 +384,8 @@ def weeks_analyze(request):
         'superuser': None,
         'teacher': None,
         'school': None,
+
+        'labs': None,
     }
 
     set_user_for_context(request.session['user_account'], context)
@@ -417,6 +396,9 @@ def weeks_analyze(request):
     elif context['teacher']:
         if context['teacher'].department.institute.school_area.school:
             context['school'] = context['teacher'].department.institute.school_area.school
+
+    # 实验室数据用来前端生成表头
+    context['labs'] = get_all_labs(context['school'])
 
     return render(request, 'apply_experiments/weeks_analyze.html', context)
 

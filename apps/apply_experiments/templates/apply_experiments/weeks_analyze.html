@@ -51,13 +51,6 @@
                data-toolbar="#toolbar"
                data-height="600"
                align="center">
-            {#            <thead>#}
-            {#            <tr>#}
-            {#                <th >星期</th>#}
-            {#                <th >节次</th>#}
-            {#                <th >7A102</th>#}
-            {#            </thead>#}
-            <tbody id="schedule_table_body" align="center"></tbody>
         </table>
     </div>
 {% endblock %}
@@ -80,10 +73,13 @@
     <script>
         function initTable() {
             $('#week_schedule_table').bootstrapTable('destroy').bootstrapTable({
-                {#sidePagination: "server",#}
-                {#url: '{% url "super_manage:get_schedule" %}',#}
+                sidePagination: "server",
+                url: '{% url "super_manage:get_schedule" school.id %}',
                 height: 550,
                 locale: $('#locale').val(),
+                onLoadSuccess: function (data) {
+                    uniteTable('week_schedule_table', 6);
+                },
                 columns: [
                     {
                         field: 'days_of_the_week',
@@ -91,74 +87,77 @@
                     }, {
                         field: 'section',
                         title: '节次',
-                    }, {
-                        field: '8b308',
-                        title: '308',
-                    }
+                    },
+                    {% for lab in labs %}
+                        {
+                            field: '{{ lab.name }}',
+                            title: '{{ lab.name }}',
+                        },
+                    {% endfor %}
                 ],
-                formatNoMatches: function(){
-                    return '';
-                }
             });
         }
 
-        function load_data() {
-            $.ajax({
-                cache:true,//保留缓存数据
-                type:"POST",
-                url:'{% url "super_manage:get_schedule" %}',
-                data:JSON.stringify({'school_id': '{{ school.id }}'}),
-                dataType:'JSON',
-                async:false,
-                headers:{'X-CSRFToken':'{{ csrf_token }}'},
-                error:function(request){
-                    console.log("提交失败", request);
-                    alert('提交失败'+request.toString());
-                },
-                success:function(data){
-                    console.log("已提交");
-                    console.log('后台返回的json', data.data, '类型', typeof data.data);
 
-                    var tbody = document.getElementsByTagName('tbody');
+        //动态合并单元格
+        function uniteTable(tableId,colLength) {//表格ID，表格列数
+            var tb=document.getElementById(tableId);
+            tb.style.display='';
+            var i = 0;
+            var j = 0;
+            var rowCount = tb.rows.length; //   行数
+            var colCount = tb.rows[0].cells.length; //   列数
 
-                    var json = data.data;
+            console.log(rowCount, colCount);
 
-                    if(json){
-                        for(var i=0; i<json.length; i++){
-                            var new_tr = document.createElement('tr');
-
-                            var j = 0;
-                            for(let x in json[i]){
-                                console.log('key:', x, ' value:', json[i][x]);
-
-                                var new_td = document.createElement('td');
-                                new_td.innerHTML = json[i][x];
-
-                                // 如果是第一行的第一列单元格，则要设置跨行，而不是第一行的第一列单元格则不要添加
-                                if(i === 0 && j === 0){
-                                    new_td.setAttribute("rowspan", '3');
-                                    console.log('set rowspan');
-                                    new_tr.appendChild(new_td);
-                                }else if(i !== 0 && j === 0){
-                                    console.log('do nothing');
-                                }else{
-                                    new_tr.appendChild(new_td);
-                                }
-
-                                j = j + 1;
-                            }
-
-                            tbody[0].appendChild(new_tr);
-                        }
+            var obj1 = null;
+            var obj2 = null;
+            //为每个单元格命名，包括表头
+            for (i = 0; i < rowCount; i++) {
+                for (j = 0; j < colCount; j++) {
+                    tb.rows[i].cells[j].id = "tb__" + i.toString() + "_" + j.toString();
+                    console.log(tb.rows[i].cells[j], tb.rows[i].cells[j].id);
+                }
+            }
+            //合并行
+            for (i = 0; i < colCount; i++) {
+                if (i == colLength) break;
+                obj1 = document.getElementById("tb__0_" + i.toString());
+                for (j = 1; j < rowCount; j++) {
+                    obj2 = document.getElementById("tb__" + j.toString() + "_" + i.toString());
+                    if (obj1.innerText == obj2.innerText && ((obj2.innerText != "" || obj1.innerText != "")&&(obj1.innerText != "-"|| obj2.innerText != "-"))) {
+                        obj1.rowSpan++;
+                        obj2.parentNode.removeChild(obj2);
+                    } else {
+                        obj1 = document.getElementById("tb__" + j.toString() + "_" + i.toString());
                     }
                 }
-            });
+            }
+            {#//合并列，出了点问题...#}
+            {#for (i = 0; i < rowCount; i++) {#}
+            {#    colCount = tb.rows[i].cells.length;#}
+            {#    obj1 = document.getElementById(tb.rows[i].cells[0].id);#}
+            {#    for (j = 1; j < colCount; j++) {#}
+            {#        if (j >= colLength) break;#}
+            {#        if (obj1.colSpan >= colLength) break;#}
+            {#        obj2 = document.getElementById(tb.rows[i].cells[j].id);#}
+            {#        if (obj1.innerText == obj2.innerText && ((obj2.innerText != "" || obj1.innerText != "")&&(obj1.innerText != "-"|| obj2.innerText != "-"))) {#}
+            {#            obj1.colSpan++;#}
+            {#            obj2.parentNode.removeChild(obj2);#}
+            {#            j = j - 1;#}
+            {#        }#}
+            {#        else {#}
+            {#            obj1 = obj2;#}
+            {#            j = j + obj1.rowSpan;#}
+            {#        }#}
+            {#    }#}
+            {#}#}
         }
 
         $(function() {
             initTable();
-            load_data();
             $('#locale').change(initTable);
+            {#uniteTable('week_schedule_table');#}
         })
     </script>
 {% endblock %}

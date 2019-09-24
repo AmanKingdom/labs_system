@@ -5,13 +5,19 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import render
 
 from apps.apply_experiments.models import Experiment, ExperimentType
-from apps.apply_experiments.views import set_user_for_context, STATUS
 from apps.super_manage.models import School, SchoolArea, Institute, Department, Grade, SuperUser, Classes, Teacher, \
     SchoolYear, Term, Course, LabsAttribute, Labs
 
 from logging_setting import ThisLogger
 
 this_logger = ThisLogger().logger
+
+
+STATUS = {
+    '1': '已提交待审核',
+    '2': '审核不通过',
+    '3': '审核通过'
+}
 
 
 # 设置本系统的唯一学年，当当前月份为8月份时，如果有超级管理员登录本系统，即可更新数据库的学年表的唯一一条学年数据
@@ -32,6 +38,25 @@ def set_system_school_year():
                 SchoolYear.objects.filter(id=school_year.id).update(since=year_now - 1, to=year_now)
     else:
         SchoolYear.objects.create(since=year_now, to=year_now + 1)
+
+
+
+def set_user_for_context(user_account, context):
+    context['superuser'] = SuperUser.objects.filter(account=user_account)
+    if context['superuser']:
+        context['superuser'] = context['superuser'][0]
+        context['teacher'] = context['superuser'].is_teacher
+        if context['teacher']:
+            return 'superuser_is_teacher'
+        else:
+            return 'superuser'
+    else:
+        context['teacher'] = Teacher.objects.filter(account=user_account)
+        if context['teacher']:
+            context['teacher'] = context['teacher'][0]
+            return 'teacher'
+        else:
+            return None
 
 
 def create_default_term_for_school(school):
@@ -790,28 +815,58 @@ def cancel_the_teacher(request):
         return JsonResponse(context)
 
 
-def get_schedule(request):
-    data = json.loads(list(request.POST.keys())[0])
+def get_schedule(request, school_id=None):
+    # data = json.loads(list(request.POST.keys())[0])
 
-    context = {
-        "data": [{
-            "days_of_the_week": '1',
-            "section": '1'
-        }, {
-            "days_of_the_week": '1',
-            "section": '2'
-        }, {
-            "days_of_the_week": '1',
-            "section": "3",
-            "8b308": "<button>do</button>"
-        }]
+    # context = {
+    #     # "data": [{
+    #     #     "days_of_the_week": '1',
+    #     #     "section": '1'
+    #     # }, {
+    #     #     "days_of_the_week": '1',
+    #     #     "section": '2'
+    #     # }, {
+    #     #     "days_of_the_week": '1',
+    #     #     "section": "3",
+    #     #     "8b308": "<button>do</button>"
+    #     # }],
+    #     "data": [],
+    #     "data_sort": [],
+    # }
+
+    data = {
+        "total": 1,
+        "rows": []
     }
 
-    school = School.objects.get(id=data['school_id'])
+    school = School.objects.get(id=school_id)
 
+    labs = get_all_labs(school)
     courses = get_all_courses(school)
 
-    # for course in courses:
+    # context['data_sort'] = ["days_of_the_week", "section"]
 
-    return JsonResponse(context)
+    # for lab in labs:
+    #     context['data_sort'].append(lab.name)
+
+    for course in courses:
+        experiments = course.experiments.all()
+        if experiments:
+            for experiment in experiments:
+                if experiment.status == 3:
+                    new_dict = {
+                        "days_of_the_week": experiment.days_of_the_week,
+                        "section": experiment.section
+                    }
+                    labs_in_experiment = experiment.labs.all()
+                    for lab in labs:
+                        if lab in labs_in_experiment:
+                            new_dict["%s" % lab.name] = "<div>%s</div>" % course.name
+                        else:
+                            new_dict["%s" % lab.name] = ""
+                    data['rows'].append(new_dict)
+
+    print(data['rows'])
+
+    return JsonResponse(data)
 

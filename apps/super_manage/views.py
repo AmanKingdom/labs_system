@@ -866,6 +866,10 @@ def get_schedule(request, school_id=None):
                             new_dict["%s" % lab.name] = ""
                     data['rows'].append(new_dict)
 
+    temp_dict = {"days_of_the_week":"", "section":""}
+    for lab in labs:
+        temp_dict["%s" % lab.name] = ""
+    data['rows'].insert(0, temp_dict)
     print(data['rows'])
 
     return JsonResponse(data)

@@ -1,44 +1,20 @@
-<!--apply_experiments/weeks_analyze.html-->
+<!--super_manage/arrange.html-->
 
-{% extends 'apply_experiments/base.html' %}
+{% extends 'super_manage/base.html' %}
 
-{% block add_css_to_apply_experiments %}
+{% block add_css_to_super_manage %}
     <!--固定列表头所需的样式依赖-->
     <link rel="stylesheet" href="/static/css_js/css/fixed-columns/bootstrap-table-fixed-columns.css">
+    <style>
+        .course_div{
+            background: #1AB394;
+            margin-left: 10%;
+            margin-right: 10%;
+        }
+    </style>
 {% endblock %}
 
-{% block apply_experiments_body %}
-    <div class="row">
-        <div id="toolbar">
-            <div class="row">
-                <div class="col-sm-4 m-b-xs">
-                    <select class="input-sm form-control input-s-sm inline">
-                        <option class="selected">计算机科学与技术学院</option>
-                        <option>网络安全学院</option>
-                    </select>
-                </div>
-                <div class="col-sm-4 m-b-xs">
-                    <select class="input-sm form-control input-s-sm inline">
-                        <option>第14周</option>
-                        <option class="selected">第15周</option>
-                        <option>第16周</option>
-                    </select>
-                </div>
-                <div class="col-sm-4 m-b-xs">
-                    <select class="input-sm form-control input-s-sm inline">
-                        <option class="selected">--星期--</option>
-                        <option>星期一</option>
-                        <option>星期二</option>
-                        <option>星期三</option>
-                        <option>星期四</option>
-                        <option>星期五</option>
-                        <option>星期六</option>
-                        <option>星期七</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-    </div>
+{% block super_manage_body %}
     <div class="table-responsive">
         <table class="table table-bordered table-hover" id="week_schedule_table"
                data-toggle="table"
@@ -55,30 +31,31 @@
     </div>
 {% endblock %}
 
-{% block add_js_to_apply_experiments %}
+{% block add_js_to_super_manage %}
     <!--固定列的js-->
     <script src="/static/css_js/js/fixed-columns/bootstrap-table-fixed-columns.js"></script>
-
-    <!--固定列-->
+    <!--固定列的设置-->
     <script>
         $(function () {
             $('#week_schedule_table').bootstrapTable('destroy').bootstrapTable({
                 minimumCountColumns:4,
                 fixedColumns:true,
-                fixedNumber:2,
+                fixedNumber:3,
             });
         })
     </script>
+
 
     <script>
         function initTable() {
             $('#week_schedule_table').bootstrapTable('destroy').bootstrapTable({
                 sidePagination: "server",
-                url: '{% url "super_manage:get_schedule" school.id %}',
+                url: '{% url "super_manage:schedule" school.id %}',
                 height: 800,
                 locale: $('#locale').val(),
                 onLoadSuccess: function (data) {
                     uniteTable('week_schedule_table');
+                    set_drag();
                 },
                 columns: [
                     {
@@ -123,10 +100,10 @@
             //合并列，在本程序，应该先做行方向上的合并，因为课程往往是有多个实验室，而在一周的一串节次内，基本都是合并后的一整个大单元格
             for (i = 1; i < rowCount; i++) {    // i作为行标
                 // 不能这样用：obj1 = document.getElementById(tb.rows[i].cells[2].id);
-                obj1 = document.getElementById("tb__"+i.toString()+"_2");   // 从每一行的第三列开始取单元格对象元素，因为星期和节次不需要做列合并
+                obj1 = document.getElementById("tb__"+i.toString()+"_2");   // 从每一行的第3列开始取单元格对象元素，因为星期和节次不需要做列合并
                 console.log('合并列，目前行和obj1：', i, obj1);
 
-                for (j = 3; j < colCount; j++) {    // 从第四列开始取每一行的单元格作为下一个判断对象
+                for (j = 3; j < colCount; j++) {    // 从第4列开始取每一行的单元格作为下一个判断对象
                     if(document.getElementById("tb__"+i.toString()+"_"+j.toString())){
                         console.log('存在obj2：',document.getElementById("tb__"+i.toString()+"_"+j.toString()));
 
@@ -185,5 +162,75 @@
             initTable();
             $('#locale').change(initTable);
         })
+    </script>
+
+
+    <!--拖拽实现-->
+    <script>
+        function set_drag() {
+            console.log("set_drag()执行");
+
+            // 每个课程都是一个div，下面这是所有课程div集合
+            var all_course_div = document.getElementsByClassName("course_div");
+            // 等下需要对表格的所有单元格进行操作
+            var courses_table = document.getElementById("week_schedule_table");
+            var all_tds = courses_table.getElementsByTagName("td");
+            var temp = null;     // 作为过渡器件，存放被拖拽对象
+
+            // 对所有可被拖拽的对象设置事件
+            for (var i=0; i<all_course_div.length; i++) {
+                all_course_div[i].onselectstart = function() {
+                    return false;
+                };
+                all_course_div[i].ondragstart = function(ev) {
+                    /*拖拽开始*/
+                    //拖拽效果
+                    ev.dataTransfer.effectAllowed = "move";
+                    ev.dataTransfer.setData("text", ev.target.innerHTML);
+                    ev.dataTransfer.setDragImage(ev.target, 0, 0);
+                    temp = ev.target;
+                    return true;
+                };
+                all_course_div[i].ondragend = function(ev) {
+                    /*拖拽结束*/
+                    ev.dataTransfer.clearData("text");
+                    temp = null;
+                    return false
+                };
+            }
+
+            /*
+            for(var i=0; i<all_tds.length; i++){
+                console.log('存在', all_tds[i]);
+
+                var td = document.getElementById(all_tds[i].id);
+
+                td.onselectstart = function() {
+                    return false;
+                };
+
+                td.ondragover = function(ev) {
+                    // 拖拽元素在目标元素头上移动的时候
+                    ev.preventDefault();
+                    return true;
+                };
+
+                td.ondragenter = function(ev) {
+                    // 拖拽元素进入目标元素头上的时候
+                    this.style.color = "#ffffff";
+                    return true;
+                };
+
+                td.ondrop = function(ev) {
+                    // 拖拽元素进入目标元素头上，同时鼠标松开的时候
+                    if (temp) {
+                        td.appendChild(temp);
+                        console.log('打印看看:', td);
+                    }
+                    this.style.color = "#000000";
+                    return false;
+                };
+            }*/
+        }
     </script>
 {% endblock %}

@@ -33,9 +33,7 @@
             display: inline-block;
         }
 
-        .editable-click,
-        a.editable-click,
-        a.editable-click:hover {
+        .editable-click, a.editable-click, a.editable-click:hover {
         {#text-decoration: none;#}
             border-bottom: dashed 0px #0088cc;
         {#white-space: nowrap;#}
@@ -51,10 +49,6 @@
         {#height:30px;#}
         {#    padding-left: 2px;#}
         {#}#}
-
-        #body_div, #page-wrapper{
-            height: auto;
-        }
     </style>
 
     <!--子html文件用这个填充块添加css样式-->
@@ -116,44 +110,43 @@
                     </li>
                 {% endif %}
 
-                <li class="active">
-                    <a href="#"><i class="fa fa-edit"></i> <span class="nav-label">申请实验室</span><span class="fa arrow"></span></a>
-                    <ul class="nav nav-second-level collapse">
-                        <li {% if apply_experiments_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:apply' %}">实验课申请</a></li>
-                        <li {% if apply_info_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:manage_application' %}">申请信息管理</a></li>
-                    </ul>
-                </li>
-
                 <!--超级管理员所使用的导航块-->
                 {% if superuser %}
-                    <li class="active">
-                        <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">教学信息管理</span><span class="fa arrow"></span></a>
+                    <li {% if active_1 %}class="active"{% endif %}>
+                        <a href="#"><i class="fa fa-bank"></i> <span class="nav-label">教学信息管理</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
-                            <li {% if school_active %}class="active"{% endif %}><a href="{% url 'super_manage:school_manage' %}">学校管理</a></li>
+                            <li {% if school_active %}class="active"{% endif %}><a href="{% url 'super_manage:school_manage' %}">校内机构管理</a></li>
                             <li {% if classes_active %}class="active"{% endif %}><a href="{% url 'super_manage:classes_manage' %}">班级管理</a></li>
                             <li {% if teacher_active %}class="active"{% endif %}><a href="{% url 'super_manage:teacher_manage' %}">教师管理</a></li>
                             <li {% if course_active %}class="active"{% endif %}><a href="{% url 'super_manage:course_manage' %}">课程管理</a></li>
                         </ul>
                     </li>
-                    <li class="active">
-                        <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">实验室信息管理</span><span class="fa arrow"></span></a>
+                    <li {% if active_2 %}class="active"{% endif %}>
+                        <a href="#"><i class="fa fa-laptop"></i> <span class="nav-label">实验室信息管理</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
                             <li {% if lab_active %}class="active"{% endif %}><a href="{% url 'super_manage:lab_manage' %}">实验室管理</a></li>
-                            <li {% if labs_attribute_active %}class="active"{% endif %}><a href="{% url 'super_manage:labs_attribute_manage' %}">实验室属性</a></li>
+                            <li {% if labs_attribute_active %}class="active"{% endif %}><a href="{% url 'super_manage:labs_attribute_manage' %}">实验室属性设置</a></li>
                         </ul>
                     </li>
-                    <li class="active">
-                        <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">实验课管理</span><span class="fa arrow"></span></a>
+                    <li {% if active_3 %}class="active"{% endif %}>
+                        <a href="#"><i class="fa fa-tasks"></i> <span class="nav-label">实验课管理</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
-                            <li {% if experiment_type_active %}class="active"{% endif %}><a href="{% url 'super_manage:experiment_type_manage' %}">实验类型管理</a></li>
-                            <li {% if application_active %}class="active"{% endif %}><a href="{% url 'super_manage:application_manage' %}">实验课管理</a></li>
-                            <li {% if classes_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">智能排课</a></li>
+                            <li {% if experiment_type_active %}class="active"{% endif %}><a href="{% url 'super_manage:experiment_type_manage' %}">实验类型设置</a></li>
+                            <li {% if application_active %}class="active"{% endif %}><a href="{% url 'super_manage:application_manage' %}">实验申请表审批</a></li>
+                            <li {% if arrange_active %}class="active"{% endif %}><a href="{% url 'super_manage:arrange' %}">智能排课</a></li>
                         </ul>
                     </li>
                 {% endif %}
 
-                <!--统计分析页面是不论用户是超级管理员还是教师都会展示的，但应该放在最后-->
-                <li class="active">
+                <li {% if active_4 %}class="active"{% endif %}>
+                    <a href="#"><i class="fa fa-edit"></i> <span class="nav-label">实验申请</span><span class="fa arrow"></span></a>
+                    <ul class="nav nav-second-level collapse">
+                        <li {% if apply_experiments_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:apply' %}">填写申请表</a></li>
+                        <li {% if apply_info_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:manage_application' %}">申请信息管理</a></li>
+                    </ul>
+                </li>
+
+                <li {% if active_5 %}class="active"{% endif %}>
                     <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">统计分析</span><span class="fa arrow"></span></a>
                     <ul class="nav nav-second-level collapse">
                         <li {% if weeks_analyze_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:weeks_analyze' %}">周次安排表</a></li>

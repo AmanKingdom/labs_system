@@ -42,7 +42,8 @@ def load_classes_of_course(request):
 # context中的值有则提供给前端，无数据则由前端自行判断处理
 def apply(request):
     context = {
-        'title': '申请实验室',
+        'title': '填写申请表',
+        'active_4': True,  # 激活导航
         'apply_experiments_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
@@ -209,6 +210,7 @@ def submit_experiments(request):
 def manage_application(request):
     context = {
         'title': '申请信息管理',
+        'active_4': True,  # 激活导航
         'apply_info_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
@@ -270,6 +272,7 @@ def change_experiments(request, course_id=None):
 
     context = {
         'title': '申请信息管理',
+        'active_3': True,  # 激活导航
         'apply_info_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
@@ -380,6 +383,7 @@ def remove_all_experiments(request):
 def weeks_analyze(request):
     context = {
         'title': '周次安排表',
+        'active_5': True,  # 激活导航
         'weeks_analyze_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
@@ -406,6 +410,7 @@ def weeks_analyze(request):
 def rooms_analyze(request):
     context = {
         'title': '实验室安排表',
+        'active_5': True,  # 激活导航
         'rooms_analyze_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,

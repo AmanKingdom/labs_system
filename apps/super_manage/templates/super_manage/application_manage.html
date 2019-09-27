@@ -6,7 +6,7 @@
 {% block super_manage_body %}
     <div class="ibox float-e-margins">
         <div class="ibox-title row">
-            <h5>实验室申请信息管理 </h5>
+            <h5>实验申请表审批 </h5>
         </div>
         <div class="ibox-content">
             <div class="table-responsive">
@@ -45,11 +45,11 @@
                             <td>{{ x.classes | safe }}</td>
                             <td>{{ x.create_time }}</td>
                             <td>{{ x.status }}</td>
-                            <td><button id="see_more_button" class="btn btn-primary btn-xs">查看详情</button></td>
+                            <td><button class="see_more_button btn btn-primary btn-xs">查看详情</button></td>
                             {% if superuser %}
                                 <td>
-                                    <button id="pass_button" class="btn btn-primary btn-xs">通过</button>
-                                    <button id="not_pass_button" class="btn btn-primary btn-xs">不通过</button>
+                                    <button class="pass_button btn btn-primary btn-xs">通过</button>
+                                    <button class="not_pass_button btn btn-primary btn-xs">不通过</button>
                                 </td>
                             {% endif %}
                         </tr>
@@ -64,7 +64,7 @@
 {% block add_js_to_super_manage %}
     <script>
         $(document).ready(function() {
-            $('#see_more_button').click(function () {
+            $('.see_more_button').click(function () {
                 var course_id = $(this).parents("tr").children("td:nth-child(4)").attr('id');
                 console.log('点击查看详情的行：', course_id);
 
@@ -72,14 +72,14 @@
                 url = url.replace('course_id', course_id);
                 window.location.href=url;
             });
-            $('#pass_button').click(function () {
+            $('.pass_button').click(function () {
                 var course_id = $(this).parents("tr").children("td:nth-child(4)").attr('id');
                 console.log('点击审核通过的行：', course_id);
                 var url = "{% url 'super_manage:application_check' 'course_id' '3' %}";
                 url = url.replace('course_id', course_id);
                 window.location.href=url;
             });
-            $('#not_pass_button').click(function () {
+            $('.not_pass_button').click(function () {
                 var course_id = $(this).parents("tr").children("td:nth-child(4)").attr('id');
                 console.log('点击审核不通过的行：', course_id);
                 var url = "{% url 'super_manage:application_check' 'course_id' '2' %}";

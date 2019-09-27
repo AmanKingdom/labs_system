@@ -12,7 +12,6 @@ from logging_setting import ThisLogger
 
 this_logger = ThisLogger().logger
 
-
 STATUS = {
     '1': '已提交待审核',
     '2': '审核不通过',
@@ -40,7 +39,6 @@ def set_system_school_year():
         SchoolYear.objects.create(since=year_now, to=year_now + 1)
 
 
-
 def set_user_for_context(user_account, context):
     context['superuser'] = SuperUser.objects.filter(account=user_account)
     if context['superuser']:
@@ -59,6 +57,7 @@ def set_user_for_context(user_account, context):
             return None
 
 
+# 本方法应该在每次创建一个新学校时被调用
 def create_default_term_for_school(school):
     school_year = SchoolYear.objects.all()
     if not school_year:
@@ -231,6 +230,7 @@ def system_settings(request):
 def school_manage(request):
     context = {
         'title': '学校管理',
+        'active_1': True,   # 激活导航
         'school_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
@@ -274,6 +274,7 @@ def school_manage(request):
 def classes_manage(request):
     context = {
         'title': '班级管理',
+        'active_1': True,  # 激活导航
         'classes_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
@@ -294,6 +295,7 @@ def classes_manage(request):
 def teacher_manage(request):
     context = {
         'title': '教师管理',
+        'active_1': True,  # 激活导航
         'teacher_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
@@ -314,6 +316,7 @@ def teacher_manage(request):
 def course_manage(request):
     context = {
         'title': '课程管理',
+        'active_1': True,  # 激活导航
         'course_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
@@ -357,6 +360,7 @@ def course_manage(request):
 def labs_attribute_manage(request):
     context = {
         'title': '实验室属性管理',
+        'active_2': True,  # 激活导航
         'labs_attribute_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
@@ -374,7 +378,8 @@ def labs_attribute_manage(request):
 
 def experiment_type_manage(request):
     context = {
-        'title': '实验类型管理',
+        'title': '实验类型设置',
+        'active_3': True,  # 激活导航
         'experiment_type_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
@@ -393,6 +398,7 @@ def experiment_type_manage(request):
 def lab_manage(request):
     context = {
         'title': '实验室管理',
+        'active_2': True,  # 激活导航
         'lab_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
@@ -428,7 +434,8 @@ def lab_manage(request):
 
 def application_manage(request):
     context = {
-        'title': '实验课管理',
+        'title': '实验申请表审批',
+        'active_3': True,  # 激活导航
         'application_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
@@ -480,7 +487,7 @@ def application_manage(request):
 
 
 def application_check(request, course_id=None, status=None):
-    this_logger.info('审核，接收到id：'+str(course_id)+'和status：'+str(status))
+    this_logger.info('审核，接收到id：' + str(course_id) + '和status：' + str(status))
 
     course = Course.objects.get(id=course_id)
     experiments = course.experiments.all()
@@ -577,7 +584,7 @@ def save_ajax(request):
         print('save_objects_data：', save_objects_data, 'school_id：', school_id)
 
         if data['delete_ids_in_database']:
-            this_logger.info('将要删除：'+str(data['delete_ids_in_database']))
+            this_logger.info('将要删除：' + str(data['delete_ids_in_database']))
 
             # 删除情况
             for id in data['delete_ids_in_database']:
@@ -601,7 +608,6 @@ def save_ajax(request):
                     ExperimentType.objects.get(id=id).delete()
                 elif data['save_objects_model'] == 'labs':
                     Labs.objects.get(id=id).delete()
-
 
         # try:
         for save_object in save_objects_data:
@@ -816,24 +822,6 @@ def cancel_the_teacher(request):
 
 
 def get_schedule(request, school_id=None):
-    # data = json.loads(list(request.POST.keys())[0])
-
-    # context = {
-    #     # "data": [{
-    #     #     "days_of_the_week": '1',
-    #     #     "section": '1'
-    #     # }, {
-    #     #     "days_of_the_week": '1',
-    #     #     "section": '2'
-    #     # }, {
-    #     #     "days_of_the_week": '1',
-    #     #     "section": "3",
-    #     #     "8b308": "<button>do</button>"
-    #     # }],
-    #     "data": [],
-    #     "data_sort": [],
-    # }
-
     data = {
         "total": 1,
         "rows": []
@@ -843,11 +831,6 @@ def get_schedule(request, school_id=None):
 
     labs = get_all_labs(school)
     courses = get_all_courses(school)
-
-    # context['data_sort'] = ["days_of_the_week", "section"]
-
-    # for lab in labs:
-    #     context['data_sort'].append(lab.name)
 
     for course in courses:
         experiments = course.experiments.all()
@@ -866,7 +849,7 @@ def get_schedule(request, school_id=None):
                             new_dict["%s" % lab.name] = ""
                     data['rows'].append(new_dict)
 
-    temp_dict = {"days_of_the_week":"", "section":""}
+    temp_dict = {"days_of_the_week": "", "section": ""}
     for lab in labs:
         temp_dict["%s" % lab.name] = ""
     data['rows'].insert(0, temp_dict)
@@ -874,3 +857,74 @@ def get_schedule(request, school_id=None):
 
     return JsonResponse(data)
 
+
+def arrange(request):
+    context = {
+        'title': '实验类型设置',
+        'active_3': True,  # 激活导航
+        'arrange_active': True,  # 激活导航
+        'superuser': None,
+        'teacher': None,
+
+        'school': None,
+        'labs': None,
+    }
+
+    set_user_for_context(request.session['user_account'], context)
+    if context['superuser'].school:
+        context['school'] = context['superuser'].school
+
+        # 实验室数据用来前端生成表头
+        context['labs'] = get_all_labs(context['school'])
+
+    return render(request, 'super_manage/arrange.html', context)
+
+
+def schedule(request, school_id=None):
+    data = {
+        "total": 1,
+        "rows": []
+    }
+
+    school = School.objects.get(id=school_id)
+
+    labs = get_all_labs(school)
+    courses = get_all_courses(school)
+
+    # 先生成一个一周内应有的星期和节次的空字典
+    # 一般学校的每天都是11节对吧？
+    # 该字典的格式应该为：{"d1_s1":{"days_of_the_week": days_of_the_week, "section": section, "xxx":""}, }， 键表示星期几的第几节
+
+    base_dict = {}
+    for days_of_the_week in range(1, 8):
+        for section in range(1, 12):
+            new_dict = {"days_of_the_week": days_of_the_week, "section": section}
+            for lab in labs:
+                new_dict["%s" % lab.name] = ""
+            base_dict["d%d_s%d" % (days_of_the_week, section)] = new_dict
+
+    for course in courses:
+        experiments = course.experiments.all()
+        if experiments:
+            for experiment in experiments:
+                if experiment.status == 3:  # 取审核通过的实验
+                    new_dict = {
+                        "days_of_the_week": experiment.days_of_the_week,
+                        "section": experiment.section
+                    }
+                    labs_in_experiment = experiment.labs.all()
+                    for lab in labs:
+                        if lab in labs_in_experiment:
+
+                            new_dict["%s" % lab.name] = '<div class="course_div" title="您可以拖拽我到别的地方去" draggable="true">%s</div>' % course.name
+                        else:
+                            new_dict["%s" % lab.name] = ""
+                    data['rows'].append(new_dict)
+
+    temp_dict = {"days_of_the_week": "", "section": ""}
+    for lab in labs:
+        temp_dict["%s" % lab.name] = ""
+    data['rows'].insert(0, temp_dict)
+    print(data['rows'])
+
+    return JsonResponse(data)

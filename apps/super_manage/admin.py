@@ -1,7 +1,7 @@
 from django.contrib import admin
 
-from apps.super_manage.models import School, Institute, SchoolArea, Labs, Department, Grade, Classes, Teacher, \
-    TotalRequirements, Course, LabsAttribute, SchoolYear, Term, SuperUser
+from apps.super_manage.models import School, Institute, SchoolArea, Lab, Department, Grade, Classes, Teacher, \
+    TotalRequirements, Course, LabsAttribute, SchoolYear, Term, SuperUser, Schedule
 
 admin.site.site_header = '实验室数据后台管理系统'
 admin.site.site_title = '实验室数据管理'
@@ -53,7 +53,7 @@ class LabsAdmin(admin.ModelAdmin):
     filter_horizontal = ('attributes',)  # 多对多选项的更好界面，也可垂直排列：filter_vertical
 
 
-admin.site.register(Labs, LabsAdmin)
+admin.site.register(Lab, LabsAdmin)
 
 
 class LabsAttributeAdmin(admin.ModelAdmin):
@@ -134,3 +134,5 @@ class SuperUserAdmin(admin.ModelAdmin):
 
 
 admin.site.register(SuperUser, SuperUserAdmin)
+
+admin.site.register(Schedule)

@@ -1,9 +1,6 @@
 from django.contrib import admin
 
-from apps.browse.models import Schedule, Assistant
-
-admin.site.register(Schedule)
-
+from apps.browse.models import Assistant
 
 class AssistantAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'teacher', 'account', 'create_time', 'modify_time', 'visible')  # 设置展示的列

@@ -4,9 +4,8 @@ from datetime import datetime
 from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import render
 
-from apps.apply_experiments.models import Experiment, ExperimentType
 from apps.super_manage.models import School, SchoolArea, Institute, Department, Grade, SuperUser, Classes, Teacher, \
-    SchoolYear, Term, Course, LabsAttribute, Labs
+    SchoolYear, Term, Course, LabsAttribute, Lab, Experiment, ExperimentType
 
 from logging_setting import ThisLogger
 
@@ -560,7 +559,7 @@ def remove_ajax(request):
                 elif data['remove_objects_model'] == 'experiment_types':
                     ExperimentType.objects.get(id=id).delete()
                 elif data['remove_objects_model'] == 'labs':
-                    Labs.objects.get(id=id).delete()
+                    Lab.objects.get(id=id).delete()
 
         except:
             context['status'] = False
@@ -607,7 +606,7 @@ def save_ajax(request):
                 elif data['save_objects_model'] == 'experiment_types':
                     ExperimentType.objects.get(id=id).delete()
                 elif data['save_objects_model'] == 'labs':
-                    Labs.objects.get(id=id).delete()
+                    Lab.objects.get(id=id).delete()
 
         # try:
         for save_object in save_objects_data:
@@ -654,7 +653,7 @@ def save_ajax(request):
                     et = ExperimentType.objects.filter(id=int(save_object['id_in_database']))
                     et.update(name=save_object['experiment_type_name'])
                 elif data['save_objects_model'] == 'labs':
-                    lab = Labs.objects.filter(id=int(save_object['id_in_database']))
+                    lab = Lab.objects.filter(id=int(save_object['id_in_database']))
                     if str(save_object['dispark']) == '1':
                         dispark = True
                     else:
@@ -709,11 +708,11 @@ def save_ajax(request):
                         dispark = True
                     else:
                         dispark = False
-                    lab = Labs.objects.create(name=save_object['lab_name'],
-                                              institute=Institute.objects.get(id=save_object['institute']),
-                                              number_of_people=save_object['number_of_people'],
-                                              dispark=dispark,
-                                              equipments=save_object['equipments'])
+                    lab = Lab.objects.create(name=save_object['lab_name'],
+                                             institute=Institute.objects.get(id=save_object['institute']),
+                                             number_of_people=save_object['number_of_people'],
+                                             dispark=dispark,
+                                             equipments=save_object['equipments'])
                     add_labs_attributes_to_lab(lab, save_object)
 
         # except:
@@ -880,6 +879,17 @@ def arrange(request):
     return render(request, 'super_manage/arrange.html', context)
 
 
+# 给schedule数据库做一遍数据
+def auto_arrange(school):
+    courses = get_all_courses(school)
+    for course in courses:
+        experiments = course.experiments.all()
+        if experiments:
+            for experiment in experiments:
+                if experiment.status == 3:  # 取审核通过的实验
+                    pass
+
+
 def schedule(request, school_id=None):
     data = {
         "total": 1,
@@ -887,6 +897,8 @@ def schedule(request, school_id=None):
     }
 
     school = School.objects.get(id=school_id)
+
+    auto_arrange(school)
 
     labs = get_all_labs(school)
     courses = get_all_courses(school)

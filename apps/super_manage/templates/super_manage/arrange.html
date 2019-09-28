@@ -47,6 +47,9 @@
 
 
     <script>
+        var rowCount = null; //   全局的行数
+        var colCount = null; //   全局的列数
+
         function initTable() {
             $('#week_schedule_table').bootstrapTable('destroy').bootstrapTable({
                 sidePagination: "server",
@@ -82,8 +85,8 @@
             tb.style.display='';
             var i = 0;
             var j = 0;
-            var rowCount = tb.rows.length; //   行数
-            var colCount = tb.rows[0].cells.length; //   列数
+            rowCount = tb.rows.length; //   行数
+            colCount = tb.rows[0].cells.length; //   列数
 
             console.log('行列数:', rowCount, colCount);
 
@@ -176,6 +179,7 @@
             var courses_table = document.getElementById("week_schedule_table");
             var all_tds = courses_table.getElementsByTagName("td");
             var temp = null;     // 作为过渡器件，存放被拖拽对象
+            var temp_parents = null;    // 用来作为记录拖拽前所在父节点（单元格），最后会用到它的跨行列信息
 
             // 对所有可被拖拽的对象设置事件
             for (var i=0; i<all_course_div.length; i++) {
@@ -189,48 +193,60 @@
                     ev.dataTransfer.setData("text", ev.target.innerHTML);
                     ev.dataTransfer.setDragImage(ev.target, 0, 0);
                     temp = ev.target;
+                    console.log('target_parent:', ev.currentTarget.parentElement);
+                    temp_parents = ev.currentTarget.parentElement;
                     return true;
                 };
                 all_course_div[i].ondragend = function(ev) {
                     /*拖拽结束*/
                     ev.dataTransfer.clearData("text");
                     temp = null;
+                    temp_parents = null;
                     return false
                 };
             }
 
-            /*
-            for(var i=0; i<all_tds.length; i++){
-                console.log('存在', all_tds[i]);
+            // 给所有单元格td绑定事件
+            console.log('表格的行数(包括表头)：', rowCount, '表格的列数：', colCount);
+            for(var i=colCount; i<all_tds.length; i++){     // 第一行是目前用来处理一个bug的，所以不用给它绑定事件
 
-                var td = document.getElementById(all_tds[i].id);
+                var reg01 = RegExp(/tb__[0-9]+_[01]/);
+                if(reg01.test(all_tds[i].id)){
+                    // 位于前两列的数据不需要绑定事件
+                    console.log('位于前两列：', all_tds[i].id);
+                }else{
+                    var td = document.getElementById(all_tds[i].id);
 
-                td.onselectstart = function() {
-                    return false;
-                };
+                    td.ondragover = function(ev) {
+                        // 拖拽元素在目标元素头上移动的时候
+                        ev.preventDefault();
+                        return true;
+                    };
 
-                td.ondragover = function(ev) {
-                    // 拖拽元素在目标元素头上移动的时候
-                    ev.preventDefault();
-                    return true;
-                };
+                    td.ondragenter = function(ev) {
+                        // 拖拽元素进入目标元素头上的时候
+                        this.style.color = "#ffffff";
+                        return true;
+                    };
 
-                td.ondragenter = function(ev) {
-                    // 拖拽元素进入目标元素头上的时候
-                    this.style.color = "#ffffff";
-                    return true;
-                };
+                    td.ondrop = function(ev) {
+                        // 拖拽元素进入目标元素头上，同时鼠标松开的时候
+                        if (temp) {
+                            var current_td = ev.target;
 
-                td.ondrop = function(ev) {
-                    // 拖拽元素进入目标元素头上，同时鼠标松开的时候
-                    if (temp) {
-                        td.appendChild(temp);
-                        console.log('打印看看:', td);
-                    }
-                    this.style.color = "#000000";
-                    return false;
-                };
-            }*/
+                            console.log('跨行：', temp_parents.getAttribute("rowspan"), '跨列：', temp_parents.getAttribute("colspan"));
+                            current_td.setAttribute("rowspan", temp_parents.getAttribute("rowspan"));
+                            current_td.setAttribute("colspan", temp_parents.getAttribute("colspan"));
+                            current_td.appendChild(temp);
+
+                            temp_parents.setAttribute("rowspan", 1);
+                            temp_parents.setAttribute("colspan", 1);
+                        }
+                        this.style.color = "#000000";
+                        return false;
+                    };
+                }
+            }
         }
     </script>
 {% endblock %}

@@ -2,9 +2,8 @@ import json
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse, Http404
 from django.shortcuts import render
 
-from apps.apply_experiments.models import ExperimentType, Experiment, SpecialRequirements
-from apps.super_manage.models import Teacher, Course, Classes, Institute, Labs, LabsAttribute, Department, \
-    TotalRequirements, Term, SuperUser
+from apps.super_manage.models import Teacher, Course, Classes, Institute, Lab, LabsAttribute, Department, \
+    TotalRequirements, Term, SuperUser, ExperimentType, Experiment, SpecialRequirements
 
 from logging_setting import ThisLogger
 from apps.super_manage.views import get_all_labs, set_user_for_context, STATUS
@@ -28,7 +27,7 @@ def set_choices_context(context):
     context['labs_of_institute'] = Institute.objects.all() if Institute.objects.all() else ""
     context['labs_attribute'] = LabsAttribute.objects.all() if LabsAttribute.objects.all() else ""
     # 因为找不到联动数据的解决方案，暂时用所有实验室来代替
-    context['all_labs'] = Labs.objects.filter(dispark=True)
+    context['all_labs'] = Lab.objects.filter(dispark=True)
 
 
 # 数据联动，动态加载班级数据
@@ -177,7 +176,7 @@ def submit_experiments(request):
                 this_logger.info('待处理的实验室的id列表：' + str(labs_ids))
                 for lab_item_id in labs_ids:
                     try:
-                        lab = Labs.objects.get(id=int(lab_item_id))
+                        lab = Lab.objects.get(id=int(lab_item_id))
                         this_logger.info('获取到lab：' + lab.name)
                         new_experiment.labs.add(lab)
                     except (Exception) as e:

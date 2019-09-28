@@ -1,24 +1,5 @@
 from django.db import models
-from apps.apply_experiments.models import Experiment
-
-
-# 已有安排的实验室及其时间，时间通过实验的id从实验项目中获取
-from apps.super_manage.models import Classes, Teacher
-
-
-class Schedule(models.Model):
-    class Meta:
-        # 该数据库表名自定义为如下：
-        db_table = 'schedule'
-
-    labs = models.CharField(max_length=20, verbose_name='实验室名称')
-    experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE, verbose_name='审核通过了的实验项目')
-    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
-    visible = models.BooleanField(verbose_name='是否可见', default=True)
-
-    def __str__(self):
-        return self.labs
+from apps.super_manage.models import Teacher
 
 
 # 学生助理

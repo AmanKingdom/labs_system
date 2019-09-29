@@ -8,8 +8,7 @@
     <style>
         .course_div{
             background: #1AB394;
-            margin-left: 10%;
-            margin-right: 10%;
+            margin: 5% 10% 5%;
         }
     </style>
 {% endblock %}
@@ -146,9 +145,12 @@
                                 console.log('现在的obj1和obj2分别为：', obj1, obj2, '处于第', j, '行，第', i, '列');
 
                                 if (obj1.innerText === obj2.innerText && (obj2.innerText !== "")) {
-                                    obj1.rowSpan++;
-                                    console.log('删除第', j, '行，第', i, '列的元素');
-                                    obj2.parentNode.removeChild(obj2);
+                                    if(obj1.getAttribute("colspan") === obj2.getAttribute("colspan")) {
+                                        console.log('obj1和obj2的跨列数：', obj1.colspan,obj2.colspan);
+                                        obj1.rowSpan++;
+                                        console.log('删除第', j, '行，第', i, '列的元素');
+                                        obj2.parentNode.removeChild(obj2);
+                                    }
                                 } else {
                                     obj1 = document.getElementById("tb__" + j.toString() + "_" + i.toString());
                                 }
@@ -192,9 +194,9 @@
                     ev.dataTransfer.effectAllowed = "move";
                     ev.dataTransfer.setData("text", ev.target.innerHTML);
                     ev.dataTransfer.setDragImage(ev.target, 0, 0);
-                    temp = ev.target;
                     console.log('target_parent:', ev.currentTarget.parentElement);
                     temp_parents = ev.currentTarget.parentElement;
+                    temp = ev.target;
                     return true;
                 };
                 all_course_div[i].ondragend = function(ev) {
@@ -211,36 +213,38 @@
             for(var i=colCount; i<all_tds.length; i++){     // 第一行是目前用来处理一个bug的，所以不用给它绑定事件
 
                 var reg01 = RegExp(/tb__[0-9]+_[01]/);
+
                 if(reg01.test(all_tds[i].id)){
                     // 位于前两列的数据不需要绑定事件
                     console.log('位于前两列：', all_tds[i].id);
                 }else{
                     var td = document.getElementById(all_tds[i].id);
 
-                    td.ondragover = function(ev) {
+                    td.ondragover = function (ev) {
                         // 拖拽元素在目标元素头上移动的时候
                         ev.preventDefault();
                         return true;
                     };
 
-                    td.ondragenter = function(ev) {
+                    td.ondragenter = function (ev) {
                         // 拖拽元素进入目标元素头上的时候
                         this.style.color = "#ffffff";
                         return true;
                     };
 
-                    td.ondrop = function(ev) {
+                    td.ondrop = function (ev) {
                         // 拖拽元素进入目标元素头上，同时鼠标松开的时候
                         if (temp) {
                             var current_td = ev.target;
+                            if(temp_parents.parentNode.rowIndex === current_td.parentNode.rowIndex){
+                                console.log('跨行：', temp_parents.getAttribute("rowspan"), '跨列：', temp_parents.getAttribute("colspan"));
+                                current_td.setAttribute("rowspan", temp_parents.getAttribute("rowspan"));
+                                current_td.setAttribute("colspan", temp_parents.getAttribute("colspan"));
+                                current_td.appendChild(temp);
 
-                            console.log('跨行：', temp_parents.getAttribute("rowspan"), '跨列：', temp_parents.getAttribute("colspan"));
-                            current_td.setAttribute("rowspan", temp_parents.getAttribute("rowspan"));
-                            current_td.setAttribute("colspan", temp_parents.getAttribute("colspan"));
-                            current_td.appendChild(temp);
-
-                            temp_parents.setAttribute("rowspan", 1);
-                            temp_parents.setAttribute("colspan", 1);
+                                {#temp_parents.setAttribute("rowspan", 1);#}
+                                {#temp_parents.setAttribute("colspan", 1);#}
+                            }
                         }
                         this.style.color = "#000000";
                         return false;

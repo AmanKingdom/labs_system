@@ -928,7 +928,7 @@ def schedule(request, school_id=None):
                     for lab in labs:
                         if lab in labs_in_experiment:
 
-                            new_dict["%s" % lab.name] = '<div class="course_div" title="您可以拖拽我到别的地方去" draggable="true">%s</div>' % course.name
+                            new_dict["%s" % lab.name] = '<div class="course_div" title="您可以拖拽我到别的地方去" draggable="true">%s</div><div class="course_div" title="您可以拖拽我到别的地方去" draggable="true">%s</div>' % (course.name, course.name)
                         else:
                             new_dict["%s" % lab.name] = ""
                     data['rows'].append(new_dict)

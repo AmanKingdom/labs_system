@@ -7,26 +7,81 @@
     <link rel="stylesheet" href="/static/css_js/css/fixed-columns/bootstrap-table-fixed-columns.css">
     <style>
         .course_div{
-            background: #1AB394;
+            background: #E5FFE5;
             margin: 5% 10% 5%;
+            padding: 5%;
         }
     </style>
 {% endblock %}
 
 {% block super_manage_body %}
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover" id="week_schedule_table"
-               data-toggle="table"
-               data-classes="table table-hover"
-               data-show-columns="true"
-               data-striped="true"
-               data-show-toggle="true"
-               data-search="true"
-               data-show-refresh="true"
-               data-toolbar="#toolbar"
-               data-height="600"
-               align="center">
-        </table>
+    {% if conflict_courses %}
+        <div class="ibox float-e-margins">
+            <div class="ibox-title">
+                <h5>冲突信息表<span class="need">（下面是通过智能编排无法解决的冲突）</span> </h5>
+            </div>
+            <div class="ibox-content">
+                <table id="conflict_info_table"
+                       class="table table-bordered table-hover"
+                       data-toggle="table">
+                    <thead><tr>
+                        <th>序号</th>
+                        <th>所有周次</th>
+                        <th>星期</th>
+                        <th>节次</th>
+                        <th>课程</th>
+                        <th>可用实验室</th>
+                        <th>操作</th>
+                    </tr></thead>
+                    <tbody>
+                    {% for course in conflict_courses %}
+                        <tr>
+                            <td>{{ course.no }}</td>
+                            <td>{{ course.weeks }}</td>
+                            <td>{{ course.days_of_the_week }}</td>
+                            <td>{{ course.section }}</td>
+                            <td id="{{ course.course.id }}">{{ course.course }}</td>
+                            <td>
+                                <select class="form-control" multiple="multiple">
+                                    {% for lab in course.free_labs %}
+                                        <option id={{ lab.id }} value={{ lab.id }}>{{ lab }}</option>
+                                    {% empty %}
+                                        没有空闲的实验室了
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td><button class="btn btn-primary btn-xs" onclick="save(this)">保存修改</button></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="ibox float-e-margins">
+        <div class="ibox-title">
+            <h5>排课结果</h5>
+            <div class="ibox-tools">
+                <button onclick="re_arrange(this)" class="btn btn-primary">重新智能排课</button>
+                <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+            </div>
+        </div>
+        <div class="ibox-content">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="week_schedule_table"
+                       data-toggle="table"
+                       data-classes="table table-hover"
+                       data-striped="true"
+                       align="center"
+                        {#               data-show-columns="true"#}
+                        {#               data-show-toggle="true"#}
+                        {#               data-search="true"#}
+                        {#               data-show-refresh="true"#}
+                        {#               data-toolbar="#toolbar"#}>
+                </table>
+            </div>
+        </div>
     </div>
 {% endblock %}
 
@@ -39,12 +94,51 @@
             $('#week_schedule_table').bootstrapTable('destroy').bootstrapTable({
                 minimumCountColumns:4,
                 fixedColumns:true,
-                fixedNumber:3,
+                fixedNumber:2,
             });
         })
     </script>
 
+    <!--保存按钮点击-->
+    <script>
+        var from_url = '{% url "super_manage:arrange" %}';
 
+        function save(save_button){
+            var course_id = save_button.parentNode.parentNode.cells[4].getAttribute("id");
+            console.log('冲突行的课程id：', course_id);
+
+            var the_selector = save_button.parentNode.parentNode.cells[5].children;
+            {#console.log(the_selector);#}
+            {#console.log(the_selector[0]);#}
+
+            selected_labs_id = [];
+            if(the_selector[0].selectedOptions.length < 1){
+                alert('请选择实验室');
+            }else{
+                for(var i=0; i < the_selector[0].selectedOptions.length; i++){
+                    selected_labs_id.push(the_selector[0].selectedOptions[i].value);
+                }
+                console.log('选中的实验室id为：', selected_labs_id);
+                var data = {
+                    "course_id":course_id,
+                    "selected_labs_id":selected_labs_id
+                };
+                var to_url = '{% url "super_manage:adjust_labs_for_schedule" %}';
+                base_ajax(from_url, to_url, data)
+            }
+        }
+
+        function re_arrange(re_arrange_button) {
+            var pass = confirm('确定要重新智能排课吗？');
+            if(pass){
+                var to_url = '{% url "super_manage:re_arrange" %}';
+                base_ajax(from_url, to_url, {})
+            }
+        }
+    </script>
+
+
+    <!--初始化表格和合并单元格-->
     <script>
         var rowCount = null; //   全局的行数
         var colCount = null; //   全局的列数
@@ -53,11 +147,10 @@
             $('#week_schedule_table').bootstrapTable('destroy').bootstrapTable({
                 sidePagination: "server",
                 url: '{% url "super_manage:schedule" school.id %}',
-                height: 800,
+                height: 600,
                 locale: $('#locale').val(),
                 onLoadSuccess: function (data) {
                     uniteTable('week_schedule_table');
-                    set_drag();
                 },
                 columns: [
                     {
@@ -103,24 +196,24 @@
             for (i = 1; i < rowCount; i++) {    // i作为行标
                 // 不能这样用：obj1 = document.getElementById(tb.rows[i].cells[2].id);
                 obj1 = document.getElementById("tb__"+i.toString()+"_2");   // 从每一行的第3列开始取单元格对象元素，因为星期和节次不需要做列合并
-                console.log('合并列，目前行和obj1：', i, obj1);
+                {#console.log('合并列，目前行和obj1：', i, obj1);#}
 
                 for (j = 3; j < colCount; j++) {    // 从第4列开始取每一行的单元格作为下一个判断对象
                     if(document.getElementById("tb__"+i.toString()+"_"+j.toString())){
-                        console.log('存在obj2：',document.getElementById("tb__"+i.toString()+"_"+j.toString()));
+                        {#console.log('存在obj2：',document.getElementById("tb__"+i.toString()+"_"+j.toString()));#}
 
-                        console.log('现在的obj1和obj2分别为：', obj1, obj2, '处于第', i, '行，第', j, '列');
+                        {#console.log('现在的obj1和obj2分别为：', obj1, obj2, '处于第', i, '行，第', j, '列');#}
 
                         obj2 = document.getElementById("tb__"+i.toString()+"_"+j.toString());
                         if (obj1.innerText === obj2.innerText && (obj2.innerText !== "")) {
                             obj1.colSpan++;
-                            console.log('删除第', i, '行，第', j, '列的元素');
+                            {#console.log('删除第', i, '行，第', j, '列的元素');#}
                             obj2.parentNode.removeChild(obj2);
                         } else {
                             obj1 = obj2;
                         }
                     }else{
-                        console.log('不存在第', i, '行，第', j, '列的元素');
+                        {#console.log('不存在第', i, '行，第', j, '列的元素');#}
                     }
                 }
             }
@@ -142,20 +235,20 @@
                             if (document.getElementById("tb__" + j.toString() + "_" + i.toString())) {
                                 obj2 = document.getElementById("tb__" + j.toString() + "_" + i.toString());
 
-                                console.log('现在的obj1和obj2分别为：', obj1, obj2, '处于第', j, '行，第', i, '列');
+                                {#console.log('现在的obj1和obj2分别为：', obj1, obj2, '处于第', j, '行，第', i, '列');#}
 
                                 if (obj1.innerText === obj2.innerText && (obj2.innerText !== "")) {
                                     if(obj1.getAttribute("colspan") === obj2.getAttribute("colspan")) {
-                                        console.log('obj1和obj2的跨列数：', obj1.colspan,obj2.colspan);
+                                        {#console.log('obj1和obj2的跨列数：', obj1.colspan,obj2.colspan);#}
                                         obj1.rowSpan++;
-                                        console.log('删除第', j, '行，第', i, '列的元素');
+                                        {#console.log('删除第', j, '行，第', i, '列的元素');#}
                                         obj2.parentNode.removeChild(obj2);
                                     }
                                 } else {
                                     obj1 = document.getElementById("tb__" + j.toString() + "_" + i.toString());
                                 }
                             } else {
-                                console.log('不存在第', j, '行，第', i, '列的元素');
+                                {#console.log('不存在第', j, '行，第', i, '列的元素');#}
                             }
                         }
                     }
@@ -167,90 +260,5 @@
             initTable();
             $('#locale').change(initTable);
         })
-    </script>
-
-
-    <!--拖拽实现-->
-    <script>
-        function set_drag() {
-            console.log("set_drag()执行");
-
-            // 每个课程都是一个div，下面这是所有课程div集合
-            var all_course_div = document.getElementsByClassName("course_div");
-            // 等下需要对表格的所有单元格进行操作
-            var courses_table = document.getElementById("week_schedule_table");
-            var all_tds = courses_table.getElementsByTagName("td");
-            var temp = null;     // 作为过渡器件，存放被拖拽对象
-            var temp_parents = null;    // 用来作为记录拖拽前所在父节点（单元格），最后会用到它的跨行列信息
-
-            // 对所有可被拖拽的对象设置事件
-            for (var i=0; i<all_course_div.length; i++) {
-                all_course_div[i].onselectstart = function() {
-                    return false;
-                };
-                all_course_div[i].ondragstart = function(ev) {
-                    /*拖拽开始*/
-                    //拖拽效果
-                    ev.dataTransfer.effectAllowed = "move";
-                    ev.dataTransfer.setData("text", ev.target.innerHTML);
-                    ev.dataTransfer.setDragImage(ev.target, 0, 0);
-                    console.log('target_parent:', ev.currentTarget.parentElement);
-                    temp_parents = ev.currentTarget.parentElement;
-                    temp = ev.target;
-                    return true;
-                };
-                all_course_div[i].ondragend = function(ev) {
-                    /*拖拽结束*/
-                    ev.dataTransfer.clearData("text");
-                    temp = null;
-                    temp_parents = null;
-                    return false
-                };
-            }
-
-            // 给所有单元格td绑定事件
-            console.log('表格的行数(包括表头)：', rowCount, '表格的列数：', colCount);
-            for(var i=colCount; i<all_tds.length; i++){     // 第一行是目前用来处理一个bug的，所以不用给它绑定事件
-
-                var reg01 = RegExp(/tb__[0-9]+_[01]/);
-
-                if(reg01.test(all_tds[i].id)){
-                    // 位于前两列的数据不需要绑定事件
-                    console.log('位于前两列：', all_tds[i].id);
-                }else{
-                    var td = document.getElementById(all_tds[i].id);
-
-                    td.ondragover = function (ev) {
-                        // 拖拽元素在目标元素头上移动的时候
-                        ev.preventDefault();
-                        return true;
-                    };
-
-                    td.ondragenter = function (ev) {
-                        // 拖拽元素进入目标元素头上的时候
-                        this.style.color = "#ffffff";
-                        return true;
-                    };
-
-                    td.ondrop = function (ev) {
-                        // 拖拽元素进入目标元素头上，同时鼠标松开的时候
-                        if (temp) {
-                            var current_td = ev.target;
-                            if(temp_parents.parentNode.rowIndex === current_td.parentNode.rowIndex){
-                                console.log('跨行：', temp_parents.getAttribute("rowspan"), '跨列：', temp_parents.getAttribute("colspan"));
-                                current_td.setAttribute("rowspan", temp_parents.getAttribute("rowspan"));
-                                current_td.setAttribute("colspan", temp_parents.getAttribute("colspan"));
-                                current_td.appendChild(temp);
-
-                                {#temp_parents.setAttribute("rowspan", 1);#}
-                                {#temp_parents.setAttribute("colspan", 1);#}
-                            }
-                        }
-                        this.style.color = "#000000";
-                        return false;
-                    };
-                }
-            }
-        }
     </script>
 {% endblock %}

@@ -135,4 +135,10 @@ class SuperUserAdmin(admin.ModelAdmin):
 
 admin.site.register(SuperUser, SuperUserAdmin)
 
-admin.site.register(Schedule)
+
+class ScheduleAdmin(admin.ModelAdmin):
+    list_display = ('id', 'school', 'which_week', 'days_of_the_week', 'section', 'lab', 'experiment', 'suitable', 'conflict', 'need_adjust', 'create_time', 'modify_time', 'visible')  # 设置展示的列
+    list_editable = ['conflict', 'need_adjust']  # 设置可行内编辑
+
+
+admin.site.register(Schedule, ScheduleAdmin)

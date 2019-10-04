@@ -5,7 +5,7 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import render
 
 from apps.super_manage.models import School, SchoolArea, Institute, Department, Grade, SuperUser, Classes, Teacher, \
-    SchoolYear, Term, Course, LabsAttribute, Lab, Experiment, ExperimentType
+    SchoolYear, Term, Course, LabsAttribute, Lab, Experiment, ExperimentType, Schedule
 
 from logging_setting import ThisLogger
 
@@ -164,6 +164,20 @@ def get_all_labs(school):
     return labs
 
 
+def get_all_labs_dispark(school):
+    labs = []
+    institutes = get_all_institutes(school)
+    if institutes:
+        for institute in institutes:
+            if institute:
+                temp_labs = institute.labs.all()
+                for lab in temp_labs:
+                    if lab:
+                        if lab.dispark:
+                            labs.append(lab)
+    return labs
+
+
 # 个人主页
 def personal_info(request):
     context = {
@@ -229,7 +243,7 @@ def system_settings(request):
 def school_manage(request):
     context = {
         'title': '学校管理',
-        'active_1': True,   # 激活导航
+        'active_1': True,  # 激活导航
         'school_active': True,  # 激活导航
         'superuser': None,
         'teacher': None,
@@ -324,6 +338,7 @@ def course_manage(request):
         'classes': [],
         'teachers': [],
         'courses': [],
+        'attributes': None,
     }
 
     set_user_for_context(request.session['user_account'], context)
@@ -332,6 +347,7 @@ def course_manage(request):
     context['institutes'] = get_all_institutes(school)
     context['classes'] = get_all_classes(school)
     context['teachers'] = get_all_teachers(school)
+    context['attributes'] = school.labs_attributes.all()
 
     courses = get_all_courses(school)
 
@@ -444,7 +460,10 @@ def application_manage(request):
 
     set_user_for_context(request.session['user_account'], context)
 
-    all_courses = Course.objects.all()
+    all_courses = None
+    if context['superuser']:
+        if context['superuser'].school:
+            all_courses = get_all_courses(context['superuser'].school)
 
     if all_courses:
         i = 1
@@ -645,6 +664,8 @@ def save_ajax(request):
                     c.update(name=save_object['course_name'],
                              institute=Institute.objects.get(id=save_object['institute']),
                              term=term)
+                    if save_object['attribute']:
+                        c.update(attribute=LabsAttribute.objects.get(id=save_object['attribute']))
                     add_teachers_classes_to_course(c[0], save_object)
                 elif data['save_objects_model'] == 'labs_attributes':
                     l = LabsAttribute.objects.filter(id=int(save_object['id_in_database']))
@@ -694,6 +715,9 @@ def save_ajax(request):
                     c = Course.objects.create(name=save_object['course_name'],
                                               institute=Institute.objects.get(id=save_object['institute']),
                                               term=term)
+                    if save_object['attribute']:
+                        c.attribute = LabsAttribute.objects.get(id=save_object['attribute'])
+                        c.save()
                     add_teachers_classes_to_course(c, save_object)
                 elif data['save_objects_model'] == 'labs_attributes':
                     LabsAttribute.objects.create(name=save_object['labs_attribute_name'],
@@ -820,6 +844,25 @@ def cancel_the_teacher(request):
         return JsonResponse(context)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 做出前端排课结果表格所需的json数据，将要去除该函数。
 def get_schedule(request, school_id=None):
     data = {
         "total": 1,
@@ -857,6 +900,33 @@ def get_schedule(request, school_id=None):
     return JsonResponse(data)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 获取某学校所有审核通过了的实验项目
+def get_all_experiments_3(school):
+    return_experiments = []
+    courses = get_all_courses(school)
+    for course in courses:
+        experiments = course.experiments.all()
+        if experiments:
+            for experiment in experiments:
+                if experiment.status == 3:  # 取审核通过的实验
+                    return_experiments.append(experiment)
+
+    return return_experiments
+
+
 def arrange(request):
     context = {
         'title': '实验类型设置',
@@ -867,6 +937,7 @@ def arrange(request):
 
         'school': None,
         'labs': None,
+        'conflict_courses': [],
     }
 
     set_user_for_context(request.session['user_account'], context)
@@ -874,22 +945,307 @@ def arrange(request):
         context['school'] = context['superuser'].school
 
         # 实验室数据用来前端生成表头
-        context['labs'] = get_all_labs(context['school'])
+        context['labs'] = get_all_labs_dispark(context['school'])
+
+        set_suitable_and_schedule(context['school'])
+
+        # 整理出冲突课程的数据以供人工解决
+        need_adjust_schedules = Schedule.objects.filter(school=context['school'], need_adjust=True)
+        need_adjust_courses = []  # 先得到不重复的需要人工调整的课程
+        for schedule_item in need_adjust_schedules:
+            if schedule_item.experiment.course not in need_adjust_courses:
+                need_adjust_courses.append(schedule_item.experiment.course)
+
+        i = 1
+        all_labs = get_all_labs_dispark(context['school'])
+        for course in need_adjust_courses:
+            schedules_of_the_course = Schedule.objects.filter(experiment__course=course)
+            new_dict = {'no': i, 'weeks': '', 'days_of_the_week': '', 'section': '', 'course': course, 'free_labs': []}
+
+            weeks = []
+            days_of_the_week = []
+            section = []
+            for schedule_item in schedules_of_the_course:
+                if schedule_item.which_week not in weeks:
+                    weeks.append(schedule_item.which_week)
+                if schedule_item.days_of_the_week not in days_of_the_week:
+                    days_of_the_week.append(schedule_item.days_of_the_week)
+                if schedule_item.section not in section:
+                    section.append(schedule_item.section)
+
+                aready_in_used_labs = []
+                # 这里的冲突安排包含了自身，在这里的逻辑中，自身安排的实验室也是可以作为可用实验室提供给前端的，所以还要去掉自身
+                conflict_schedules = Schedule.objects.filter(which_week=schedule_item.which_week, days_of_the_week=schedule_item.days_of_the_week, section=schedule_item.section)
+
+                free_labs_of_the_schedule = []
+
+                for temp_schedule in conflict_schedules:
+                    if temp_schedule.lab not in aready_in_used_labs:
+                        aready_in_used_labs.append(temp_schedule.lab)
+
+                for lab in all_labs:
+                    if lab not in aready_in_used_labs:
+                        free_labs_of_the_schedule.append(lab)   # 这些空闲实验室只是当前这个安排的情况下有空闲而已，而总的空闲实验室还要根据该课程下所有安排的时间决定
+
+                free_labs_of_the_schedule.append(schedule_item.lab)
+                new_dict["free_labs"].append(free_labs_of_the_schedule)
+
+            def list_to_string(l, tag):
+                temp_str = ''
+                for s in l:
+                    temp_str = temp_str + tag + str(s)
+                return temp_str[1:]
+
+            new_dict['weeks'] = list_to_string(weeks, ',')
+            new_dict['days_of_the_week'] = list_to_string(days_of_the_week, ',')
+            new_dict['section'] = list_to_string(section, ',')
+
+            # 要对课程的空闲实验室进行 交集 处理
+            if len(new_dict['free_labs']) > 1:
+                temp_free_labs = new_dict['free_labs']
+                result_set = set(temp_free_labs[0])
+                for index in range(1, len(temp_free_labs)):
+                    result_set = result_set.intersection(set(temp_free_labs[index]))
+                new_dict['free_labs'] = list(result_set)
+            elif len(new_dict['free_labs']) == 1:
+                new_dict['free_labs'] = new_dict['free_labs'][0]
+
+            context['conflict_courses'].append(new_dict)
+
+            i = i + 1
 
     return render(request, 'super_manage/arrange.html', context)
 
 
-# 给schedule数据库做一遍数据
-def auto_arrange(school):
-    courses = get_all_courses(school)
-    for course in courses:
-        experiments = course.experiments.all()
-        if experiments:
-            for experiment in experiments:
-                if experiment.status == 3:  # 取审核通过的实验
-                    pass
+def re_arrange(request):
+    context = {
+        'status': True,
+        'message': None,
+    }
+
+    school = SuperUser.objects.get(account=request.session.get('user_account')).school
+    Schedule.objects.filter(school=school).delete()
+
+    return JsonResponse(context)
 
 
+# 给schedule数据库做一遍数据，并计算出适合度存入
+def set_suitable_and_schedule(school):
+    experiments = get_all_experiments_3(school)
+    for experiment in experiments:
+        sections = experiment.section.split(',')
+        for section in sections:
+
+            labs = experiment.labs.all()
+            for lab in labs:
+
+                # 判断是否有冲突
+                schedules = Schedule.objects.filter(
+                    school=school,
+                    which_week=experiment.which_week,
+                    days_of_the_week=experiment.days_of_the_week,
+                    section=int(section),
+                    lab=lab
+                )
+
+                schedules_len = len(schedules)
+
+                same_schedules = Schedule.objects.filter(
+                    school=school,
+                    which_week=experiment.which_week,
+                    days_of_the_week=experiment.days_of_the_week,
+                    section=int(section),
+                    experiment=experiment
+                )
+                print('数据库中是否存在实验：', experiment, '的安排数据?', same_schedules)
+
+                # 当数据库没有这条记录时可以考虑存入
+                if not same_schedules:
+                    conflict = False
+                    if schedules_len > 0:
+                        conflict = True
+                        schedules.update(conflict=conflict)
+
+                    s = Schedule.objects.create(
+                        school=school,
+                        which_week=experiment.which_week,
+                        days_of_the_week=experiment.days_of_the_week,
+                        section=int(section),
+                        lab=lab,
+                        experiment=experiment,
+                        conflict=conflict
+                    )
+                    print('set_suitable_and_schedule()创建', s)
+
+                    for schedule_item in schedules:
+                        # 通过课程的属性设置适合度，用十位数表示优先权即可
+                        the_attribute = schedule_item.experiment.course.attribute
+                        if the_attribute:
+                            if the_attribute in lab.attributes.all():
+                                schedule_item.suitable = 10
+                                schedule_item.save()
+
+                        # 通过班级数量设置适合度，因为班级一般不会超过3，所以可以用个位数表示其优先权
+                        classes_num = len(Classes.objects.filter(course=schedule_item.experiment.course))
+                        schedule_item.suitable = schedule_item.suitable + classes_num
+                        schedule_item.save()
+    # 数据做完，则处理一遍冲突
+    dispose_conflict(school)
+
+
+def dispose_conflict(school):
+    while True:
+        # 以 适合度 作为第一排序依据、课程作为第二排序依据、实验项目作为第三排序依据获取所有 冲突且不用人工调整的 条目
+        conflict_no_need_adjust_schedules = Schedule.objects.filter(school=school, conflict=True,
+                                                                    need_adjust=False).order_by('-suitable',
+                                                                                                'experiment__course',
+                                                                                                'experiment')
+        if conflict_no_need_adjust_schedules:
+            print('存在 冲突且不需人工调整 的条目')
+
+            first = True  # 用来说明冲突己方已在最期望的最适合位置上，不需要自动调整实验室，否则需要调整
+            conflict_me = conflict_no_need_adjust_schedules[0]  # 冲突己方
+            print('冲突己方：', conflict_me)
+
+            # 冲突双方集合，包含冲突己方，获取冲突对方则要从[1:]取
+            all_conflict = conflict_no_need_adjust_schedules.filter(
+                which_week=conflict_me.which_week,
+                days_of_the_week=conflict_me.days_of_the_week,
+                section=conflict_me.section,
+                lab=conflict_me.lab
+            )
+
+            if len(all_conflict) > 1:
+                i = 2
+                for conflict_you in all_conflict[1:]:
+                    print('冲突对方：', conflict_you)
+                    if conflict_me.suitable == conflict_you.suitable:
+                        print('冲突双方的适合度相同:', conflict_me.suitable, conflict_you.suitable)
+                        for conflict_item in all_conflict:  # 这里的冲突条目都是来自不同课程的，需要对这些课程的所有冲突与非冲突安排都设置为需要人工调整
+                            Schedule.objects.filter(experiment__course=conflict_item.experiment.course).update(
+                                need_adjust=True)
+                        break
+                    elif conflict_me.suitable > conflict_you.suitable:
+                        print('冲突己方的适合度大:', conflict_me.suitable, conflict_you.suitable, '取消冲突己方课程的所有冲突条目的冲突')
+
+                        if first:
+                            print(conflict_me, '冲突己方不需要重新设置实验室')
+                            conflict_no_need_adjust_schedules.filter(
+                                experiment__course=conflict_me.experiment.course).update(conflict=False)
+                            first = False
+                        else:
+                            print(conflict_me, '冲突己方课程的所有条目要重新设置实验室')
+                            new_labs_for_schedule(school, conflict_me)
+
+                        if i < len(all_conflict):
+                            print('有下一个冲突对方:', all_conflict[i])
+                            conflict_me = conflict_you
+                        else:
+                            print('没有下一个冲突对方，重新设置当前冲突对方课程的所有条目的实验室')
+                            new_labs_for_schedule(school, conflict_you)
+            else:
+                print(conflict_me, '的冲突对方已被设置为人工调整，所以冲突己方也要被设置为人工调整')
+                Schedule.objects.filter(experiment__course=conflict_me.experiment.course).update(need_adjust=True)
+                break
+        else:
+            this_logger.info('已经没有 冲突且不需人工调整 的条目了')
+            break
+
+
+# 通过调用find_free_labs()寻找合适的实验室给这条安排的课程的所有条目，由于条目的更新并不容易，所以直接删除后从实验项目做一遍新数据
+def new_labs_for_schedule(school, conflict_schedule):
+    print('执行赋值新实验室函数------------------------------------' * 2)
+    labs = find_free_labs(school, conflict_schedule.experiment.course)
+    if labs:
+        course = conflict_schedule.experiment.course
+        Schedule.objects.filter(experiment__course=course).delete()
+        create_schedule_for_course(school, course, labs)
+
+    else:
+        Schedule.objects.filter(experiment__course=conflict_schedule.experiment.course).update(need_adjust=True)
+
+
+def create_schedule_for_course(school, course, labs):
+    experiments = Experiment.objects.filter(course=course)
+    for experiment in experiments:
+        sections = experiment.section.split(',')
+        for section in sections:
+
+            for lab in labs:
+                new_schedule = Schedule.objects.create(
+                    school=school,
+                    which_week=experiment.which_week,
+                    days_of_the_week=experiment.days_of_the_week,
+                    section=int(section),
+                    lab=lab,
+                    experiment=experiment,
+                )
+                print('create_schedule_for_course创建schedule：', new_schedule)
+
+
+def find_free_labs(school, course):
+    print('执行查找空闲实验室函数------------------------------------' * 2)
+    attribute = course.attribute
+    student_sum = 0  # 该门课的学生总人数
+    for classes_item in course.classes.all():
+        student_sum = student_sum + classes_item.amount
+
+    # 被占用的实验室们
+    aready_in_used_labs = []
+
+    for schdule_item in Schedule.objects.filter(experiment__course=course):
+        for same_time_schdule in Schedule.objects.filter(which_week=schdule_item.which_week,
+                                                         days_of_the_week=schdule_item.days_of_the_week,
+                                                         section=schdule_item.section):
+            if same_time_schdule.lab not in aready_in_used_labs:
+                aready_in_used_labs.append(same_time_schdule.lab)
+
+    # 所有开放的实验室
+    all_dispark_labs = get_all_labs_dispark(school)
+    # 所有空闲的实验室们
+    all_free_labs = []
+
+    for free_lab in all_dispark_labs:
+        if free_lab not in aready_in_used_labs:
+            all_free_labs.append(free_lab)
+
+    # 最终获取的空闲实验室们
+    free_labs = []
+    success = False
+
+    # 有空闲实验室才干活
+    if all_free_labs:
+
+        # 获取匹配实验室的方式：通过属性和容纳人数来获取，并且实验室是连续的
+        i = 0
+        while not success:
+            if i >= len(all_free_labs):
+                break
+
+            if attribute in all_free_labs[i].attributes.all():
+                free_labs.append(all_free_labs[i])
+                print('找到合适的实验室：', free_labs)
+
+                # 目前所得到的符合情况的实验室的容纳人数总和：
+                temp_sum = 0
+                for lab in free_labs:
+                    temp_sum = temp_sum + lab.number_of_people
+
+                if temp_sum >= student_sum:
+                    success = True
+                    print('处理课程：', course, '。通过属性和容纳人数找到合适的连续实验室')
+            else:
+                free_labs.clear()
+                print('处理课程：', course, '。没有连续的包含该课程属性的空闲实验室，清空原来获取到的实验室')
+
+            i = i + 1
+
+        if success:
+            return free_labs
+    return None
+
+
+# 做出前端排课结果表格所需的json数据
 def schedule(request, school_id=None):
     data = {
         "total": 1,
@@ -898,15 +1254,16 @@ def schedule(request, school_id=None):
 
     school = School.objects.get(id=school_id)
 
-    auto_arrange(school)
+    # set_suitable_and_schedule(school)
 
-    labs = get_all_labs(school)
-    courses = get_all_courses(school)
+    labs = get_all_labs_dispark(school)
+    # courses = get_all_courses(school)
 
     # 先生成一个一周内应有的星期和节次的空字典
     # 一般学校的每天都是11节对吧？
     # 该字典的格式应该为：{"d1_s1":{"days_of_the_week": days_of_the_week, "section": section, "xxx":""}, }， 键表示星期几的第几节
 
+    # 基础空数据
     base_dict = {}
     for days_of_the_week in range(1, 8):
         for section in range(1, 12):
@@ -915,28 +1272,53 @@ def schedule(request, school_id=None):
                 new_dict["%s" % lab.name] = ""
             base_dict["d%d_s%d" % (days_of_the_week, section)] = new_dict
 
-    for course in courses:
-        experiments = course.experiments.all()
-        if experiments:
-            for experiment in experiments:
-                if experiment.status == 3:  # 取审核通过的实验
-                    new_dict = {
-                        "days_of_the_week": experiment.days_of_the_week,
-                        "section": experiment.section
-                    }
-                    labs_in_experiment = experiment.labs.all()
-                    for lab in labs:
-                        if lab in labs_in_experiment:
+    all_schedules = Schedule.objects.filter(school=school)
 
-                            new_dict["%s" % lab.name] = '<div class="course_div" title="您可以拖拽我到别的地方去" draggable="true">%s</div><div class="course_div" title="您可以拖拽我到别的地方去" draggable="true">%s</div>' % (course.name, course.name)
-                        else:
-                            new_dict["%s" % lab.name] = ""
-                    data['rows'].append(new_dict)
+    div = '<div class="course_div">%s</div>'
+    for schedule_item in all_schedules:
+        # new_div = div % schedule_item.experiment.course.name
+        new_div = div % schedule_item.experiment.course.name
+        if new_div not in base_dict["d%d_s%d" % (schedule_item.days_of_the_week, schedule_item.section)][
+            "%s" % schedule_item.lab.name]:
+            base_dict["d%d_s%d" % (schedule_item.days_of_the_week, schedule_item.section)][
+                "%s" % schedule_item.lab.name] = \
+                base_dict["d%d_s%d" % (schedule_item.days_of_the_week, schedule_item.section)][
+                    "%s" % schedule_item.lab.name] + new_div
 
-    temp_dict = {"days_of_the_week": "", "section": ""}
+    data['rows'] = list(base_dict.values())
+
+    empty_row = {"days_of_the_week": "", "section": ""}
     for lab in labs:
-        temp_dict["%s" % lab.name] = ""
-    data['rows'].insert(0, temp_dict)
-    print(data['rows'])
+        empty_row["%s" % lab.name] = ""
+    data['rows'].insert(0, empty_row)
+
+    # print('整理后，前端所需要的json数据：\n', data['rows'])
 
     return JsonResponse(data)
+
+
+def adjust_labs_for_schedule(request):
+    data = json.loads(list(request.POST.keys())[0])
+
+    context = {
+        'status': True,
+        'message': None,
+    }
+
+    if request.is_ajax():
+        try:
+            course = Course.objects.get(id=data['course_id'])
+            Schedule.objects.filter(experiment__course=course).delete()
+
+            selected_labs = []
+            for lab_id in data['selected_labs_id']:
+                selected_labs.append(Lab.objects.get(id=lab_id))
+
+            school = SuperUser.objects.get(account=request.session.get('user_account')).school
+            create_schedule_for_course(school, course, selected_labs)
+
+        except:
+            context['status'] = False
+            context['message'] = '修改失败，请重试'
+
+        return JsonResponse(context)

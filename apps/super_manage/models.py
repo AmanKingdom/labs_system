@@ -89,16 +89,22 @@ class Lab(models.Model):
 
     institute = models.ForeignKey(Institute, on_delete=models.CASCADE, verbose_name='所属学院', related_name='labs')
     name = models.CharField(max_length=30, verbose_name='实验室名称')
-    number_of_people = models.CharField(max_length=10, verbose_name='容纳人数', default=40, blank=True, null=True)
+    number_of_people = models.IntegerField(verbose_name='容纳人数', default=40)
     dispark = models.BooleanField(verbose_name='开放情况', default=True)
     attributes = models.ManyToManyField(LabsAttribute, verbose_name='实验室属性')
     equipments = models.TextField(verbose_name='实验室设备信息', blank=True, null=True)
+    equipments_amount = models.IntegerField(verbose_name='设备数量', default=40)
+
+    attribute1 = models.ForeignKey(LabsAttribute, verbose_name='1号属性', blank=True, null=True, on_delete=models.SET_NULL, related_name='lab_attr1')
+    attribute2 = models.ForeignKey(LabsAttribute, verbose_name='2号属性', blank=True, null=True, on_delete=models.SET_NULL, related_name='lab_attr2')
+    attribute3 = models.ForeignKey(LabsAttribute, verbose_name='3号属性', blank=True, null=True, on_delete=models.SET_NULL, related_name='lab_attr3')
+
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
     visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
-        return self.name
+        return '%s(%d台)' % (self.name, self.equipments_amount)
 
 
 # 年级
@@ -125,6 +131,8 @@ class Classes(models.Model):
 
     name = models.CharField(max_length=30, verbose_name='班级')
     grade = models.ForeignKey(Grade, on_delete=models.CASCADE, verbose_name='所属年级', related_name='classes')
+    amount = models.IntegerField(verbose_name='学生人数', default=40)
+
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
     visible = models.BooleanField(verbose_name='是否可见', default=True)
@@ -219,6 +227,8 @@ class Course(models.Model):
     teachers = models.ManyToManyField(Teacher, verbose_name='授课教师')
     total_requirements = models.ForeignKey(TotalRequirements, on_delete=models.SET_NULL,
                                            verbose_name='总体实验需求', blank=True, null=True)
+    attribute = models.ForeignKey(LabsAttribute, on_delete=models.SET_NULL, blank=True, null=True, verbose_name='课程属性')
+
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
     visible = models.BooleanField(verbose_name='是否可见', default=True)
@@ -323,14 +333,15 @@ class Schedule(models.Model):
         # 该数据库表名自定义为如下：
         db_table = 'schedule'
 
-    school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='所属学校')
+    school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='所属学校', related_name='schedules')
     which_week = models.IntegerField(verbose_name='周次')
     days_of_the_week = models.IntegerField(verbose_name='星期')
     section = models.IntegerField(verbose_name='节次')
     lab = models.ForeignKey(Lab, on_delete=models.CASCADE, verbose_name='实验室')
     experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE, verbose_name='实验项目')
-    suitable = models.IntegerField(verbose_name='适合度。默认为1，数值越大越适合', default=1)
+    suitable = models.IntegerField(verbose_name='适合度。默认为0，数值越大越适合', default=0)
     conflict = models.BooleanField(verbose_name='是否和其它安排有冲突', default=False)
+    need_adjust = models.BooleanField(verbose_name='需要人工调整', default=False)
 
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')

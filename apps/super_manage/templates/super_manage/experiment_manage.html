@@ -100,13 +100,13 @@
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
 
     <script>
-        {% if superuser %}
-            $.fn.editable.defaults.disabled = true;
-            $('#remove_experiment_button').prop('disabled', true);
-            $('#add_experiment_button').prop('disabled', true);
-            $('#remove_all_experiment').prop('disabled', true);
-            $('#submit').prop('disabled', true);
-        {% endif %}
+{#        {% if superuser %}#}
+{#            $.fn.editable.defaults.disabled = true;#}
+{#            $('#remove_experiment_button').prop('disabled', true);#}
+{#            $('#add_experiment_button').prop('disabled', true);#}
+{#            $('#remove_all_experiment').prop('disabled', true);#}
+{#            $('#submit').prop('disabled', true);#}
+{#        {% endif %}#}
     </script>
 
 
@@ -348,10 +348,10 @@
 
             $experiments_table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table',
                 function () {
-                    {% if superuser %}
-                    {% else %}
+{#                    {% if superuser %}#}
+{#                    {% else %}#}
                         $remove.prop('disabled', !$experiments_table.bootstrapTable('getSelections').length);
-                    {% endif %}
+{#                    {% endif %}#}
 
                     // save your data, here just save the current page
                     selections = getIdSelections()
@@ -362,7 +362,7 @@
                 console.log(name, args)
             })
             $remove.click(function () {
-                var ids = getIdSelections()
+                var ids = getIdSelections();
                 $experiments_table.bootstrapTable('remove', {
                     field: 'id',
                     values: ids

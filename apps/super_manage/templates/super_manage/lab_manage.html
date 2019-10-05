@@ -37,6 +37,13 @@
     {% else %}
         请先添加学院信息，有学院信息后可进行下一步设置 <a href="{% url 'super_manage:school_manage' %}">>>>前往添加</a>
     {% endif %}
+    <div align="left" style="margin-left: 20px">
+        <a href="#" onClick="history.back(-1);">
+            <button id="back" class="btn btn-primary" title="返回上一页">
+                返回上一页
+            </button>
+        </a>
+    </div>
 {% endblock %}
 
 {% block add_js_to_super_manage %}
@@ -103,7 +110,7 @@
                         },
                     },{
                         field:'attribute1',
-                        title: '1级属性',
+                        title: '<a href="{% url 'super_manage:labs_attribute_manage' %}">1级属性</a>',
                         editable:{
                             type:'select',
                             source: [
@@ -116,7 +123,7 @@
                         },
                     },{
                         field:'attribute2',
-                        title: '2级属性',
+                        title: '<a href="{% url 'super_manage:labs_attribute_manage' %}">2级属性</a>',
                         editable:{
                             type:'select',
                             source: [
@@ -129,7 +136,7 @@
                         },
                     },{
                         field:'attribute3',
-                        title: '3级属性',
+                        title: '<a href="{% url 'super_manage:labs_attribute_manage' %}">3级属性</a>',
                         editable:{
                             type:'select',
                             source: [
@@ -206,7 +213,7 @@
                     "id": index,
                     "institute": {% if institutes %}{{ institutes.0.id }}{% else %}""{% endif %},
                     "lab_name": "",
-                    "number_of_people": "",
+                    "number_of_people": "40",
                     "dispark": '1',
                     "attribute1": "",
                     "attribute2": "",
@@ -241,32 +248,30 @@
         $('#save_lab_button').click(function () {
             var labs = lab_table.bootstrapTable('getData');
 
-            if(labs.length !== 0){
-                var pass = true;
+            var pass = true;
 
-                $('.not_null').remove();	 // 清除掉以前的错误信息
+            $('.not_null').remove();	 // 清除掉以前的错误信息
 
-                $.each(labs, function (index, value) {
-                    console.log(index, value);
+            $.each(labs, function (index, value) {
+                console.log(index, value);
 
-                    if(value['institute'] === empty_text || value['institute'] == "" || value['institute'] == null){
-                        pass = false;
-                        add_tip('lab_table', index, 2)
-                    }
-
-                    if(value['lab_name'] === empty_text || value['lab_name'] == ""){
-                        pass = false;
-                        add_tip('lab_table', index, 3)
-                    }
-
-                    if(value['dispark'] === empty_text || value['dispark'] == ""){
-                        pass = false;
-                        add_tip('lab_table', index, 5)
-                    }
-                });
-                if(pass){
-                    save_ajax(from_url, 'labs', labs, '{{ school.id }}')
+                if(value['institute'] === empty_text || value['institute'] == "" || value['institute'] == null){
+                    pass = false;
+                    add_tip('lab_table', index, 2)
                 }
+
+                if(value['lab_name'] === empty_text || value['lab_name'] == ""){
+                    pass = false;
+                    add_tip('lab_table', index, 3)
+                }
+
+                if(value['dispark'] === empty_text || value['dispark'] == ""){
+                    pass = false;
+                    add_tip('lab_table', index, 5)
+                }
+            });
+            if(pass){
+                save_ajax(from_url, 'labs', labs, '{{ school.id }}')
             }
         })
     </script>

@@ -6,33 +6,40 @@
 
 {% block super_manage_body %}
     {% if superuser.school %}
-    <div class="row">
-        <div class="col-md-12">
-            <br>
-            <div class="ibox float-e-margins">
-                <div class="ibox-title">
-                    <h5>实验室属性信息表</h5>
-                    <div class="ibox-tools">
-                        <button id="add_labs_attribute_button" class="btn btn-primary">添加实验室属性</button>
-                        <button id="remove_labs_attribute_button" class="btn btn-danger" disabled>删除实验室属性</button>
-                                                <button id="save_labs_attribute_button" class="btn btn-primary">保存修改</button>
-<a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+        <div class="row">
+            <div class="col-md-12">
+                <br>
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>实验室属性信息表</h5>
+                        <div class="ibox-tools">
+                            <button id="add_labs_attribute_button" class="btn btn-primary">添加实验室属性</button>
+                            <button id="remove_labs_attribute_button" class="btn btn-danger" disabled>删除实验室属性</button>
+                            <button id="save_labs_attribute_button" class="btn btn-primary">保存修改</button>
+                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                        </div>
                     </div>
-                </div>
-                <div class="ibox-content">
-                    <table id="labs_attribute_table"
-                           class="table-responsive"
-                           data-id-field="id"
-                           data-response-handler="responseHandler"
-                           data-click-to-select="true">
-                    </table>
+                    <div class="ibox-content">
+                        <table id="labs_attribute_table"
+                               class="table-responsive"
+                               data-id-field="id"
+                               data-response-handler="responseHandler"
+                               data-click-to-select="true">
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
     {% else %}
         <a href="{% url 'super_manage:school_manage' %}">还没有学校信息，请先添加学校信息 >>> </a>
     {% endif %}
+    <div align="left" style="margin-left: 20px">
+        <a href="#" onClick="history.back(-1);">
+            <button id="back" class="btn btn-primary" title="返回上一页">
+                返回上一页
+            </button>
+        </a>
+    </div>
 {% endblock %}
 
 {% block add_js_to_super_manage %}
@@ -128,22 +135,20 @@
         $('#save_labs_attribute_button').click(function () {
             var labs_attributes = labs_attribute_table.bootstrapTable('getData');
 
-            if(labs_attributes.length !== 0){
-                var pass = true;
+            var pass = true;
 
-                $('.not_null').remove();	 // 清除掉以前的错误信息
+            $('.not_null').remove();	 // 清除掉以前的错误信息
 
-                $.each(labs_attributes, function (index, value) {
-                    console.log(index, value);
+            $.each(labs_attributes, function (index, value) {
+                console.log(index, value);
 
-                    if(value['labs_attribute_name'] === empty_text || value['labs_attribute_name'] == ""){
-                        pass = false;
-                        add_tip('labs_attribute_table', index, 2)
-                    }
-                });
-                if(pass){
-                    save_ajax(from_url, 'labs_attributes', labs_attributes, '{{ school.id }}')
+                if(value['labs_attribute_name'] === empty_text || value['labs_attribute_name'] == ""){
+                    pass = false;
+                    add_tip('labs_attribute_table', index, 2)
                 }
+            });
+            if(pass){
+                save_ajax(from_url, 'labs_attributes', labs_attributes, '{{ school.id }}')
             }
         })
     </script>

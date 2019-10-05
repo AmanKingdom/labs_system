@@ -15,8 +15,8 @@
                         <div class="ibox-tools">
                             <button id="add_classes_button" class="btn btn-primary">添加班级</button>
                             <button id="remove_classes_button" class="btn btn-danger" disabled>删除班级</button>
-                                                        <button id="save_classes_button" class="btn btn-primary">保存修改</button>
-<a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                            <button id="save_classes_button" class="btn btn-primary">保存修改</button>
+                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                         </div>
                     </div>
                     <div class="ibox-content">
@@ -34,6 +34,13 @@
         <hr>
         请先添加年级信息，有年级信息后可进行下一步设置 <a href="{% url 'super_manage:school_manage' %}">>>>前往添加</a>
     {% endif %}
+    <div align="left" style="margin-left: 20px">
+        <a href="#" onClick="history.back(-1);">
+            <button id="back" class="btn btn-primary" title="返回上一页">
+                返回上一页
+            </button>
+        </a>
+    </div>
 {% endblock %}
 
 {% block add_js_to_super_manage %}
@@ -75,9 +82,14 @@
                         },
                     },{
                         field: 'classes_name',
-                        title: '班级名称(建议直接填班级数字)<span class="need">*</span>',
+                        title: '班级<span class="need">*</span>',
                         editable:{
-                            type:'text',
+                            type:'select',
+                            source: [
+                                {% for classes_number in classes_numbers %}
+                                    { value: {{ classes_number }}, text: '{{ classes_number }}'},
+                                {% endfor %}
+                            ]
                         },
                     },{
                         field:'id_in_database',
@@ -135,7 +147,7 @@
                 new_row = {
                     "id": index,
                     "grade": data[index-1].grade,
-                    "classes_name": data[index-1].classes_name,
+                    "classes_name": Number(data[index-1].classes_name)+1,
                 };
             }
 
@@ -153,27 +165,25 @@
         $('#save_classes_button').click(function () {
             var classes = classes_table.bootstrapTable('getData');
 
-            if(classes.length !== 0){
-                var pass = true;
+            var pass = true;
 
-                $('.not_null').remove();	 // 清除掉以前的错误信息
+            $('.not_null').remove();	 // 清除掉以前的错误信息
 
-                $.each(classes, function (index, value) {
-                    console.log(index, value);
+            $.each(classes, function (index, value) {
+                console.log(index, value);
 
-                    if(value['grade'] === empty_text || value['grade'] == ""){
-                        pass = false;
-                        add_tip('classes_table', index, 2)
-                    }
-
-                    if(value['classes_name'] === empty_text || value['classes_name'] == ""){
-                        pass = false;
-                        add_tip('classes_table', index, 3)
-                    }
-                });
-                if(pass){
-                    save_ajax(from_url, 'classes', classes, '{{ school.id }}')
+                if(value['grade'] === empty_text || value['grade'] == ""){
+                    pass = false;
+                    add_tip('classes_table', index, 2)
                 }
+
+                if(value['classes_name'] === empty_text || value['classes_name'] == ""){
+                    pass = false;
+                    add_tip('classes_table', index, 3)
+                }
+            });
+            if(pass){
+                save_ajax(from_url, 'classes', classes, '{{ school.id }}')
             }
         })
     </script>

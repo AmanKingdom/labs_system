@@ -14,8 +14,7 @@
 {% block super_manage_body %}
     <div class="row">
         <div class="col-md-4 col-sm-10 col-xs-10">
-            &nbsp;&nbsp;&nbsp;&nbsp;
-            <label for="school_name">学校名称<span class="need">*</span>：</label> <a id="school_name" style="width: 60%;">{{ school.name }}</a>
+            <label for="school_name" style="margin-left: 15px">学校名称<span class="need">*</span>：</label> <a id="school_name" style="width: 60%;">{{ school.name }}</a>
             <a onclick="submit_school()" title="保存修改" class="pull-right"><i class="fa fa-save"></i></a>
         </div>
     </div>
@@ -76,10 +75,10 @@
                         <br>
                         <div class="ibox float-e-margins">
                             <div class="ibox-title">
-                                <h5>系 信息表</h5>
+                                <h5>系别信息表</h5>
                                 <div class="ibox-tools">
-                                    <button id="add_department_button" class="btn btn-primary">添加 系</button>
-                                    <button id="remove_department_button" class="btn btn-danger" disabled>删除 系</button>
+                                    <button id="add_department_button" class="btn btn-primary">添加系别</button>
+                                    <button id="remove_department_button" class="btn btn-danger" disabled>删除系别</button>
                                     <button id="save_department_button" class="btn btn-primary">保存修改</button>
                                     <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                                 </div>
@@ -120,12 +119,16 @@
                             </div>
                         </div>
                     </div>
-                    <div class="pull-right" style="margin-top: 80px; margin-bottom: 20px">
-                        <a href="{% url 'super_manage:classes_manage' %}">前往设置班级 >>></a>
+                    <div class="pull-right" style="margin-right: 30px">
+                        <a href="{% url 'super_manage:classes_manage' %}">
+                            <button id="back" class="btn btn-primary" title="返回上一页">
+                                前往设置班级 >>>
+                            </button>
+                        </a>
                     </div>
                 {% else %}
                     <hr>
-                    请先添加系，有系后可进行下一步设置
+                    请先添加系别，有系别后可进行下一步设置
                 {% endif %}
             {% else %}
                 <hr>
@@ -139,6 +142,13 @@
         <hr>
         请先设置您的学校名称，设置完学校名称即可进行下一步设置
     {% endif %}
+    <div align="left" style="margin-left: 20px">
+        <a href="#" onClick="history.back(-1);">
+            <button id="back" class="btn btn-primary" title="返回上一页">
+                返回上一页
+            </button>
+        </a>
+    </div>
 
 {% endblock %}
 
@@ -269,7 +279,6 @@
     <script>
         $('#save_school_area_button').click(function () {
             var school_areas_origin = school_area_table.bootstrapTable('getData');
-            var school_areas = [];
 
             var pass = true;
 
@@ -403,27 +412,25 @@
         $('#save_institute_button').click(function () {
             var institutes = institute_table.bootstrapTable('getData');
 
-            if(institutes.length !== 0){
-                var pass = true;
+            var pass = true;
 
-                $('.not_null').remove();	 // 清除掉以前的错误信息
+            $('.not_null').remove();	 // 清除掉以前的错误信息
 
-                $.each(institutes, function (index, value) {
-                    console.log(index, value);
+            $.each(institutes, function (index, value) {
+                console.log(index, value);
 
-                    if(value['school_area'] === empty_text || value['school_area'] == ""){
-                        pass = false;
-                        add_tip('institute_table', index, 2)
-                    }
-
-                    if(value['institute_name'] === empty_text || value['institute_name'] == ""){
-                        pass = false;
-                        add_tip('institute_table', index, 3)
-                    }
-                });
-                if(pass){
-                    save_ajax(from_url, 'institutes', institutes, '{{ school.id }}')
+                if(value['school_area'] === empty_text || value['school_area'] == ""){
+                    pass = false;
+                    add_tip('institute_table', index, 2)
                 }
+
+                if(value['institute_name'] === empty_text || value['institute_name'] == ""){
+                    pass = false;
+                    add_tip('institute_table', index, 3)
+                }
+            });
+            if(pass){
+                save_ajax(from_url, 'institutes', institutes, '{{ school.id }}')
             }
         })
     </script>
@@ -431,7 +438,7 @@
 
 
 
-    <!--系表设置相关  开始-->
+    <!--系别表设置相关  开始-->
     <script>
         var department_table = $('#department_table');
         var remove_department_button = $('#remove_department_button');
@@ -463,7 +470,7 @@
                         },
                     },{
                         field: 'department_name',
-                        title: '系名称<span class="need">*</span>',
+                        title: '系别名称<span class="need">*</span>',
                         editable:{
                             type:'text',
                         },
@@ -502,9 +509,9 @@
             $('#locale').change(init_department_table);
         })
     </script>
-    <!--系表设置相关  结束-->
+    <!--系别表设置相关  结束-->
 
-    <!--动态添加系表格行 事件 开始-->
+    <!--动态添加系别表格行 事件 开始-->
     <script>
         $("#add_department_button").click(function () {
             // 用index实现编号自增
@@ -534,38 +541,36 @@
             });
         });
     </script>
-    <!--动态添加系表格行 事件 结束-->
+    <!--动态添加系别表格行 事件 结束-->
 
-    <!--保存修改或增加系信息后的表格 事件 开始 -->
+    <!--保存修改或增加系别信息后的表格 事件 开始 -->
     <script>
         $('#save_department_button').click(function () {
             var departments = department_table.bootstrapTable('getData');
 
-            if(departments.length !== 0){
-                var pass = true;
+            var pass = true;
 
-                $('.not_null').remove();	 // 清除掉以前的错误信息
+            $('.not_null').remove();	 // 清除掉以前的错误信息
 
-                $.each(departments, function (index, value) {
-                    console.log(index, value);
+            $.each(departments, function (index, value) {
+                console.log(index, value);
 
-                    if(value['institute'] === empty_text || value['institute'] == ""){
-                        pass = false;
-                        add_tip('department_table', index, 2)
-                    }
-
-                    if(value['department_name'] === empty_text || value['department_name'] == ""){
-                        pass = false;
-                        add_tip('department_table', index, 3)
-                    }
-                });
-                if(pass){
-                    save_ajax(from_url, 'departments', departments, '{{ school.id }}')
+                if(value['institute'] === empty_text || value['institute'] == ""){
+                    pass = false;
+                    add_tip('department_table', index, 2)
                 }
+
+                if(value['department_name'] === empty_text || value['department_name'] == ""){
+                    pass = false;
+                    add_tip('department_table', index, 3)
+                }
+            });
+            if(pass){
+                save_ajax(from_url, 'departments', departments, '{{ school.id }}')
             }
         })
     </script>
-    <!--保存修改或增加系信息后的表格 事件 结束 -->
+    <!--保存修改或增加系别信息后的表格 事件 结束 -->
 
 
 
@@ -589,7 +594,7 @@
                         field: 'id',
                     },{
                         field:'department',
-                        title: '所属 系<span class="need">*</span>',
+                        title: '所属系别<span class="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
@@ -602,9 +607,14 @@
                         },
                     },{
                         field: 'grade_name',
-                        title: '年级名称(建议直接填年级的年份数字)<span class="need">*</span>',
+                        title: '年级<span class="need">*</span>',
                         editable:{
-                            type:'text',
+                            type:'select',
+                            source:[
+                                {% for year in years %}
+                                    {value: {{year}}, text:'{{ year }}'},
+                                {% endfor %}
+                            ]
                         },
                     },{
                         field:'id_in_database',
@@ -662,7 +672,7 @@
                 new_row = {
                     "id": index,
                     "department": data[index-1].department,
-                    "grade_name": data[index-1].grade_name,
+                    "grade_name": Number(data[index-1].grade_name)+1,
                 };
             }
 
@@ -680,27 +690,25 @@
         $('#save_grade_button').click(function () {
             var grades = grade_table.bootstrapTable('getData');
 
-            if(grades.length !== 0){
-                var pass = true;
+            var pass = true;
 
-                $('.not_null').remove();	 // 清除掉以前的错误信息
+            $('.not_null').remove();	 // 清除掉以前的错误信息
 
-                $.each(grades, function (index, value) {
-                    console.log(index, value);
+            $.each(grades, function (index, value) {
+                console.log(index, value);
 
-                    if(value['department'] === empty_text || value['department'] == ""){
-                        pass = false;
-                        add_tip('grade_table', index, 2)
-                    }
-
-                    if(value['grade_name'] === empty_text || value['grade_name'] == ""){
-                        pass = false;
-                        add_tip('grade_table', index, 3)
-                    }
-                });
-                if(pass){
-                    save_ajax(from_url, 'grades', grades, '{{ school.id }}')
+                if(value['department'] === empty_text || value['department'] == ""){
+                    pass = false;
+                    add_tip('grade_table', index, 2)
                 }
+
+                if(value['grade_name'] === empty_text || value['grade_name'] == ""){
+                    pass = false;
+                    add_tip('grade_table', index, 3)
+                }
+            });
+            if(pass){
+                save_ajax(from_url, 'grades', grades, '{{ school.id }}')
             }
         })
     </script>

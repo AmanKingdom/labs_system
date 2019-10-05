@@ -33,6 +33,13 @@
     {% else %}
         <a href="{% url 'super_manage:school_manage' %}">还没有学校信息，请先添加学校信息 >>> </a>
     {% endif %}
+    <div align="left" style="margin-left: 20px">
+        <a href="#" onClick="history.back(-1);">
+            <button id="back" class="btn btn-primary" title="返回上一页">
+                返回上一页
+            </button>
+        </a>
+    </div>
 {% endblock %}
 
 {% block add_js_to_super_manage %}
@@ -128,22 +135,20 @@
         $('#save_experiment_type_button').click(function () {
             var experiment_types = experiment_type_table.bootstrapTable('getData');
 
-            if(experiment_types.length !== 0){
-                var pass = true;
+            var pass = true;
 
-                $('.not_null').remove();	 // 清除掉以前的错误信息
+            $('.not_null').remove();	 // 清除掉以前的错误信息
 
-                $.each(experiment_types, function (index, value) {
-                    console.log(index, value);
+            $.each(experiment_types, function (index, value) {
+                console.log(index, value);
 
-                    if(value['experiment_type_name'] === empty_text || value['experiment_type_name'] == ""){
-                        pass = false;
-                        add_tip('experiment_type_table', index, 2)
-                    }
-                });
-                if(pass){
-                    save_ajax(from_url, 'experiment_types', experiment_types, '{{ school.id }}')
+                if(value['experiment_type_name'] === empty_text || value['experiment_type_name'] == ""){
+                    pass = false;
+                    add_tip('experiment_type_table', index, 2)
                 }
+            });
+            if(pass){
+                save_ajax(from_url, 'experiment_types', experiment_types, '{{ school.id }}')
             }
         })
     </script>

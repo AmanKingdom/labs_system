@@ -8,6 +8,7 @@
 {% endblock %}
 
 {% block apply_experiments_body %}
+    <h1 class="need">本页面未正式启用</h1>
     <div class="row">
         <div class="row">
             <div class="col-sm-offset-1 col-sm-3 m-b-xs">
@@ -183,12 +184,12 @@
     <script src="/static/css_js/js/fixed-columns/bootstrap-table-fixed-columns.js"></script>
 
     <script>
-    $(function () {
-        $('#room_schedule_table').bootstrapTable('destroy').bootstrapTable({
-            minimumCountColumns:4,
-            fixedColumns:true,
-            fixedNumber:1,
-        });
-    })
-</script>
+        $(function () {
+            $('#room_schedule_table').bootstrapTable('destroy').bootstrapTable({
+                minimumCountColumns:4,
+                fixedColumns:true,
+                fixedNumber:1,
+            });
+        })
+    </script>
 {% endblock %}

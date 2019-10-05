@@ -38,6 +38,13 @@
         <hr>
         请先添加班级信息，有班级信息后可进行下一步设置 <a href="{% url 'super_manage:classes_manage' %}">>>>前往添加</a>
     {% endif %}
+    <div align="left" style="margin-left: 20px">
+        <a href="#" onClick="history.back(-1);">
+            <button id="back" class="btn btn-primary" title="返回上一页">
+                返回上一页
+            </button>
+        </a>
+    </div>
 {% endblock %}
 
 {% block add_js_to_super_manage %}
@@ -87,7 +94,7 @@
                         },
                     },{
                         field:'attribute',
-                        title: '课程属性',
+                        title: '<a href="{% url 'super_manage:labs_attribute_manage' %}">课程属性</a>',
                         editable:{
                             type:'select',
                             source: [
@@ -215,27 +222,25 @@
         $('#save_course_button').click(function () {
             var courses = course_table.bootstrapTable('getData');
 
-            if(courses.length !== 0){
-                var pass = true;
+            var pass = true;
 
-                $('.not_null').remove();	 // 清除掉以前的错误信息
+            $('.not_null').remove();	 // 清除掉以前的错误信息
 
-                $.each(courses, function (index, value) {
-                    console.log(index, value);
+            $.each(courses, function (index, value) {
+                console.log(index, value);
 
-                    if(value['grade'] === empty_text || value['grade'] == ""){
-                        pass = false;
-                        add_tip('course_table', index, 2)
-                    }
-
-                    if(value['course_name'] === empty_text || value['course_name'] == ""){
-                        pass = false;
-                        add_tip('course_table', index, 3)
-                    }
-                });
-                if(pass){
-                    save_ajax(from_url, 'courses', courses, '{{ school.id }}')
+                if(value['grade'] === empty_text || value['grade'] == ""){
+                    pass = false;
+                    add_tip('course_table', index, 2)
                 }
+
+                if(value['course_name'] === empty_text || value['course_name'] == ""){
+                    pass = false;
+                    add_tip('course_table', index, 3)
+                }
+            });
+            if(pass){
+                save_ajax(from_url, 'courses', courses, '{{ school.id }}')
             }
         })
     </script>

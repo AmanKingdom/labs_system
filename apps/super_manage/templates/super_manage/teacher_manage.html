@@ -15,8 +15,8 @@
                         <div class="ibox-tools">
                             <button id="add_teacher_button" class="btn btn-primary">添加教师</button>
                             <button id="remove_teacher_button" class="btn btn-danger" disabled>删除教师</button>
-                                                       <button id="save_teacher_button" class="btn btn-primary">保存修改</button>
- <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                            <button id="save_teacher_button" class="btn btn-primary">保存修改</button>
+                            <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                         </div>
                     </div>
                     <div class="ibox-content">
@@ -34,6 +34,13 @@
         <hr>
         请先添加系别信息，有系别信息后可进行下一步设置 <a href="{% url 'super_manage:school_manage' %}">>>>前往添加</a>
     {% endif %}
+    <div align="left" style="margin-left: 20px">
+        <a href="#" onClick="history.back(-1);">
+            <button id="back" class="btn btn-primary" title="返回上一页">
+                返回上一页
+            </button>
+        </a>
+    </div>
 {% endblock %}
 
 {% block add_js_to_super_manage %}
@@ -181,37 +188,35 @@
         $('#save_teacher_button').click(function () {
             var teachers = teacher_table.bootstrapTable('getData');
 
-            if(teachers.length !== 0){
-                var pass = true;
+            var pass = true;
 
-                $('.not_null').remove();	 // 清除掉以前的错误信息
+            $('.not_null').remove();	 // 清除掉以前的错误信息
 
-                $.each(teachers, function (index, value) {
-                    console.log(index, value);
+            $.each(teachers, function (index, value) {
+                console.log(index, value);
 
-                    if(value['department'] === empty_text || value['department'] == ""){
-                        pass = false;
-                        add_tip('teacher_table', index, 2)
-                    }
-
-                    if(value['teacher_name'] === empty_text || value['teacher_name'] == ""){
-                        pass = false;
-                        add_tip('teacher_table', index, 3)
-                    }
-
-                    if(value['account'] === empty_text || value['account'] == ""){
-                        pass = false;
-                        add_tip('teacher_table', index, 4)
-                    }
-
-                    if(value['password'] === empty_text || value['password'] == ""){
-                        pass = false;
-                        add_tip('teacher_table', index, 5)
-                    }
-                });
-                if(pass){
-                    save_ajax(from_url, 'teachers', teachers, '{{ school.id }}')
+                if(value['department'] === empty_text || value['department'] == ""){
+                    pass = false;
+                    add_tip('teacher_table', index, 2)
                 }
+
+                if(value['teacher_name'] === empty_text || value['teacher_name'] == ""){
+                    pass = false;
+                    add_tip('teacher_table', index, 3)
+                }
+
+                if(value['account'] === empty_text || value['account'] == ""){
+                    pass = false;
+                    add_tip('teacher_table', index, 4)
+                }
+
+                if(value['password'] === empty_text || value['password'] == ""){
+                    pass = false;
+                    add_tip('teacher_table', index, 5)
+                }
+            });
+            if(pass){
+                save_ajax(from_url, 'teachers', teachers, '{{ school.id }}')
             }
         })
     </script>

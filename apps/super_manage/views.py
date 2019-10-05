@@ -253,6 +253,7 @@ def school_manage(request):
         'institutes': [],
         'departments': [],
         'grades': [],
+        'years': None,
     }
 
     set_user_for_context(request.session['user_account'], context)
@@ -281,6 +282,8 @@ def school_manage(request):
             for grade in department.grades.all():
                 context['grades'].append(grade)
 
+    context['years'] = [x for x in range(datetime.now().year-5, datetime.now().year+5)]
+
     return render(request, 'super_manage/school_manage.html', context)
 
 
@@ -294,6 +297,7 @@ def classes_manage(request):
 
         'grades': [],
         'classes': [],
+        'classes_numbers': [x for x in range(1, 9)]
     }
 
     set_user_for_context(request.session['user_account'], context)

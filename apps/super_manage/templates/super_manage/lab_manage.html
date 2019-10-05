@@ -102,21 +102,43 @@
                             ]
                         },
                     },{
-                        field:'labs_attributes',
-                        title: '实验室属性',
+                        field:'attribute1',
+                        title: '1级属性',
                         editable:{
-                            type:'select2',
+                            type:'select',
                             source: [
-                                {% for labs_attribute in labs_attributes %}
-                                    { value: {{ labs_attribute.id }}, text: '{{ labs_attribute.name }}'},
+                                {% for attribute in labs_attributes %}
+                                    { value: {{ attribute.id }}, text: '{{ attribute.name }}'},
                                 {% empty %}
                                     { value:"", text: not_found_data},
                                 {% endfor %}
-                            ],
-                            select2 : {
-                                multiple : true,
-                                width : '100px'//设置宽，这个一定要，不然显示框很窄
-                            }
+                            ]
+                        },
+                    },{
+                        field:'attribute2',
+                        title: '2级属性',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% for attribute in labs_attributes %}
+                                    { value: {{ attribute.id }}, text: '{{ attribute.name }}'},
+                                {% empty %}
+                                    { value:"", text: not_found_data},
+                                {% endfor %}
+                            ]
+                        },
+                    },{
+                        field:'attribute3',
+                        title: '3级属性',
+                        editable:{
+                            type:'select',
+                            source: [
+                                {% for attribute in labs_attributes %}
+                                    { value: {{ attribute.id }}, text: '{{ attribute.name }}'},
+                                {% empty %}
+                                    { value:"", text: not_found_data},
+                                {% endfor %}
+                            ]
                         },
                     },{
                         field: 'equipments',
@@ -138,18 +160,20 @@
         function load_lab(){
             console.log('load_labs()执行');
             var index = 0;
-            {% for l in labs %}
+            {% for lab in labs %}
                 var new_row = {
                     "id": index,
-                    'institute': '{{ l.lab.institute.id }}',
-                    'lab_name': '{{ l.lab.name }}',
-                    'number_of_people': '{{ l.lab.number_of_people }}',
-                    'dispark': {% if l.lab.dispark %}'1'{% else %}'0'{% endif %},
-                    'labs_attributes': '{{ l.labs_attributes }}',
-                    'equipments': '{{ l.lab.equipments }}',
-                    "id_in_database": '{{ l.lab.id }}',
+                    'institute': '{{ lab.institute.id }}',
+                    'lab_name': '{{ lab.name }}',
+                    'number_of_people': '{{ lab.number_of_people }}',
+                    'dispark': {% if lab.dispark %}'1'{% else %}'0'{% endif %},
+                    'attribute1': '{{ lab.attribute1.id }}',
+                    'attribute2': '{{ lab.attribute2.id }}',
+                    'attribute3': '{{ lab.attribute3.id }}',
+                    'equipments': '{{ lab.equipments }}',
+                    "id_in_database": '{{ lab.id }}',
                 };
-                console.log('实验室开放：{{ l.lab.dispark }}');
+                console.log('实验室开放：{{ lab.dispark }}');
                 // 插入该行
                 lab_table.bootstrapTable('insertRow', {
                     index: index,
@@ -184,7 +208,9 @@
                     "lab_name": "",
                     "number_of_people": "",
                     "dispark": '1',
-                    "labs_attributes": "",
+                    "attribute1": "",
+                    "attribute2": "",
+                    "attribute3": "",
                     "equipments": "",
                 };
             }else{
@@ -194,7 +220,9 @@
                     "lab_name": "",
                     "number_of_people": data[index-1].number_of_people,
                     "dispark": data[index-1].dispark,
-                    "labs_attributes": data[index-1].labs_attributes,
+                    "attribute1": data[index-1].attribute1,
+                    "attribute2": data[index-1].attribute2,
+                    "attribute3": data[index-1].attribute3,
                     "equipments": "",
                 };
             }

@@ -104,7 +104,15 @@ class Lab(models.Model):
     visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
-        return '%s(%d台)' % (self.name, self.equipments_amount)
+        return_str = '%s(%d台)' % (self.name, self.equipments_amount)
+        if self.attribute1:
+            return_str = return_str + ' 属性1:' + self.attribute1.name
+        if self.attribute2:
+            return_str = return_str + ' 属性2:' + self.attribute2.name
+        if self.attribute3:
+            return_str = return_str + ' 属性3:' + self.attribute3.name
+
+        return return_str
 
 
 # 年级
@@ -318,6 +326,8 @@ class Experiment(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, verbose_name='所属课程', related_name='experiments')
     status = models.IntegerField(verbose_name='状态：1-已提交但未审核，2-审核未通过，3-审核通过', default=1)
     labs_attribute = models.ManyToManyField(LabsAttribute, verbose_name='实验室属性，用于筛选实验室，可以多个属性，也可不选')
+
+    aready_schedule = models.BooleanField(verbose_name='是否已经被编排', default=False)
 
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')

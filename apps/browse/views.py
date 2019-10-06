@@ -3,12 +3,12 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
 from apps.browse.models import Assistant
-from apps.super_manage.models import Teacher, SuperUser, School, Term, SchoolYear
+from apps.super_manage.models import Teacher, SuperUser, School
 
-from logging_setting import ThisLogger
+
 from super_manage.views import create_default_term_for_school
 
-this_logger = ThisLogger().logger
+from apps.super_manage.views import this_logger
 
 
 # 基础视图，检查登录

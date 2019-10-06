@@ -2,13 +2,12 @@ import json
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse, Http404
 from django.shortcuts import render
 
-from apps.super_manage.models import Teacher, Course, Classes, Institute, Lab, LabsAttribute, Department, \
-    TotalRequirements, Term, SuperUser, ExperimentType, Experiment, SpecialRequirements
+from apps.super_manage.models import Course, Classes, Institute, Lab, LabsAttribute, \
+    TotalRequirements, ExperimentType, Experiment, SpecialRequirements
 
-from logging_setting import ThisLogger
 from apps.super_manage.views import get_all_labs, set_user_for_context, STATUS
 
-this_logger = ThisLogger().logger
+from apps.super_manage.views import this_logger
 
 
 def set_choices_context(context):

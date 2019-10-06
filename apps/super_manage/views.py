@@ -8,7 +8,6 @@ from apps.super_manage.models import School, SchoolArea, Institute, Department, 
     SchoolYear, Term, Course, LabsAttribute, Lab, Experiment, ExperimentType, Schedule
 
 from logging_setting import ThisLogger
-
 this_logger = ThisLogger().logger
 
 STATUS = {
@@ -985,8 +984,7 @@ def arrange(request):
                 new_dict['free_labs'] = new_dict['free_labs'][0]
 
             # 实验安排自身的实验室也是可用实验室
-            for lab in list(set(self_labs)):
-                new_dict['free_labs'].insert(0, lab)
+            new_dict['free_labs'] = list(set(self_labs))[::-1] + new_dict['free_labs']
 
             context['conflict_courses'].append(new_dict)
 

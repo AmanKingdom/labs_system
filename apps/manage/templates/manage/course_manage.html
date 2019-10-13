@@ -1,14 +1,14 @@
 <!--super_user/course_manage.html-->
 
-{% extends 'super_manage/base.html' %}
+{% extends 'manage/base.html' %}
 
-{% block add_css_to_super_manage %}
+{% block add_css_to_manage %}
     <!--多项选择的css依赖-->
     <link href="/static/css_js/css/plugins/select2/select2.min.css" rel="stylesheet" type="text/css">
     <link href="/static/css_js/css/plugins/select2/select2-bootstrap.css" rel="stylesheet" type="text/css">
 {% endblock %}
 
-{% block super_manage_body %}
+{% block manage_body %}
     {% if classes %}
         <div class="row">
             <div class="col-md-12">
@@ -36,7 +36,7 @@
         </div>
     {% else %}
         <hr>
-        请先添加班级信息，有班级信息后可进行下一步设置 <a href="{% url 'super_manage:classes_manage' %}">>>>前往添加</a>
+        请先添加班级信息，有班级信息后可进行下一步设置 <a href="{% url 'manage:classes_manage' %}">>>>前往添加</a>
     {% endif %}
     <div align="left" style="margin-left: 20px">
         <a href="#" onClick="history.back(-1);">
@@ -47,11 +47,11 @@
     </div>
 {% endblock %}
 
-{% block add_js_to_super_manage %}
+{% block add_js_to_manage %}
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
     <!--当前页面的全局设置-->
     <script>
-        var from_url = "{% url 'super_manage:course_manage' %}";
+        var from_url = "{% url 'manage:course_manage' %}";
     </script>
 
 
@@ -94,7 +94,7 @@
                         },
                     },{
                         field:'attribute',
-                        title: '<a href="{% url 'super_manage:labs_attribute_manage' %}">课程属性</a>',
+                        title: '<a href="{% url 'manage:labs_attribute_manage' %}">课程属性</a>',
                         editable:{
                             type:'select',
                             source: [

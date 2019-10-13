@@ -1,8 +1,8 @@
-<!--super_manage/arrange.html-->
+<!--manage/arrange.html-->
 
-{% extends 'super_manage/base.html' %}
+{% extends 'manage/base.html' %}
 
-{% block add_css_to_super_manage %}
+{% block add_css_to_manage %}
     <!--固定列表头所需的样式依赖-->
     <link rel="stylesheet" href="/static/css_js/css/fixed-columns/bootstrap-table-fixed-columns.css">
     <style>
@@ -14,7 +14,7 @@
     </style>
 {% endblock %}
 
-{% block super_manage_body %}
+{% block manage_body %}
     {% if conflict_courses %}
         <div class="ibox float-e-margins">
             <div class="ibox-title">
@@ -96,7 +96,7 @@
     </div>
 {% endblock %}
 
-{% block add_js_to_super_manage %}
+{% block add_js_to_manage %}
     <!--固定列的js-->
     <script src="/static/css_js/js/fixed-columns/bootstrap-table-fixed-columns.js"></script>
     <!--固定列的设置-->
@@ -112,7 +112,7 @@
 
     <!--保存按钮点击-->
     <script>
-        var from_url = '{% url "super_manage:arrange" %}';
+        var from_url = '{% url "manage:arrange" %}';
 
         function save(save_button){
             var course_id = save_button.parentNode.parentNode.cells[4].getAttribute("id");
@@ -134,7 +134,7 @@
                     "course_id":course_id,
                     "selected_labs_id":selected_labs_id
                 };
-                var to_url = '{% url "super_manage:adjust_labs_for_schedule" %}';
+                var to_url = '{% url "manage:adjust_labs_for_schedule" %}';
                 base_ajax(from_url, to_url, data)
             }
         }
@@ -142,7 +142,7 @@
         function re_arrange(re_arrange_button) {
             var pass = confirm('确定要重新智能排课吗？');
             if(pass){
-                var to_url = '{% url "super_manage:re_arrange" %}';
+                var to_url = '{% url "manage:re_arrange" %}';
                 base_ajax(from_url, to_url, {})
             }
         }
@@ -157,7 +157,7 @@
         function initTable() {
             $('#week_schedule_table').bootstrapTable('destroy').bootstrapTable({
                 sidePagination: "server",
-                url: '{% url "super_manage:schedule" school.id %}',
+                url: '{% url "manage:schedule" school.id %}',
                 height: 600,
                 locale: $('#locale').val(),
                 onLoadSuccess: function (data) {

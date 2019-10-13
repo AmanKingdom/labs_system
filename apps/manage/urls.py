@@ -1,12 +1,12 @@
 from django.urls import path
 
-from apps.super_manage.views import school_manage, create_or_modify_school_ajax, remove_ajax, \
+from apps.manage.views import school_manage, create_or_modify_school_ajax, remove_ajax, \
     save_ajax, classes_manage, teacher_manage, save_term_ajax, become_a_teacher, cancel_the_teacher, course_manage, \
     labs_attribute_manage, experiment_type_manage, lab_manage, system_settings, personal_info, application_manage, \
-    application_check, get_schedule, arrange, schedule, adjust_labs_for_schedule, re_arrange
+    application_check, get_schedule, arrange, schedule, adjust_labs_for_schedule, re_arrange, IArrange, ScheduleView
 from apps.browse.views import require_login
 
-app_name = 'super_manage'
+app_name = 'manage'
 
 urlpatterns = [
     path('personal_info', require_login(personal_info), name='personal_info'),
@@ -35,4 +35,7 @@ urlpatterns = [
     path('schedule/<school_id>/', schedule, name='schedule'),
     path('adjust_labs_for_schedule', adjust_labs_for_schedule, name='adjust_labs_for_schedule'),
     path('re_arrange', re_arrange, name='re_arrange'),
+
+    path('iarrange', IArrange.as_view(), name='iarrange'),
+    path('ischedule', ScheduleView.as_view(), name='ischedule'),
 ]

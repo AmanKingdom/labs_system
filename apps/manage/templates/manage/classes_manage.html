@@ -1,10 +1,10 @@
 <!--super_user/classes_manage.html-->
 
-{% extends 'super_manage/base.html' %}
+{% extends 'manage/base.html' %}
 
-{% block add_css_to_super_manage %}{% endblock %}
+{% block add_css_to_manage %}{% endblock %}
 
-{% block super_manage_body %}
+{% block manage_body %}
     {% if grades %}
         <div class="row">
             <div class="col-md-12">
@@ -32,7 +32,7 @@
         </div>
     {% else %}
         <hr>
-        请先添加年级信息，有年级信息后可进行下一步设置 <a href="{% url 'super_manage:school_manage' %}">>>>前往添加</a>
+        请先添加年级信息，有年级信息后可进行下一步设置 <a href="{% url 'manage:school_manage' %}">>>>前往添加</a>
     {% endif %}
     <div align="left" style="margin-left: 20px">
         <a href="#" onClick="history.back(-1);">
@@ -43,10 +43,10 @@
     </div>
 {% endblock %}
 
-{% block add_js_to_super_manage %}
+{% block add_js_to_manage %}
     <!--当前页面的全局设置-->
     <script>
-        var from_url = "{% url 'super_manage:classes_manage' %}";
+        var from_url = "{% url 'manage:classes_manage' %}";
     </script>
 
 

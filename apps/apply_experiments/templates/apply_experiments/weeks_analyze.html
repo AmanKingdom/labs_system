@@ -8,34 +8,32 @@
 {% endblock %}
 
 {% block apply_experiments_body %}
-    <div class="row">
-        <div id="toolbar">
-            <div class="row">
-                <div class="col-sm-4 m-b-xs">
-                    <select class="input-sm form-control input-s-sm inline">
-                        <option class="selected">计算机科学与技术学院</option>
-                        <option>网络安全学院</option>
-                    </select>
-                </div>
-                <div class="col-sm-4 m-b-xs">
-                    <select class="input-sm form-control input-s-sm inline">
-                        <option>第14周</option>
-                        <option class="selected">第15周</option>
-                        <option>第16周</option>
-                    </select>
-                </div>
-                <div class="col-sm-4 m-b-xs">
-                    <select class="input-sm form-control input-s-sm inline">
-                        <option class="selected">--星期--</option>
-                        <option>星期一</option>
-                        <option>星期二</option>
-                        <option>星期三</option>
-                        <option>星期四</option>
-                        <option>星期五</option>
-                        <option>星期六</option>
-                        <option>星期七</option>
-                    </select>
-                </div>
+    <div id="toolbar">
+        <div class="row">
+            <div class="col-sm-4 m-b-xs">
+                <select class="form-control">
+                    <option class="selected">计算机科学与技术学院</option>
+                    <option>网络安全学院</option>
+                </select>
+            </div>
+            <div class="col-sm-4 m-b-xs">
+                <select class="form-control">
+                    <option>第14周</option>
+                    <option class="selected">第15周</option>
+                    <option>第16周</option>
+                </select>
+            </div>
+            <div class="col-sm-4 m-b-xs">
+                <select class="form-control">
+                    <option class="selected">--星期--</option>
+                    <option>星期一</option>
+                    <option>星期二</option>
+                    <option>星期三</option>
+                    <option>星期四</option>
+                    <option>星期五</option>
+                    <option>星期六</option>
+                    <option>星期七</option>
+                </select>
             </div>
         </div>
     </div>
@@ -75,7 +73,7 @@
         function initTable() {
             $('#week_schedule_table').bootstrapTable('destroy').bootstrapTable({
                 sidePagination: "server",
-                url: '{% url "super_manage:get_schedule" school.id %}',
+                url: '{% url "manage:get_schedule" school.id %}',
                 height: 800,
                 locale: $('#locale').val(),
                 onLoadSuccess: function (data) {

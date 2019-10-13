@@ -1,10 +1,10 @@
-<!--super_manage/personal_info.html-->
+<!--manage/personal_info.html-->
 
-{% extends 'super_manage/base.html' %}
+{% extends 'manage/base.html' %}
 
-{% block add_css_to_super_manage %}{% endblock %}
+{% block add_css_to_manage %}{% endblock %}
 
-{% block super_manage_body %}
+{% block manage_body %}
     <div class="row">
         {% if superuser %}
             <div {% if teacher %}class="col-md-6"{% else %}class="col-md-6 col-md-offset-3"{% endif %}>
@@ -17,7 +17,7 @@
                             {% if superuser.school %}
                                 负责管理：{{ superuser.school }} 实验室
                             {% else %}
-                                <a href="{% url 'super_manage:school_manage' %}">还没有学校信息，前往设置学校信息 >>></a>
+                                <a href="{% url 'manage:school_manage' %}">还没有学校信息，前往设置学校信息 >>></a>
                             {% endif %}
                         </small>
                     </div>
@@ -122,7 +122,7 @@
                                 </li>
                             </ul>
                         {% else %}
-                            <a href="{% url 'super_manage:school_manage' %}">没有系别数据，请前往添加 >>></a>
+                            <a href="{% url 'manage:school_manage' %}">没有系别数据，请前往添加 >>></a>
                         {% endif %}
                     </div>
                     <div class="modal-footer">
@@ -134,7 +134,7 @@
     </div>
 {% endblock %}
 
-{% block add_js_to_super_manage %}
+{% block add_js_to_manage %}
     <script>
         function personal_homepage_ajax(url, data){
             $.ajax({
@@ -153,7 +153,7 @@
                     console.log(data);
                     if(data.status){
                         console.log('提交成功！');
-                        window.location.href="{% url 'super_manage:personal_info' %}"
+                        window.location.href="{% url 'manage:personal_info' %}"
                     }else{
                         console.log('错误信息：'+data.message);
                         alert(data.message)
@@ -165,11 +165,11 @@
         $('#become_a_teacher_button').click(function () {
             var from_department_id = document.getElementById('from_department').value;
 
-            personal_homepage_ajax('{% url "super_manage:become_a_teacher" %}', JSON.stringify({'from_department_id': from_department_id}))
+            personal_homepage_ajax('{% url "manage:become_a_teacher" %}', JSON.stringify({'from_department_id': from_department_id}))
         });
 
         $('#cancel_the_teacher_button').click(function () {
-            personal_homepage_ajax('{% url "super_manage:cancel_the_teacher" %}', JSON.stringify({'superuser_id': {{ superuser.id }} }))
+            personal_homepage_ajax('{% url "manage:cancel_the_teacher" %}', JSON.stringify({'superuser_id': {{ superuser.id }} }))
         });
 
         /*$(function() {

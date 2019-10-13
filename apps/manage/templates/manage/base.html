@@ -52,7 +52,7 @@
     </style>
 
     <!--子html文件用这个填充块添加css样式-->
-    {% block add_css_to_super_manage %}{% endblock %}
+    {% block add_css_to_manage %}{% endblock %}
 </head>
 
 <body>
@@ -98,13 +98,13 @@
                 </li>
 
                 <li {% if personal_info_active %}class="active"{% endif %}>
-                    <a href="{% url 'super_manage:personal_info' %}">
+                    <a href="{% url 'manage:personal_info' %}">
                         <i class="fa fa-user-circle-o"></i><span class="nav-label">个人信息</span>
                     </a>
                 </li>
                 {% if superuser %}
                     <li {% if system_settings_active %}class="active"{% endif %}>
-                        <a href="{% url 'super_manage:system_settings' %}">
+                        <a href="{% url 'manage:system_settings' %}">
                             <i class="fa fa-cog"></i><span class="nav-label">系统设置</span>
                         </a>
                     </li>
@@ -115,25 +115,26 @@
                     <li {% if active_1 %}class="active"{% endif %}>
                         <a href="#"><i class="fa fa-bank"></i> <span class="nav-label">教学信息管理</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
-                            <li {% if school_active %}class="active"{% endif %}><a href="{% url 'super_manage:school_manage' %}">校内机构管理</a></li>
-                            <li {% if classes_active %}class="active"{% endif %}><a href="{% url 'super_manage:classes_manage' %}">班级管理</a></li>
-                            <li {% if teacher_active %}class="active"{% endif %}><a href="{% url 'super_manage:teacher_manage' %}">教师管理</a></li>
-                            <li {% if course_active %}class="active"{% endif %}><a href="{% url 'super_manage:course_manage' %}">课程管理</a></li>
+                            <li {% if school_active %}class="active"{% endif %}><a href="{% url 'manage:school_manage' %}">校内机构管理</a></li>
+                            <li {% if classes_active %}class="active"{% endif %}><a href="{% url 'manage:classes_manage' %}">班级管理</a></li>
+                            <li {% if teacher_active %}class="active"{% endif %}><a href="{% url 'manage:teacher_manage' %}">教师管理</a></li>
+                            <li {% if course_active %}class="active"{% endif %}><a href="{% url 'manage:course_manage' %}">课程管理</a></li>
                         </ul>
                     </li>
                     <li {% if active_2 %}class="active"{% endif %}>
                         <a href="#"><i class="fa fa-laptop"></i> <span class="nav-label">实验室信息管理</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
-                            <li {% if lab_active %}class="active"{% endif %}><a href="{% url 'super_manage:lab_manage' %}">实验室管理</a></li>
-                            <li {% if labs_attribute_active %}class="active"{% endif %}><a href="{% url 'super_manage:labs_attribute_manage' %}">实验室属性设置</a></li>
+                            <li {% if lab_active %}class="active"{% endif %}><a href="{% url 'manage:lab_manage' %}">实验室管理</a></li>
+                            <li {% if labs_attribute_active %}class="active"{% endif %}><a href="{% url 'manage:labs_attribute_manage' %}">实验室属性设置</a></li>
                         </ul>
                     </li>
                     <li {% if active_3 %}class="active"{% endif %}>
                         <a href="#"><i class="fa fa-tasks"></i> <span class="nav-label">实验课管理</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
-                            <li {% if experiment_type_active %}class="active"{% endif %}><a href="{% url 'super_manage:experiment_type_manage' %}">实验类型设置</a></li>
-                            <li {% if application_active %}class="active"{% endif %}><a href="{% url 'super_manage:application_manage' %}">实验申请表审批</a></li>
-                            <li {% if arrange_active %}class="active"{% endif %}><a href="{% url 'super_manage:arrange' %}">智能排课</a></li>
+                            <li {% if experiment_type_active %}class="active"{% endif %}><a href="{% url 'manage:experiment_type_manage' %}">实验类型设置</a></li>
+                            <li {% if application_active %}class="active"{% endif %}><a href="{% url 'manage:application_manage' %}">实验申请表审批</a></li>
+                            <li {% if arrange_active %}class="active"{% endif %}><a href="{% url 'manage:arrange' %}">智能排课</a></li>
+                            <li {% if iarrange_active %}class="active"{% endif %}><a href="{% url 'manage:iarrange' %}">智能排课2</a></li>
                         </ul>
                     </li>
                 {% endif %}
@@ -223,7 +224,7 @@
             </nav>
         </div>
         <div class="row border-bottom white-bg dashboard-header">
-            {% block super_manage_body %}{% endblock %}
+            {% block manage_body %}{% endblock %}
         </div>
     </div>
 </div>
@@ -333,7 +334,7 @@
 <script>
     //  传入数据为：保存后返回的地址，保存对象的模型类型字符串，保存对象数据，保存对象所在学校的id
     function save_ajax(from_url, save_objects_model, save_objects_data, school_id){
-        var to_url = "{% url 'super_manage:save_ajax' %}";
+        var to_url = "{% url 'manage:save_ajax' %}";
         var data = {'save_objects_model': save_objects_model, 'save_objects_data':save_objects_data, 'school_id': school_id, 'delete_ids_in_database':delete_ids_in_database};
         if(delete_ids_in_database){
             console.log('将要删除的对象在数据库中的ids为：', delete_ids_in_database)
@@ -345,7 +346,7 @@
 <!--通用的删除方法-->
 <script>
     function remove_ajax(from_url, remove_json){
-        var url = "{% url 'super_manage:remove_ajax' %}";
+        var url = "{% url 'manage:remove_ajax' %}";
         base_ajax(from_url, url, remove_json);
     }
 </script>
@@ -428,7 +429,7 @@
 
 
 <!--子html文件用这个填充块添加js样式-->
-{% block add_js_to_super_manage %}{% endblock %}
+{% block add_js_to_manage %}{% endblock %}
 </body>
 
 </html>

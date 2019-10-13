@@ -7,7 +7,7 @@
     <form class="m-t" role="form" action="{% url 'browse:login' %}" method="post">
         {% csrf_token %}
         <div class="form-group">
-            <input type="text" class="form-control" placeholder="工号/学号" required name="account">
+            <input type="text" class="form-control" placeholder="手机号/工号/学号" required name="account">
         </div>
         <div class="form-group">
             <input type="password" class="form-control" placeholder="密码" required name="password">

@@ -21,7 +21,7 @@
             </div>
         </div>
         <br><br>
-        <a href="{% url 'super_manage:school_manage' %}">跳过</a>
+        <a href="{% url 'manage:school_manage' %}">跳过</a>
     </form>
 {% endblock %}
 
@@ -42,7 +42,7 @@
                     console.log("已提交");
                     if(data.status){
                         console.log('创建学校成功！');
-                        window.location.href="{% url 'super_manage:school_manage' %}"
+                        window.location.href="{% url 'manage:school_manage' %}"
                     }
                     else{
                         console.log('注册信息有问题：'+data.message);

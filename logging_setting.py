@@ -12,7 +12,7 @@ class ThisLogger(object):
     }
 
     # 默认的日志文件为 logging.log，默认等级为 info
-    def __init__(self, filename='logging.log', level='info', when='D', backup_count=3,
+    def __init__(self, filename='logging/logging.log', level='info', when='D', backup_count=3,
                  formatter_str='[%(asctime)s] %(pathname)s %(module)s:%(lineno)d行: %(message)s'):
         self.logger = logging.getLogger(filename)
 

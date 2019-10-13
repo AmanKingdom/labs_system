@@ -1,14 +1,14 @@
 <!--super_user/lab_manage.html-->
 
-{% extends 'super_manage/base.html' %}
+{% extends 'manage/base.html' %}
 
-{% block add_css_to_super_manage %}
+{% block add_css_to_manage %}
     <!--多项选择的css依赖-->
     <link href="/static/css_js/css/plugins/select2/select2.min.css" rel="stylesheet" type="text/css">
     <link href="/static/css_js/css/plugins/select2/select2-bootstrap.css" rel="stylesheet" type="text/css">
 {% endblock %}
 
-{% block super_manage_body %}
+{% block manage_body %}
     {% if institutes %}
         <div class="row">
             <div class="col-md-12">
@@ -35,7 +35,7 @@
             </div>
         </div>
     {% else %}
-        请先添加学院信息，有学院信息后可进行下一步设置 <a href="{% url 'super_manage:school_manage' %}">>>>前往添加</a>
+        请先添加学院信息，有学院信息后可进行下一步设置 <a href="{% url 'manage:school_manage' %}">>>>前往添加</a>
     {% endif %}
     <div align="left" style="margin-left: 20px">
         <a href="#" onClick="history.back(-1);">
@@ -46,11 +46,11 @@
     </div>
 {% endblock %}
 
-{% block add_js_to_super_manage %}
+{% block add_js_to_manage %}
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
     <!--当前页面的全局设置-->
     <script>
-        var from_url = "{% url 'super_manage:lab_manage' %}";
+        var from_url = "{% url 'manage:lab_manage' %}";
     </script>
 
 
@@ -110,7 +110,7 @@
                         },
                     },{
                         field:'attribute1',
-                        title: '<a href="{% url 'super_manage:labs_attribute_manage' %}">1级属性</a>',
+                        title: '<a href="{% url 'manage:labs_attribute_manage' %}">1级属性</a>',
                         editable:{
                             type:'select',
                             source: [
@@ -123,7 +123,7 @@
                         },
                     },{
                         field:'attribute2',
-                        title: '<a href="{% url 'super_manage:labs_attribute_manage' %}">2级属性</a>',
+                        title: '<a href="{% url 'manage:labs_attribute_manage' %}">2级属性</a>',
                         editable:{
                             type:'select',
                             source: [
@@ -136,7 +136,7 @@
                         },
                     },{
                         field:'attribute3',
-                        title: '<a href="{% url 'super_manage:labs_attribute_manage' %}">3级属性</a>',
+                        title: '<a href="{% url 'manage:labs_attribute_manage' %}">3级属性</a>',
                         editable:{
                             type:'select',
                             source: [

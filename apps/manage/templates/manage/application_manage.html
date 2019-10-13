@@ -1,9 +1,9 @@
-<!--super_manage/application_manage.html-->
+<!--manage/application_manage.html-->
 
-{% extends 'super_manage/base.html' %}
-{% block add_css_to_super_manage %}{% endblock %}
+{% extends 'manage/base.html' %}
+{% block add_css_to_manage %}{% endblock %}
 
-{% block super_manage_body %}
+{% block manage_body %}
     <div class="ibox float-e-margins">
         <div class="ibox-title row">
             <h5>实验申请表审批 </h5>
@@ -61,7 +61,7 @@
     </div>
 {% endblock %}
 
-{% block add_js_to_super_manage %}
+{% block add_js_to_manage %}
     <script>
         $(document).ready(function() {
             $('.see_more_button').click(function () {
@@ -75,14 +75,14 @@
             $('.pass_button').click(function () {
                 var course_id = $(this).parents("tr").children("td:nth-child(4)").attr('id');
                 console.log('点击审核通过的行：', course_id);
-                var url = "{% url 'super_manage:application_check' 'course_id' '3' %}";
+                var url = "{% url 'manage:application_check' 'course_id' '3' %}";
                 url = url.replace('course_id', course_id);
                 window.location.href=url;
             });
             $('.not_pass_button').click(function () {
                 var course_id = $(this).parents("tr").children("td:nth-child(4)").attr('id');
                 console.log('点击审核不通过的行：', course_id);
-                var url = "{% url 'super_manage:application_check' 'course_id' '2' %}";
+                var url = "{% url 'manage:application_check' 'course_id' '2' %}";
                 url = url.replace('course_id', course_id);
                 window.location.href=url;
             });

@@ -344,6 +344,8 @@ class Schedule(models.Model):
         db_table = 'schedule'
 
     school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='所属学校', related_name='schedules')
+    institute = models.ForeignKey(Institute, on_delete=models.CASCADE, verbose_name='开课单位', related_name='schedules')
+
     which_week = models.IntegerField(verbose_name='周次')
     days_of_the_week = models.IntegerField(verbose_name='星期')
     section = models.IntegerField(verbose_name='节次')

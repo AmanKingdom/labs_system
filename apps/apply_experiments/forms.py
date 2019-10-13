@@ -1,6 +1,6 @@
 from django import forms
 
-from apps.super_manage.models import Course
+from apps.manage.models import Course
 
 #
 # class CourseForm(forms.ModelForm):

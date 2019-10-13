@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.super_manage.models import School, Institute, SchoolArea, Lab, Department, Grade, Classes, Teacher, \
+from apps.manage.models import School, Institute, SchoolArea, Lab, Department, Grade, Classes, Teacher, \
     TotalRequirements, Course, LabsAttribute, SchoolYear, Term, SuperUser, Schedule
 
 admin.site.site_header = '实验室数据后台管理系统'

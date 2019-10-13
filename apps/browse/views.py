@@ -1,14 +1,15 @@
 from django.http import HttpResponseRedirect, Http404, JsonResponse
 from django.shortcuts import render
+from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from apps.browse.models import Assistant
-from apps.super_manage.models import Teacher, SuperUser, School
+from apps.manage.models import Teacher, SuperUser, School
+from browse.forms import LoginForm
 
+from manage.views import create_default_term_for_school
 
-from super_manage.views import create_default_term_for_school
-
-from apps.super_manage.views import this_logger
+from apps.manage.views import this_logger
 
 
 # 基础视图，检查登录
@@ -30,7 +31,7 @@ def homepage(request):
     elif request.session['user_type'] == 'teacher':
         return HttpResponseRedirect('/apply_experiments/apply')
     elif request.session['user_type'] == 'superuser':
-        return HttpResponseRedirect('/super_manage/school_manage')
+        return HttpResponseRedirect('/manage/school_manage')
     else:
         return HttpResponseRedirect('/browse/login')
 
@@ -100,6 +101,56 @@ def set_school(request):
         return render(request, 'browse/set_school.html', context)
 
 
+class LoginView(View):
+    context = {'title': '登录', 'message': None}
+
+    def get(self, request):
+        return render(request, 'browse/login.html', self.context)
+
+    def post(self, request):
+        login_form = LoginForm(request.POST)
+        if login_form.is_valid():
+            try:
+                superuser = SuperUser.objects.get(**login_form.cleaned_data)
+                if superuser:
+                    this_logger.info(superuser.name + '超级管理员登录成功')
+                    request.session['user_account'] = superuser.account
+                    request.session['user_type'] = 'superuser'
+
+                    request.session['user_id'] = superuser.id
+                    if superuser.school:
+                        request.session['school_id'] = superuser.school_id
+
+                    return HttpResponseRedirect('/manage/school_manage')
+            except:
+                try:
+                    teacher = Teacher.objects.get(**login_form.cleaned_data)
+                    if teacher:
+                        this_logger.info(teacher.name + '教师登录成功')
+                        request.session['user_account'] = teacher.account
+                        request.session['user_type'] = 'teacher'
+
+                        request.session['user_id'] = teacher.id
+
+                        return HttpResponseRedirect('/apply_experiments/apply')
+                except:
+                    try:
+                        assistant = Assistant.objects.get(**login_form.cleaned_data)
+                        if assistant:
+                            this_logger.info(assistant.name + '助理登录成功')
+                            request.session['user_account'] = assistant.account
+                            request.session['user_type'] = 'assistant'
+
+                            request.session['user_id'] = assistant.id
+
+                            return HttpResponseRedirect('/browse/assistant_view')
+                    except:
+                        this_logger.info('登录失败')
+
+            self.context['message'] = '登录失败，请检查账号或重新输入密码，助理忘记密码请向老师申请找回。'
+        return render(request, 'browse/login.html', self.context)
+
+
 @csrf_exempt
 def login(request):
     context = {'title': '登录', 'message': None}
@@ -114,7 +165,7 @@ def login(request):
                 this_logger.info(superuser.name + '超级管理员登录成功')
                 request.session['user_account'] = superuser.account
                 request.session['user_type'] = 'superuser'
-                return HttpResponseRedirect('/super_manage/school_manage')
+                return HttpResponseRedirect('/manage/school_manage')
         except:
             try:
                 teacher = Teacher.objects.get(account=account, password=password)

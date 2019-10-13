@@ -1,8 +1,8 @@
 <!--apply_experiments/base.html-->
 
-{% extends 'super_manage/base.html' %}
+{% extends 'manage/base.html' %}
 
-{% block add_css_to_super_manage %}
+{% block add_css_to_manage %}
     <style>
         .table, .ibox{
             margin-bottom: 0;
@@ -11,10 +11,10 @@
     {% block add_css_to_apply_experiments %}{% endblock %}
 {% endblock %}
 
-{% block super_manage_body %}
+{% block manage_body %}
     {% block apply_experiments_body %}{% endblock %}
 {% endblock %}
 
-{% block add_js_to_super_manage %}
+{% block add_js_to_manage %}
     {% block add_js_to_apply_experiments %}{% endblock %}
 {% endblock %}

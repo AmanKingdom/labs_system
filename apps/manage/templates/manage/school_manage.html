@@ -1,8 +1,8 @@
 <!--super_user/school_manage.html-->
 
-{% extends 'super_manage/base.html' %}
+{% extends 'manage/base.html' %}
 
-{% block add_css_to_super_manage %}
+{% block add_css_to_manage %}
     <style>
         #school_name{
             height: 40px;
@@ -11,7 +11,7 @@
     </style>
 {% endblock %}
 
-{% block super_manage_body %}
+{% block manage_body %}
     <div class="row">
         <div class="col-md-4 col-sm-10 col-xs-10">
             <label for="school_name" style="margin-left: 15px">学校名称<span class="need">*</span>：</label> <a id="school_name" style="width: 60%;">{{ school.name }}</a>
@@ -120,7 +120,7 @@
                         </div>
                     </div>
                     <div class="pull-right" style="margin-right: 30px">
-                        <a href="{% url 'super_manage:classes_manage' %}">
+                        <a href="{% url 'manage:classes_manage' %}">
                             <button id="back" class="btn btn-primary" title="返回上一页">
                                 前往设置班级 >>>
                             </button>
@@ -152,10 +152,10 @@
 
 {% endblock %}
 
-{% block add_js_to_super_manage %}
+{% block add_js_to_manage %}
     <!--当前页面的全局设置-->
     <script>
-        var from_url = "{% url 'super_manage:school_manage' %}";
+        var from_url = "{% url 'manage:school_manage' %}";
     </script>
 
     <!--学校信息设置相关  开始-->
@@ -188,7 +188,7 @@
             }
         }
         function create_or_modify_school(old_school_name, new_school_name) {
-            var to_url = "{% url 'super_manage:create_or_modify_school_ajax' %}";
+            var to_url = "{% url 'manage:create_or_modify_school_ajax' %}";
             var data = {"old_school_name":old_school_name, "new_school_name":new_school_name};
             base_ajax(from_url, to_url, data);
         }

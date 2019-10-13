@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.super_manage.models import ExperimentType, Experiment, SpecialRequirements
+from apps.manage.models import ExperimentType, Experiment, SpecialRequirements
 
 
 class ExperimentTypeAdmin(admin.ModelAdmin):

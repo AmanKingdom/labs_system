@@ -2,12 +2,12 @@ import json
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse, Http404
 from django.shortcuts import render
 
-from apps.super_manage.models import Course, Classes, Institute, Lab, LabsAttribute, \
+from apps.manage.models import Course, Classes, Institute, Lab, LabsAttribute, \
     TotalRequirements, ExperimentType, Experiment, SpecialRequirements
 
-from apps.super_manage.views import get_all_labs, set_user_for_context, STATUS
+from apps.manage.views import get_all_labs, set_user_for_context, STATUS
 
-from apps.super_manage.views import this_logger
+from apps.manage.views import this_logger
 
 
 def set_choices_context(context):
@@ -260,7 +260,7 @@ def manage_application(request):
     except (Exception) as e:
         print('获取实验申请信息时出错', e)
 
-    return render(request, 'super_manage/application_manage.html', context)
+    return render(request, 'manage/application_manage.html', context)
     # else:
     #     return HttpResponseRedirect('/browse/login')
 
@@ -352,7 +352,7 @@ def change_experiments(request, course_id=None):
 
     set_choices_context(context)
 
-    return render(request, 'super_manage/experiment_manage.html', context)
+    return render(request, 'manage/experiment_manage.html', context)
     # else:
     #     return HttpResponseRedirect('/browse/login')
 

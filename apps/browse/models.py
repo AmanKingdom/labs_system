@@ -1,5 +1,5 @@
 from django.db import models
-from apps.super_manage.models import Teacher
+from apps.manage.models import Teacher
 
 
 # 学生助理

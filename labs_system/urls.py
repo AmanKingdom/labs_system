@@ -23,5 +23,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('apply_experiments/', include('apps.apply_experiments.urls')),
     path('browse/', include('apps.browse.urls')),
-    path('super_manage/', include('apps.super_manage.urls')),
+    path('manage/', include('apps.manage.urls')),
 ]

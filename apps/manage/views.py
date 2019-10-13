@@ -3,11 +3,13 @@ from datetime import datetime
 
 from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import render
+from django.views import View
 
-from apps.super_manage.models import School, SchoolArea, Institute, Department, Grade, SuperUser, Classes, Teacher, \
+from apps.manage.models import School, SchoolArea, Institute, Department, Grade, SuperUser, Classes, Teacher, \
     SchoolYear, Term, Course, LabsAttribute, Lab, Experiment, ExperimentType, Schedule
 
 from logging_setting import ThisLogger
+
 this_logger = ThisLogger().logger
 
 STATUS = {
@@ -42,6 +44,8 @@ def set_user_for_context(user_account, context):
     if context['superuser']:
         context['superuser'] = context['superuser'][0]
         context['teacher'] = context['superuser'].is_teacher
+        if context['superuser'].school:
+            context['school'] = context['superuser'].school
         if context['teacher']:
             return 'superuser_is_teacher'
         else:
@@ -209,7 +213,7 @@ def personal_info(request):
                                 for department in departments:
                                     context['departments'].append(department)
 
-    return render(request, 'super_manage/personal_info.html', context)
+    return render(request, 'manage/personal_info.html', context)
 
 
 def system_settings(request):
@@ -236,7 +240,7 @@ def system_settings(request):
         context['term'] = Term.objects.filter(school=context['school'])[0]
         context['term_begin_date'] = context['term'].begin_date
 
-    return render(request, 'super_manage/system_settings.html', context)
+    return render(request, 'manage/system_settings.html', context)
 
 
 def school_manage(request):
@@ -281,9 +285,9 @@ def school_manage(request):
             for grade in department.grades.all():
                 context['grades'].append(grade)
 
-    context['years'] = [x for x in range(datetime.now().year-5, datetime.now().year+5)]
+    context['years'] = [x for x in range(datetime.now().year - 5, datetime.now().year + 5)]
 
-    return render(request, 'super_manage/school_manage.html', context)
+    return render(request, 'manage/school_manage.html', context)
 
 
 def classes_manage(request):
@@ -305,7 +309,7 @@ def classes_manage(request):
     context['grades'] = get_all_grades(school)
     context['classes'] = get_all_classes(school)
 
-    return render(request, 'super_manage/classes_manage.html', context)
+    return render(request, 'manage/classes_manage.html', context)
 
 
 def teacher_manage(request):
@@ -326,7 +330,7 @@ def teacher_manage(request):
     context['departments'] = get_all_departments(school)
     context['teachers'] = get_all_teachers(school)
 
-    return render(request, 'super_manage/teacher_manage.html', context)
+    return render(request, 'manage/teacher_manage.html', context)
 
 
 def course_manage(request):
@@ -372,7 +376,7 @@ def course_manage(request):
         }
         context['courses'].append(temp)
 
-    return render(request, 'super_manage/course_manage.html', context)
+    return render(request, 'manage/course_manage.html', context)
 
 
 def labs_attribute_manage(request):
@@ -391,7 +395,7 @@ def labs_attribute_manage(request):
     if context['superuser'].school:
         context['labs_attributes'] = context['superuser'].school.labs_attributes.all()
 
-    return render(request, 'super_manage/labs_attribute_manage.html', context)
+    return render(request, 'manage/labs_attribute_manage.html', context)
 
 
 def experiment_type_manage(request):
@@ -410,7 +414,7 @@ def experiment_type_manage(request):
     if context['superuser'].school:
         context['experiment_types'] = context['superuser'].school.experiment_types.all()
 
-    return render(request, 'super_manage/experiment_type_manage.html', context)
+    return render(request, 'manage/experiment_type_manage.html', context)
 
 
 def lab_manage(request):
@@ -435,7 +439,7 @@ def lab_manage(request):
         context['institutes'] = get_all_institutes(school)
         context['labs'] = get_all_labs(school)
 
-    return render(request, 'super_manage/lab_manage.html', context)
+    return render(request, 'manage/lab_manage.html', context)
 
 
 def application_manage(request):
@@ -492,7 +496,7 @@ def application_manage(request):
                 context['courses'].append(course_item)
                 i = i + 1
 
-    return render(request, 'super_manage/application_manage.html', context)
+    return render(request, 'manage/application_manage.html', context)
 
 
 def application_check(request, course_id=None, status=None):
@@ -504,7 +508,7 @@ def application_check(request, course_id=None, status=None):
         experiment.status = status
         experiment.save()
 
-    return HttpResponseRedirect('/super_manage/application_manage')
+    return HttpResponseRedirect('/manage/application_manage')
 
 
 # 如果传入的旧名称和新名称一样就是要创建新学校
@@ -990,7 +994,7 @@ def arrange(request):
 
             i = i + 1
 
-    return render(request, 'super_manage/arrange.html', context)
+    return render(request, 'manage/arrange.html', context)
 
 
 def re_arrange(request):
@@ -1359,3 +1363,86 @@ def adjust_labs_for_schedule(request):
             context['message'] = '修改失败，请重试'
 
         return JsonResponse(context)
+
+
+# 初始化数据库安排表(按学院)
+def init_schedule(institute_id):
+    courses = Course.objects.filter(institute_id=institute_id)
+    experiments = []
+    for course in courses:
+        experiments.append(course.experiments)
+
+
+class ScheduleView(View):
+    data = {
+        "total": 1,
+        "rows": []
+    }
+
+    def get(self, request):
+        labs = Lab.objects.filter(institute_id=request.session.get('current_institute_id'), dispark=True)
+
+        # 先生成一个一周内应有的星期和节次的空字典
+        # 一般学校的每天都是11节对吧？
+        # 该字典的格式应该为：{"d1_s1":{"days_of_the_week": days_of_the_week, "section": section, "xxx":""}, }， 键表示星期几的第几节
+
+        # 基础空数据
+        base_dict = {}
+        for days_of_the_week in range(1, 8):
+            for section in range(1, 12):
+                new_dict = {"days_of_the_week": days_of_the_week, "section": section}
+                for lab in labs:
+                    new_dict["%s" % lab.name] = ""
+                base_dict["d%s_s%d" % (days_of_the_week, section)] = new_dict
+        empty_row = base_dict['d1_s1'].copy()
+        empty_row["days_of_the_week"] = empty_row["section"] = ""
+
+        # 为提高性能，使用prefetch_related可以做三次单表查询，然后再联表，不用总是查数据库表
+        schedules = Schedule.objects.filter(institute_id=request.session.get('current_institute_id')).prefetch_related('experiment__course', 'lab').values('experiment__course__name', 'days_of_the_week', 'section', 'lab__name')
+
+        div = '<div class="course_div">%s</div>'
+        for x in schedules:
+            new_div = div % x['experiment__course__name']
+            if new_div not in base_dict['d%d_s%d' % (x['days_of_the_week'], x['section'])]['%s' % x['lab__name']]:
+                base_dict["d%d_s%d" % (x['days_of_the_week'], x['section'])]["%s" % x['lab__name']] = base_dict["d%d_s%d" % (x['days_of_the_week'], x['section'])]["%s" % x['lab__name']] + new_div
+
+        self.data['rows'] = [empty_row] + list(base_dict.values())
+        # print('整理后，前端所需要的json数据：\n', self.data['rows'])
+        return JsonResponse(self.data)
+
+
+
+class IArrange(View):
+    context = {
+        'title': '实验类型设置',
+        'active_3': True,  # 激活导航
+        'iarrange_active': True,  # 激活导航
+        'superuser': None,
+        'teacher': None,
+
+        'school': None,
+        'labs': None,
+        'conflict_courses': [],
+        'institutes': [],
+    }
+
+    def get(self, request):
+        set_user_for_context(request.session['user_account'], self.context)
+
+        self.context['institutes'] = get_all_institutes(self.context['school'])
+        if request.GET.get('current_institute_id'):
+            request.session['current_institute_id'] = request.GET.get('current_institute_id')
+        elif not request.GET.get('current_institute_id') and not request.session.get('current_institute_id', None):
+            request.session['current_institute_id'] = self.context['institutes'][0].id
+
+        self.context['labs'] = Lab.objects.filter(institute_id=request.session['current_institute_id'], dispark=True)
+
+        return render(request, 'manage/iarrange.html', self.context)
+
+    def post(self, request):  # 创建
+        print(self.context)
+        return render(request, 'manage/iarrange.html', self.context)
+
+    def put(self, request):  # 更新
+        print(self.context)
+        return render(request, 'manage/iarrange.html', self.context)

@@ -41,9 +41,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'apps.browse.apps.BrowseConfig',
+    'apps.manage.apps.ManageConfig',
     'apps.apply_experiments.apps.ApplyExperimentsConfig',
-    'apps.super_manage.apps.SuperManageConfig',
+    'apps.browse.apps.BrowseConfig',
 ]
 
 MIDDLEWARE = [

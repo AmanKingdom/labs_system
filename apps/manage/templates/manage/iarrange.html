@@ -6,10 +6,15 @@
     <!--固定列表头所需的样式依赖-->
     <link rel="stylesheet" href="/static/css_js/css/fixed-columns/bootstrap-table-fixed-columns.css">
     <style>
+        .course_div, .conflict_div{
+            margin: 5%;
+            padding: 5% 0 5%;
+        }
         .course_div{
             background: #E5FFE5;
-            margin: 5% 10% 5%;
-            padding: 5%;
+        }
+        .conflict_div{
+            background: #d8afaf;
         }
     </style>
 {% endblock %}
@@ -39,11 +44,11 @@
                             <th>操作</th>
                         </tr></thead>
                         <tbody>
-                        {% for course in conflict_courses %}
+                        {% for course_block in conflict_courses %}
                             <tr>
-                                <td>{{ course.no }}</td>
-                                <td>{{ course.weeks }}</td>
-                                <td>{{ course.days_of_the_week }}</td>
+                                <td>{{ course_block.no }}</td>
+                                <td>{{ course_block.weeks }}</td>
+                                <td>{{ course_block.days_of_the_week }}</td>
                                 <td>{{ course.section }}</td>
                                 <td id="{{ course.course.id }}">{{ course.course }}</td>
                                 <td>

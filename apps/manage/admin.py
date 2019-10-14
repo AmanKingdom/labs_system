@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from apps.manage.models import School, Institute, SchoolArea, Lab, Department, Grade, Classes, Teacher, \
-    TotalRequirements, Course, LabsAttribute, SchoolYear, Term, SuperUser, Schedule
+    TotalRequirements, Course, LabsAttribute, SchoolYear, Term, SuperUser, Schedule, CourseBlock
 
 admin.site.site_header = '实验室数据后台管理系统'
 admin.site.site_title = '实验室数据管理'
@@ -142,3 +142,10 @@ class ScheduleAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Schedule, ScheduleAdmin)
+
+
+class CourseBlockAdmin(admin.ModelAdmin):
+    list_display = ('id', 'course', 'days_of_the_week', 'max_suitable', 'create_time', 'modify_time', 'visible')  # 设置展示的列
+
+
+admin.site.register(CourseBlock, CourseBlockAdmin)

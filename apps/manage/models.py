@@ -237,6 +237,8 @@ class Course(models.Model):
                                            verbose_name='总体实验需求', blank=True, null=True)
     attribute = models.ForeignKey(LabsAttribute, on_delete=models.SET_NULL, blank=True, null=True, verbose_name='课程属性')
 
+    has_block = models.BooleanField(verbose_name='是否有课程块', default=False)
+
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
     visible = models.BooleanField(verbose_name='是否可见', default=True)
@@ -350,7 +352,7 @@ class Schedule(models.Model):
     days_of_the_week = models.IntegerField(verbose_name='星期')
     section = models.IntegerField(verbose_name='节次')
     lab = models.ForeignKey(Lab, on_delete=models.CASCADE, verbose_name='实验室')
-    experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE, verbose_name='实验项目')
+    experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE, verbose_name='实验项目', related_name='schedules')
     suitable = models.IntegerField(verbose_name='适合度。默认为0，数值越大越适合', default=0)
     conflict = models.BooleanField(verbose_name='是否和其它安排有冲突', default=False)
     need_adjust = models.BooleanField(verbose_name='需要人工调整', default=False)
@@ -362,3 +364,26 @@ class Schedule(models.Model):
     def __str__(self):
         return "%s 第%d周 星期%d - %d节 %s实验室 %s" % (
             self.school.name, self.which_week, self.days_of_the_week, self.section, self.lab.name, self.experiment.name)
+
+
+# 一门课程在同一星期内、相同实验室的安排集合，暂且叫 课程块 吧
+class CourseBlock(models.Model):
+    class Meta:
+        # 该数据库表名自定义为如下：
+        db_table = 'course_block'
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, verbose_name='课程')
+    days_of_the_week = models.IntegerField(verbose_name='星期')
+    max_suitable = models.IntegerField(verbose_name='安排中的最高适合度', default=0)
+
+    schedules = models.ManyToManyField(Schedule, verbose_name='所有安排', related_name='course_block')
+    labs = models.ManyToManyField(Lab, verbose_name='统一的实验室')
+    conflict = models.BooleanField(verbose_name='是否和其它课程块有冲突', default=False)
+    need_adjust = models.BooleanField(verbose_name='需要人工调整', default=False)
+
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
+    visible = models.BooleanField(verbose_name='是否可见', default=True)
+
+    def __str__(self):
+        return '%s 星期:%d' % (self.course.name, self.days_of_the_week)

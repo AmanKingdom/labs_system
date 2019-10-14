@@ -6,7 +6,7 @@ from django.shortcuts import render
 from django.views import View
 
 from apps.manage.models import School, SchoolArea, Institute, Department, Grade, SuperUser, Classes, Teacher, \
-    SchoolYear, Term, Course, LabsAttribute, Lab, Experiment, ExperimentType, Schedule
+    SchoolYear, Term, Course, LabsAttribute, Lab, Experiment, ExperimentType, Schedule, CourseBlock
 
 from logging_setting import ThisLogger
 
@@ -499,8 +499,10 @@ def application_manage(request):
     return render(request, 'manage/application_manage.html', context)
 
 
+
+
 def application_check(request, course_id=None, status=None):
-    this_logger.info('审核，接收到id：' + str(course_id) + '和status：' + str(status))
+    this_logger.info('审核，接收到id：' + str(course_id) + '和status：' + status)
 
     course = Course.objects.get(id=course_id)
     experiments = course.experiments.all()
@@ -508,7 +510,75 @@ def application_check(request, course_id=None, status=None):
         experiment.status = status
         experiment.save()
 
+        if status == '3':
+            # 审核通过则做一遍安排数据
+            init_schedule(experiment)
+        else:
+            # 审核不通过则取消原有的安排数据
+            cancel_schedule(experiment)
+            experiment.aready_schedule = False
+            experiment.save()
+
+    if status == '3':
+        # 审核通过则对安排数据整理一次课程块
+        if not course.has_block:
+            set_course_block(course, experiments)
+    else:
+        if course.has_block:
+            CourseBlock.objects.filter(course=course).delete()
+            course.has_block = False
+            course.save()
+
     return HttpResponseRedirect('/manage/application_manage')
+
+
+def cancel_schedule(experiment):
+    if experiment.aready_schedule:
+        for s in Schedule.objects.filter(experiment=experiment):
+            s.delete()
+
+
+# 根据课程设置课程块
+def set_course_block(course, experiments):
+    experiments_dict = {}
+    for experiment in experiments:
+        key_str = 'd%d' % experiment.days_of_the_week
+        for lab in experiment.labs.all():
+            key_str = key_str + '_%s' % lab.name
+
+        if key_str not in experiments_dict.keys():
+            experiments_dict[key_str] = []
+
+        experiments_dict[key_str].append(experiment)
+    # print('整理出的实验项目块：', experiments_dict)
+
+    for e_key, e_value in zip(experiments_dict.keys(), experiments_dict.values()):
+        course_block = CourseBlock.objects.create(
+            course=course,
+            days_of_the_week=int(e_key[1]),
+        )
+
+        max_suitable = 0
+        labs = []
+        conflict = False
+        for experiment in e_value:
+            for s in Schedule.objects.filter(experiment=experiment):
+                if s.conflict:
+                    conflict = True
+                if s.lab not in labs:
+                    labs.append(s.lab)
+                course_block.schedules.add(s)
+                if s.suitable > max_suitable:
+                    max_suitable = s.suitable
+
+        course_block.max_suitable = max_suitable
+        for lab in labs:
+            course_block.labs.add(lab)
+        course_block.conflict = conflict
+        course_block.save()
+
+    course.has_block = True
+    course.save()
 
 
 # 如果传入的旧名称和新名称一样就是要创建新学校
@@ -1365,12 +1435,72 @@ def adjust_labs_for_schedule(request):
         return JsonResponse(context)
 
 
-# 初始化数据库安排表(按学院)
-def init_schedule(institute_id):
-    courses = Course.objects.filter(institute_id=institute_id)
-    experiments = []
-    for course in courses:
-        experiments.append(course.experiments)
+
+
+
+
+
+
+
+
+# 对单个实验项目初始化数据库安排表，只要该实验没有被写进安排表中，则都要创建并设置一番适合度和冲突情况
+def init_schedule(experiment):
+    if not experiment.aready_schedule:
+        experiment.aready_schedule = True
+        experiment.save()
+
+        # 先通过联表获取该实验的学院外键id，不要放在循环中多次联表获取
+        course = experiment.course
+        institute = course.institute
+        school = institute.school_area.school
+        labs = experiment.labs.all()
+
+        # 通过课程的属性设置适合度，实验室的层级属性的权值分别为：一级-15，二级-10，三级-5
+        the_attribute = course.attribute
+        # 通过班级数量设置适合度，因为班级一般不会超过3，所以可以用个位数表示其优先权
+        classes_num = len(course.classes.all())
+
+        for section in experiment.section.split(','):
+            for lab in labs:
+
+                # 判断是否有冲突，先获取数据库中同一个学院内，同时间和同实验室的安排，如果能获取到则是有冲突
+                schedules = Schedule.objects.filter(
+                    institute=institute,
+                    which_week=experiment.which_week,
+                    days_of_the_week=experiment.days_of_the_week,
+                    section=int(section),
+                    lab=lab
+                )
+
+                conflict = False
+                if len(schedules) > 0:
+                    conflict = True
+                    schedules.update(conflict=conflict)
+                    # 使这些冲突安排的对应课程块也标记冲突
+                    for s in schedules:
+                        s.course_block.update(conflict=True)
+
+                new_schedule = Schedule.objects.create(
+                    school=school,
+                    institute=institute,
+                    which_week=experiment.which_week,
+                    days_of_the_week=experiment.days_of_the_week,
+                    section=int(section),
+                    lab=lab,
+                    experiment=experiment,
+                    conflict=conflict
+                )
+
+                if the_attribute:
+                    if the_attribute == lab.attribute1:
+                        new_schedule.suitable = 15
+                    elif the_attribute == lab.attribute2:
+                        new_schedule.suitable = 10
+                    elif the_attribute == lab.attribute3:
+                        new_schedule.suitable = 5
+
+                new_schedule.suitable = new_schedule.suitable + classes_num
+                new_schedule.save()
 
 
 class ScheduleView(View):
@@ -1397,19 +1527,53 @@ class ScheduleView(View):
         empty_row = base_dict['d1_s1'].copy()
         empty_row["days_of_the_week"] = empty_row["section"] = ""
 
-        # 为提高性能，使用prefetch_related可以做三次单表查询，然后再联表，不用总是查数据库表
-        schedules = Schedule.objects.filter(institute_id=request.session.get('current_institute_id')).prefetch_related('experiment__course', 'lab').values('experiment__course__name', 'days_of_the_week', 'section', 'lab__name')
-
         div = '<div class="course_div">%s</div>'
-        for x in schedules:
-            new_div = div % x['experiment__course__name']
-            if new_div not in base_dict['d%d_s%d' % (x['days_of_the_week'], x['section'])]['%s' % x['lab__name']]:
-                base_dict["d%d_s%d" % (x['days_of_the_week'], x['section'])]["%s" % x['lab__name']] = base_dict["d%d_s%d" % (x['days_of_the_week'], x['section'])]["%s" % x['lab__name']] + new_div
+        conflict_div = '<div class="conflict_div">%s</div>'
+
+        courses = Course.objects.filter(institute_id=request.session.get('current_institute_id'), has_block=True)
+        for course in courses:
+            course_blocks = CourseBlock.objects.filter(course=course)
+            for course_block in course_blocks:
+                for schedule_item in course_block.schedules.all():
+                    if course_block.conflict:
+                        new_div = conflict_div % (course.name + get_weeks(course_block) + get_classes_name_from_course(course.id))
+                    else:
+                        new_div = div % (course.name + get_weeks(course_block) + get_classes_name_from_course(course.id))
+                    if new_div not in base_dict['d%d_s%d' % (schedule_item.days_of_the_week, schedule_item.section)]['%s' % schedule_item.lab.name]:
+                        base_dict['d%d_s%d' % (schedule_item.days_of_the_week, schedule_item.section)]['%s' % schedule_item.lab.name] = base_dict['d%d_s%d' % (schedule_item.days_of_the_week, schedule_item.section)]['%s' % schedule_item.lab.name] + new_div
+
+        # 为提高性能，使用prefetch_related可以做三次单表查询，然后再联表，不用总是查数据库表，且按照适合度从大到小排序
+        # schedules = Schedule.objects.filter(institute_id=request.session.get('current_institute_id')).prefetch_related('experiment__course', 'lab').order_by('-suitable').values('experiment__course_id', 'experiment__course__name', 'days_of_the_week', 'section', 'lab__name')
+        # div = '<div class="course_div">%s</div>'
+        # for x in schedules:
+        #     new_div = div % (x['experiment__course__name'] + get_weeks(x['experiment__course_id'],x['days_of_the_week']) + get_classes_name_from_course(x['experiment__course_id']))
+        #     if new_div not in base_dict['d%d_s%d' % (x['days_of_the_week'], x['section'])]['%s' % x['lab__name']]:
+        #         base_dict["d%d_s%d" % (x['days_of_the_week'], x['section'])]["%s" % x['lab__name']] = base_dict["d%d_s%d" % (x['days_of_the_week'], x['section'])]["%s" % x['lab__name']] + new_div
 
         self.data['rows'] = [empty_row] + list(base_dict.values())
         # print('整理后，前端所需要的json数据：\n', self.data['rows'])
         return JsonResponse(self.data)
 
+
+# 通过课程id和指定的星期获取同星期内该课程的所有安排周次，但传来的数据要使得能够区分出是哪个课程块
+def get_weeks(course_block):
+    weeks = []
+    for schedule_item in course_block.schedules.all():
+        if schedule_item.which_week not in weeks:
+            weeks.append(schedule_item.which_week)
+
+    temp = ''
+    for w in weeks:
+        temp = temp + '、' + str(w)
+    return '<br>周次[ ' + temp[1:] + ' ]'
+
+
+# 为前端页面排课表格定制的获取课程的班级信息函数
+def get_classes_name_from_course(course_id):
+    all_classes_str = ''
+    for classes_item in Course.objects.get(id=course_id).classes.all():
+        all_classes_str = all_classes_str + '<br>' + classes_item.grade.name + '级' + classes_item.grade.department.name + classes_item.name + '班'
+    return all_classes_str
 
 
 class IArrange(View):
@@ -1436,6 +1600,19 @@ class IArrange(View):
             request.session['current_institute_id'] = self.context['institutes'][0].id
 
         self.context['labs'] = Lab.objects.filter(institute_id=request.session['current_institute_id'], dispark=True)
+
+        courses = Course.objects.filter(institute_id=request.session['current_institute_id'])
+        i = 0
+        for course in courses:
+            conflict_course_blocks = CourseBlock.objects.filter(course=course, conflict=True)
+            for conflict_course_block in conflict_course_blocks:
+                i = i + 1
+                new_dict = {
+                    "no": i,
+                    "weeks": get_weeks(conflict_course_block),
+                    "conflict_course_block": conflict_course_block,
+                }
+                self.context['conflict_courses'].append(new_dict)
 
         return render(request, 'manage/iarrange.html', self.context)
 

@@ -417,4 +417,3 @@ def rooms_analyze(request):
     set_user_for_context(request.session['user_account'], context)
 
     return render(request, 'apply_experiments/rooms_analyze.html', context)
-

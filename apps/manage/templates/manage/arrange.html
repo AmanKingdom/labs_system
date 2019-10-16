@@ -6,21 +6,33 @@
     <!--固定列表头所需的样式依赖-->
     <link rel="stylesheet" href="/static/css_js/css/fixed-columns/bootstrap-table-fixed-columns.css">
     <style>
-        .course_div, .conflict_div{
+        .course_div, .need_adjust_div{
+            font-weight: bold;
+            color: #000;
             margin: 2%;
             padding: 2%;
         }
-        .course_div{
-            background: #E5FFE5;
-        }
-        .conflict_div{
+
+        .green1_div{ background:#d5ead0;}
+        .green2_div{ background:#c1e8b8;}
+        .green3_div{ background:#95e582;}
+        .green4_div{ background:#9bbd93;}
+        .green5_div{ background:#7c9776;}
+        .blue1_div{ background: #96ade4;}
+        .blue2_div{ background: #7798e4;}
+        .blue3_div{ background: #5d85e4;}
+        .blue4_div{ background: #7083af;}
+        .blue5_div{ background: #5d7bc1;}
+
+        .need_adjust_div{
             background: #d8afaf;
+            border: 2px solid #ff0000;
         }
     </style>
 {% endblock %}
 
 {% block manage_body %}
-    {% if conflict_course_blocks %}
+    {% if need_adjust_course_blocks %}
         <div class="ibox float-e-margins">
             <div class="ibox-title">
                 <h5>冲突信息表<span class="need">（下面是通过智能编排无法解决的冲突）</span> </h5>
@@ -30,7 +42,7 @@
             </div>
             <div class="ibox-content">
                 <div class="table-responsive">
-                    <table id="conflict_info_table"
+                    <table id="need_adjust_info_table"
                            data-toggle="table"
                            class="table">
                         <thead><tr>
@@ -44,7 +56,7 @@
                             <th>操作</th>
                         </tr></thead>
                         <tbody>
-                        {% for course_block in conflict_course_blocks %}
+                        {% for course_block in need_adjust_course_blocks %}
                             <tr>
                                 <td>{{ course_block.no }}</td>
                                 <td>{{ course_block.course_block.weeks }}</td>
@@ -76,7 +88,7 @@
             <h5>排课结果</h5>
             <div class="ibox-tools">
                 <div class="row form-inline">
-                    {% if conflict_course_blocks %}<span class="need pull-left" style="margin-left: 5px">（浅红色块表示冲突）</span>{% endif %}
+                    {% if need_adjust_course_blocks %}<span class="need pull-left" style="margin-left: 5px">（红色块表示冲突）</span>{% endif %}
                     <label for="institutes">选择排课学院：</label>
                     <select name="institutes" class="form-control" id="institutes" style="margin-right: 40px;margin-bottom: 5px;">
                         {% for institute in institutes %}
@@ -134,7 +146,7 @@
         </div>
     </div>
 
-    {% if no_conflict_course_blocks %}
+    {% if no_need_adjust_course_blocks %}
         <div class="ibox float-e-margins">
             <div class="ibox-title">
                 <h5>没有冲突的课程信息表</h5>
@@ -144,7 +156,7 @@
             </div>
             <div class="ibox-content">
                 <div class="table-responsive">
-                    <table id="conflict_info_table"
+                    <table id="need_adjust_info_table"
                            data-toggle="table"
                            class="table">
                         <thead><tr>
@@ -158,7 +170,7 @@
                             <th>操作</th>
                         </tr></thead>
                         <tbody>
-                        {% for course_block in no_conflict_course_blocks %}
+                        {% for course_block in no_need_adjust_course_blocks %}
                             <tr>
                                 <td>{{ course_block.no }}</td>
                                 <td>{{ course_block.course_block.weeks }}</td>

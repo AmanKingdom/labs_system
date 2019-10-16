@@ -145,7 +145,7 @@ admin.site.register(SuperUser, SuperUserAdmin)
 
 
 class CourseBlockAdmin(admin.ModelAdmin):
-    list_display = ('id', 'course', 'days_of_the_week', 'max_suitable', 'create_time', 'modify_time', 'visible')  # 设置展示的列
+    list_display = ('id', 'course', 'days_of_the_week', 'max_suitable', 'need_adjust', 'create_time', 'modify_time', 'visible')  # 设置展示的列
 
 
 admin.site.register(CourseBlock, CourseBlockAdmin)

@@ -378,10 +378,11 @@ class CourseBlock(models.Model):
     sections = models.CharField(max_length=10, verbose_name='所有节次', default='')
     max_suitable = models.IntegerField(verbose_name='安排中的最高适合度', default=0)
 
+    student_sum = models.IntegerField(verbose_name='课程总人数', default=0)
+
     experiments = models.ManyToManyField(Experiment, verbose_name='包含的实验项目', related_name='course_block')
     new_labs = models.ManyToManyField(Lab, verbose_name='新分配的实验室', related_name='course_block_for_new')
     old_labs = models.ManyToManyField(Lab, verbose_name='原来的实验室', related_name='course_block_for_old')
-    conflict = models.BooleanField(verbose_name='是否和其它课程块有冲突', default=False)
 
     need_adjust = models.BooleanField(verbose_name='需要人工调整', default=False)
 
@@ -390,7 +391,7 @@ class CourseBlock(models.Model):
     visible = models.BooleanField(verbose_name='是否可见', default=True)
 
     def __str__(self):
-        return '%s 星期:%d' % (self.course.name, self.days_of_the_week)
+        return '%s星期:%d节次:%s周次:%s' % (self.course.name, self.days_of_the_week, self.sections, self.weeks)
 
 
 # 排课设置

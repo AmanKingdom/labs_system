@@ -9,7 +9,7 @@ from apps.manage.models import School, SchoolArea, Institute, Department, Grade,
     SchoolYear, Term, Course, LabsAttribute, Lab, Experiment, ExperimentType, CourseBlock, ArrangeSettings
 
 from logging_setting import ThisLogger
-from manage.tools.string_tool import list_to_str
+from manage.tools.string_tool import list_to_str, str_to_set
 
 this_logger = ThisLogger().logger
 
@@ -881,6 +881,11 @@ def set_course_block(course, experiments):
         experiments_dict[key_str].append(experiment)
     # print('整理出的实验项目块：', experiments_dict)
 
+    # 获取该课程的总班级人数
+    student_sum = 0
+    for classes in course.classes.all():
+        student_sum = student_sum + classes.amount
+
     for e_key, e_value in zip(experiments_dict.keys(), experiments_dict.values()):
         course_block = CourseBlock.objects.create(
             course=course,
@@ -897,6 +902,7 @@ def set_course_block(course, experiments):
 
         for lab in e_value[0].labs.all():
             course_block.old_labs.add(lab)
+        course_block.student_sum = student_sum
         course_block.save()
 
     course.has_block = True
@@ -933,20 +939,25 @@ class ScheduleView(View):
         empty_row = base_dict['d1_s1'].copy()
         empty_row["days_of_the_week"] = empty_row["section"] = ""
 
-        div = '<div class="course_div">%s</div>'
-        conflict_div = '<div class="conflict_div">%s</div>'
+        div = '<div class="course_div %s">%s</div>'
+        need_adjust_div = '<div class="need_adjust_div %s">%s</div>'
 
         courses = Course.objects.filter(institute_id=request.session.get('current_institute_id'), has_block=True)
-        for course in courses:
+        # 设计10个可用的颜色
+        color_divs = ['green1_div', 'blue4_div', 'green4_div', 'blue1_div', 'green5_div', 'blue2_div', 'green2_div', 'blue3_div', 'blue5_div', 'green3_div']
+        temp = divmod(len(courses), len(color_divs))
+        color_divs = color_divs * temp[0] + color_divs[:temp[1]]
+
+        for course, color_div in zip(courses, color_divs):
             course_blocks = CourseBlock.objects.filter(course=course)
             for course_block in course_blocks:
-                if course_block.conflict:
-                    new_div = conflict_div % (course.name + '<br>周次[' + course_block.weeks + ']' + get_classes_name_from_course(course.id))
+                if course_block.need_adjust:
+                    new_div = need_adjust_div % (color_div, (course.name + '<br>周次[' + course_block.weeks + ']' + get_classes_name_from_course(course.id)))
                 else:
-                    new_div = div % (course.name + '<br>周次[' + course_block.weeks + ']' + get_classes_name_from_course(course.id))
+                    new_div = div % (color_div, (course.name + '<br>周次[' + course_block.weeks + ']' + get_classes_name_from_course(course.id)))
 
                 for section in course_block.sections.split(','):
-                    for lab in course_block.old_labs.all():   # 等下改为new_labs
+                    for lab in course_block.new_labs.all():
                         if new_div not in base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name]:
                             base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name] = base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name] + new_div
 
@@ -970,8 +981,8 @@ def get_classes_name_from_course(course_id):
 
 
 
-
-def get_free_labs_for_course_block(institute_id, course_block):
+# 为前端设计的获取可选实验室的函数
+def get_available_labs_for_course_block(institute_id, course_block):
     all_labs = list(Lab.objects.filter(institute_id=institute_id, dispark=True))
     # 找同一个星期的课程块进行周次的比较
     same_day_course_blocks = CourseBlock.objects.filter(course__institute_id=institute_id, days_of_the_week=course_block.days_of_the_week)
@@ -989,12 +1000,118 @@ def get_free_labs_for_course_block(institute_id, course_block):
                 aready_used_labs.append(lab)
     for lab in aready_used_labs:
         all_labs.remove(lab)
-    free_labs = all_labs + list(course_block.old_labs.all())
+    free_labs = all_labs + list(course_block.new_labs.all())
     return free_labs
 
 
+def the_sort(course_blocks, tag):
+    print(tag)
+    for x in course_blocks:
+        print('课程名称：', x, ' 人数：', x.student_sum)
+
+
+# 获取一个实验室列表的总容纳人数
+def get_labs_contain_num(labs):
+    contain_num = 0
+    for lab in labs:
+        contain_num = contain_num + lab.number_of_people
+    return contain_num
+
+
+def find_labs(institute_id, course_block):
+    course_attribute = course_block.course.attribute
+    current_attributes = ['attribute1', 'attribute2', 'attribute3']
+    # 暂且按照实验室的创建来作为实验室相邻的依据
+    all_labs = Lab.objects.filter(institute_id=institute_id, dispark=True)
+    for current_attribute in current_attributes:
+        free_labs = []
+        for lab in all_labs:
+            if getattr(lab, current_attribute) == course_attribute:
+                if not lab_in_used(lab, course_block):
+                    free_labs.clear()
+                else:
+                    free_labs.append(lab)
+                    if get_labs_contain_num(free_labs) >= course_block.student_sum:
+                        print('为课程块：', course_block, '找到实验室：', free_labs)
+                        return free_labs
+            else:
+                free_labs.clear()
+    print('课程块：', course_block, '找不到实验室：')
+    return None
+
+
+def lab_in_used(lab, course_block):
+    """
+    判断符合某个课程块的某个实验室是否被占用
+    :param lab: 要判断的实验室（单个）
+    :param course_block: 要对比的课程块（单个）
+    :return: 被占用则返回True，否则返回False
+    """
+    print('为课程块', course_block, '判断实验室', lab, '是否被占用')
+    for course_block_for_new in lab.course_block_for_new.all():
+        # 如果星期不同，则不是占用，如果星期相同，则判断节次：
+        print('判断有使用该实验室的课程块：', course_block_for_new)
+        if course_block_for_new.days_of_the_week == course_block.days_of_the_week:
+            print('要对比课程块', course_block_for_new, '和本身的课程块', course_block, '的星期相同')
+            print('下面准备判断节次，他们的节次分别为：', course_block_for_new.sections, course_block.sections)
+            its_sections = str_to_set(course_block_for_new.sections, ',')
+            my_sections = str_to_set(course_block.sections, ',')
+            print('节次字符串转集合后：', its_sections, my_sections)
+
+            # 如果没交集，则不是占用，如果有交集，则判断周次：
+            if its_sections.intersection(my_sections):
+                print('要对比课程块', course_block_for_new, '和本身的课程块', course_block, '的节次相同')
+                print('下面准备判断周次，他们的周次分别为：', course_block_for_new.weeks, course_block.weeks)
+                its_weeks = str_to_set(course_block_for_new.weeks, '、')
+                my_weeks = str_to_set(course_block.weeks, '、')
+                print('周次字符串转集合后：', its_weeks, my_weeks)
+
+                # 如果有交集，则是占用，如果没交集，则不是占用
+                if its_weeks.intersection(my_weeks):
+                    print('要对比课程块', course_block_for_new, '和本身的课程块', course_block, '的周次相同')
+                    print(lab, '该实验室被占用了')
+                    return False
+    print('没有被占用')
+    return True
+
+
 def auto_arrange(institute_id, attribute1_id, attribute2_id):
-    pass
+    # 该学院的所有课程块
+    all_course_blocks = CourseBlock.objects.filter(course__institute_id=institute_id)
+    # 每次排课前，一定要先将所有课程块的新实验室删掉
+    for course_block in all_course_blocks:
+        course_block.new_labs.clear()
+        course_block.save()
+
+    # 最优先排课的课程块
+    course_blocks1 = all_course_blocks.filter(course__attribute_id=attribute1_id).order_by('student_sum')
+    # 次优先排课的课程块
+    course_blocks2 = all_course_blocks.filter(course__attribute_id=attribute2_id).order_by('student_sum')
+
+    def get_student_sum(x):
+        return x.student_sum
+    # 剩下的课程块
+    course_blocks3 = list(set(all_course_blocks) - set(course_blocks1) - set(course_blocks2))
+    course_blocks3.sort(reverse=True, key=get_student_sum)
+
+    # 打印看看有没有出错：
+    the_sort(course_blocks1, '最优先排课课程块：')
+    the_sort(course_blocks2, '次优先排课课程块：')
+    the_sort(course_blocks3, '剩下的课程块：')
+
+    for course_blocks in [course_blocks1, course_blocks2, course_blocks3]:
+        for course_block in course_blocks:
+            print('为课程块', course_block, '寻找实验室')
+            result_labs = find_labs(institute_id, course_block)
+            if result_labs:
+                for lab in result_labs:
+                    course_block.new_labs.add(lab)
+                course_block.need_adjust = False
+            else:
+                course_block.need_adjust = True
+                for lab in course_block.old_labs.all():
+                    course_block.new_labs.add(lab)
+            course_block.save()
 
 
 class Arrange(View):
@@ -1007,8 +1124,8 @@ class Arrange(View):
 
         'school': None,
         'labs': None,
-        'conflict_course_blocks': [],
-        'no_conflict_course_blocks': [],
+        'need_adjust_course_blocks': [],
+        'no_need_adjust_course_blocks': [],
         'institutes': [],
         'attributes': None,
     }
@@ -1043,24 +1160,24 @@ class Arrange(View):
 
         self.context['labs'] = Lab.objects.filter(institute_id=request.session['current_institute_id'], dispark=True)
         courses = Course.objects.filter(institute_id=request.session['current_institute_id'])
-        self.context['conflict_course_blocks'] = self.set_course_blocks(courses, True, request.session['current_institute_id'])
-        self.context['no_conflict_course_blocks'] = self.set_course_blocks(courses, False, request.session['current_institute_id'])
+        self.context['need_adjust_course_blocks'] = self.set_course_blocks(courses, True, request.session['current_institute_id'])
+        self.context['no_need_adjust_course_blocks'] = self.set_course_blocks(courses, False, request.session['current_institute_id'])
 
         return render(request, 'manage/arrange.html', self.context)
 
     # 生成前端人工调整课程块列表的数据的方法
-    def set_course_blocks(self, the_courses, conflict, institute_id):
+    def set_course_blocks(self, the_courses, need_adjust, institute_id):
         blocks_list = []
         i = 0
         for course in the_courses:
-            course_blocks = CourseBlock.objects.filter(course=course, conflict=conflict)
+            course_blocks = CourseBlock.objects.filter(course=course, need_adjust=need_adjust)
             for course_block in course_blocks:
                 i = i + 1
                 new_dict = {
                     "no": i,
                     "course_block": course_block,
                     "classes": get_classes_name_from_course(course_block.course.id),
-                    "free_labs": get_free_labs_for_course_block(institute_id, course_block)
+                    "free_labs": get_available_labs_for_course_block(institute_id, course_block)
                 }
                 blocks_list.append(new_dict)
         return blocks_list
@@ -1073,8 +1190,6 @@ class Arrange(View):
         put_data = QueryDict(request.body)
         attribute1_id = put_data.get('attribute1_id')
         attribute2_id = put_data.get('attribute2_id')
-
-        print(attribute1_id, attribute2_id)
 
         change = False
         arrange_settings = ArrangeSettings.objects.filter(institute_id=request.session['current_institute_id'])

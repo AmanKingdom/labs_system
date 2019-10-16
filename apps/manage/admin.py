@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from apps.manage.models import School, Institute, SchoolArea, Lab, Department, Grade, Classes, Teacher, \
-    TotalRequirements, Course, LabsAttribute, SchoolYear, Term, SuperUser, Schedule, CourseBlock
+    TotalRequirements, Course, LabsAttribute, SchoolYear, Term, SuperUser, CourseBlock, ArrangeSettings
 
 admin.site.site_header = '实验室数据后台管理系统'
 admin.site.site_title = '实验室数据管理'
@@ -136,12 +136,12 @@ class SuperUserAdmin(admin.ModelAdmin):
 admin.site.register(SuperUser, SuperUserAdmin)
 
 
-class ScheduleAdmin(admin.ModelAdmin):
-    list_display = ('id', 'school', 'which_week', 'days_of_the_week', 'section', 'lab', 'experiment', 'suitable', 'conflict', 'need_adjust', 'create_time', 'modify_time', 'visible')  # 设置展示的列
-    list_editable = ['conflict', 'need_adjust']  # 设置可行内编辑
-
-
-admin.site.register(Schedule, ScheduleAdmin)
+# class ScheduleAdmin(admin.ModelAdmin):
+#     list_display = ('id', 'school', 'which_week', 'days_of_the_week', 'section', 'lab', 'experiment', 'suitable', 'conflict', 'need_adjust', 'create_time', 'modify_time', 'visible')  # 设置展示的列
+#     list_editable = ['conflict', 'need_adjust']  # 设置可行内编辑
+#
+#
+# admin.site.register(Schedule, ScheduleAdmin)
 
 
 class CourseBlockAdmin(admin.ModelAdmin):
@@ -149,3 +149,5 @@ class CourseBlockAdmin(admin.ModelAdmin):
 
 
 admin.site.register(CourseBlock, CourseBlockAdmin)
+
+admin.site.register(ArrangeSettings)

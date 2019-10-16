@@ -134,7 +134,6 @@
                             <li {% if experiment_type_active %}class="active"{% endif %}><a href="{% url 'manage:experiment_type_manage' %}">实验类型设置</a></li>
                             <li {% if application_active %}class="active"{% endif %}><a href="{% url 'manage:application_manage' %}">实验申请表审批</a></li>
                             <li {% if arrange_active %}class="active"{% endif %}><a href="{% url 'manage:arrange' %}">智能排课</a></li>
-                            <li {% if iarrange_active %}class="active"{% endif %}><a href="{% url 'manage:iarrange' %}">智能排课2</a></li>
                         </ul>
                     </li>
                 {% endif %}

@@ -6,16 +6,21 @@
     <!--固定列表头所需的样式依赖-->
     <link rel="stylesheet" href="/static/css_js/css/fixed-columns/bootstrap-table-fixed-columns.css">
     <style>
+        .course_div, .conflict_div{
+            margin: 2%;
+            padding: 2%;
+        }
         .course_div{
             background: #E5FFE5;
-            margin: 5% 10% 5%;
-            padding: 5%;
+        }
+        .conflict_div{
+            background: #d8afaf;
         }
     </style>
 {% endblock %}
 
 {% block manage_body %}
-    {% if conflict_courses %}
+    {% if conflict_course_blocks %}
         <div class="ibox float-e-margins">
             <div class="ibox-title">
                 <h5>冲突信息表<span class="need">（下面是通过智能编排无法解决的冲突）</span> </h5>
@@ -35,25 +40,21 @@
                             <th>节次</th>
                             <th>课程</th>
                             <th>授课班级</th>
-                            <th>可用实验室</th>
+                            <th>可选实验室</th>
                             <th>操作</th>
                         </tr></thead>
                         <tbody>
-                        {% for course in conflict_courses %}
+                        {% for course_block in conflict_course_blocks %}
                             <tr>
-                                <td>{{ course.no }}</td>
-                                <td>{{ course.weeks }}</td>
-                                <td>{{ course.days_of_the_week }}</td>
-                                <td>{{ course.section }}</td>
-                                <td id="{{ course.course.id }}">{{ course.course }}</td>
+                                <td>{{ course_block.no }}</td>
+                                <td>{{ course_block.course_block.weeks }}</td>
+                                <td>{{ course_block.course_block.days_of_the_week }}</td>
+                                <td>{{ course_block.course_block.sections }}</td>
+                                <td id="{{ course_block.course_block.course.id }}">{{ course_block.course_block.course }}</td>
+                                <td>{{ course_block.classes|safe }}</td>
                                 <td>
-                                    {% for classes_item in course.classes %}
-                                        {{ classes_item.grade__name }}级{{ classes_item.grade__department__name }}{{ classes_item.name }}班<br>
-                                    {% endfor %}
-                                </td>
-                                <td>
-                                    <select multiple="multiple" class="form-control">
-                                        {% for lab in course.free_labs %}
+                                    <select multiple="multiple" class="form-control" name="labs_selected">
+                                        {% for lab in course_block.free_labs %}
                                             <option id={{ lab.id }} value={{ lab.id }}>{{ lab }}</option>
                                         {% empty %}
                                             没有空闲的实验室了
@@ -74,8 +75,51 @@
         <div class="ibox-title">
             <h5>排课结果</h5>
             <div class="ibox-tools">
-                <button onclick="re_arrange(this)" class="btn btn-primary">重新智能排课</button>
-                <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                <div class="row form-inline">
+                    {% if conflict_course_blocks %}<span class="need pull-left" style="margin-left: 5px">（浅红色块表示冲突）</span>{% endif %}
+                    <label for="institutes">选择排课学院：</label>
+                    <select name="institutes" class="form-control" id="institutes" style="margin-right: 40px;margin-bottom: 5px;">
+                        {% for institute in institutes %}
+                            {% if institute.id|urlencode:"" == request.session.current_institute_id %}
+                                <option value="{{ institute.id }}" selected>{{ institute.name }}</option>
+                            {% else %}
+                                <option value="{{ institute.id }}">{{ institute.name }}</option>
+                            {% endif %}
+                        {% empty %}
+                            <option>暂无数据</option>
+                        {% endfor %}
+                    </select>
+
+                    <label for="attribute1">最优先排课属性：</label>
+                    <select name="attribute1" class="form-control" id="attribute1" style="margin-right: 40px;margin-bottom: 5px;">
+                        {% for attribute in attributes %}
+                            {% if attribute.id|urlencode:"" == request.session.current_attribute1_id|urlencode:"" %}
+                                <option value="{{ attribute.id }}" selected>{{ attribute.name }}</option>
+                            {% else %}
+                                <option value="{{ attribute.id }}">{{ attribute.name }}</option>
+                            {% endif %}
+                        {% empty %}
+                            <option>暂无数据</option>
+                        {% endfor %}
+                    </select>
+
+                    <label for="attribute2">次优先排课属性：</label>
+                    <select name="attribute2" class="form-control" id="attribute2" style="margin-right: 40px;margin-bottom: 5px;">
+                        {% for attribute in attributes %}
+                            {% if attribute.id|urlencode:"" == request.session.current_attribute2_id|urlencode:"" %}
+                                <option value="{{ attribute.id }}" selected>{{ attribute.name }}</option>
+                            {% else %}
+                                <option value="{{ attribute.id }}">{{ attribute.name }}</option>
+                            {% endif %}
+                        {% empty %}
+                            <option>暂无数据</option>
+                        {% endfor %}
+                    </select>
+
+                    <button onclick="arrange(this)" class="btn btn-primary">按属性智能排课</button>
+                    <button onclick="re_arrange(this)" class="btn btn-primary">重新智能排课</button>
+                    <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                </div>
             </div>
         </div>
         <div class="ibox-content">
@@ -84,19 +128,82 @@
                        data-toggle="table"
                        data-classes="table table-hover"
                        data-striped="true"
-                       align="center"
-                        {#               data-show-columns="true"#}
-                        {#               data-show-toggle="true"#}
-                        {#               data-search="true"#}
-                        {#               data-show-refresh="true"#}
-                        {#               data-toolbar="#toolbar"#}>
+                       align="center">
                 </table>
             </div>
         </div>
     </div>
+
+    {% if no_conflict_course_blocks %}
+        <div class="ibox float-e-margins">
+            <div class="ibox-title">
+                <h5>没有冲突的课程信息表</h5>
+                <div class="ibox-tools">
+                    <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                </div>
+            </div>
+            <div class="ibox-content">
+                <div class="table-responsive">
+                    <table id="conflict_info_table"
+                           data-toggle="table"
+                           class="table">
+                        <thead><tr>
+                            <th>序号</th>
+                            <th>所有周次</th>
+                            <th>星期</th>
+                            <th>节次</th>
+                            <th>课程</th>
+                            <th>授课班级</th>
+                            <th>可选实验室</th>
+                            <th>操作</th>
+                        </tr></thead>
+                        <tbody>
+                        {% for course_block in no_conflict_course_blocks %}
+                            <tr>
+                                <td>{{ course_block.no }}</td>
+                                <td>{{ course_block.course_block.weeks }}</td>
+                                <td>{{ course_block.course_block.days_of_the_week }}</td>
+                                <td>{{ course_block.course_block.sections }}</td>
+                                <td id="{{ course_block.course_block.course.id }}">{{ course_block.course_block.course }}</td>
+                                <td>{{ course_block.classes|safe }}</td>
+                                <td>
+                                    <select multiple="multiple" class="form-control" name="labs_selected">
+                                        {% for lab in course_block.free_labs %}
+                                            <option id={{ lab.id }} value={{ lab.id }}>{{ lab }}</option>
+                                        {% empty %}
+                                            没有空闲的实验室了
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td><button class="btn btn-primary btn-xs" onclick="save(this)">保存修改</button></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}
 
 {% block add_js_to_manage %}
+    <!--选择学院后触发事件-->
+    <script>
+        $("#institutes").change(function () {
+            var current_institute_id = $(this).val();
+            console.log('选择的学院 ID 为：' + current_institute_id);
+
+            $.ajax({
+                url: '{% url 'manage:arrange' %}',
+                type:'GET',
+                data: {'current_institute_id': current_institute_id},
+                success: function (data) {
+                    window.location.reload();
+                }
+            });
+        });
+    </script>
+
     <!--固定列的js-->
     <script src="/static/css_js/js/fixed-columns/bootstrap-table-fixed-columns.js"></script>
     <!--固定列的设置-->
@@ -134,7 +241,7 @@
                     "course_id":course_id,
                     "selected_labs_id":selected_labs_id
                 };
-                var to_url = '{% url "manage:adjust_labs_for_schedule" %}';
+                {#var to_url = '{% url "manage:adjust_labs_for_schedule" %}';#}
                 base_ajax(from_url, to_url, data)
             }
         }
@@ -142,8 +249,37 @@
         function re_arrange(re_arrange_button) {
             var pass = confirm('确定要重新智能排课吗？');
             if(pass){
-                var to_url = '{% url "manage:re_arrange" %}';
+                var to_url = '{% url "manage:arrange" %}';
                 base_ajax(from_url, to_url, {})
+            }
+        }
+
+        // 按属性智能排课按钮点击：
+        function arrange(arrange_button){
+            var attribute1_id = $('#attribute1 option:selected').val();
+            var attribute1 = $('#attribute1 option:selected').text();
+
+            var attribute2_id = $('#attribute2 option:selected').val();
+            var attribute2 = $('#attribute2 option:selected').text();
+
+            console.log(attribute1_id, attribute2_id);
+
+            if (attribute1_id !== null) {
+                var pass = confirm('下面是您的选择：\n最优先排课属性为：'+attribute1+'，\n次优先排课属性为：'+attribute2 +'，\n确定要按这些属性智能排课吗？');
+                if(pass){
+                    var to_url = '{% url "manage:arrange" %}';
+                    $.ajax({
+                        url:to_url,
+                        type:'PUT',
+                        data:{"attribute1_id": attribute1_id, "attribute2_id":attribute2_id},
+                        headers:{'X-CSRFToken':'{{ csrf_token }}'},
+                        success:function (data) {
+                            window.location.reload();
+                        }
+                    });
+                }
+            }else{
+                alert('请先选择排课属性');
             }
         }
     </script>
@@ -157,7 +293,8 @@
         function initTable() {
             $('#week_schedule_table').bootstrapTable('destroy').bootstrapTable({
                 sidePagination: "server",
-                url: '{% url "manage:schedule" school.id %}',
+                type:'GET',
+                url: '{% url "manage:schedule" %}',
                 height: 600,
                 locale: $('#locale').val(),
                 onLoadSuccess: function (data) {

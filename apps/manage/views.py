@@ -19,6 +19,10 @@ STATUS = {
     '3': '审核通过'
 }
 
+# 设计13个可用的课程块背景颜色
+COLOR_DIVS = ['color1_div','color2_div','color3_div','color4_div','color5_div','color6_div',
+              'color7_div','color8_div','color9_div','color10_div','color11_div','color12_div','color13_div']
+
 
 # 设置本系统的唯一学年，当当前月份为8月份时，如果有超级管理员登录本系统，即可更新数据库的学年表的唯一一条学年数据
 def set_system_school_year():
@@ -943,18 +947,21 @@ class ScheduleView(View):
         need_adjust_div = '<div class="need_adjust_div %s">%s</div>'
 
         courses = Course.objects.filter(institute_id=request.session.get('current_institute_id'), has_block=True)
-        # 设计10个可用的颜色
-        color_divs = ['green1_div', 'blue4_div', 'green4_div', 'blue1_div', 'green5_div', 'blue2_div', 'green2_div', 'blue3_div', 'blue5_div', 'green3_div']
-        temp = divmod(len(courses), len(color_divs))
-        color_divs = color_divs * temp[0] + color_divs[:temp[1]]
+
+        temp = divmod(len(courses), len(COLOR_DIVS))
+        color_divs = COLOR_DIVS * temp[0] + COLOR_DIVS[:temp[1]]
 
         for course, color_div in zip(courses, color_divs):
             course_blocks = CourseBlock.objects.filter(course=course)
             for course_block in course_blocks:
+                content = '课程：' + course.name + \
+                          '<br>老师：' + get_teachers_name_from_course(course.id) + \
+                          '<br>周次：[ ' + course_block.weeks + \
+                          ' ]<br>班级：' + get_classes_name_from_course(course.id)
                 if course_block.need_adjust:
-                    new_div = need_adjust_div % (color_div, (course.name + '<br>周次[' + course_block.weeks + ']' + get_classes_name_from_course(course.id)))
+                    new_div = need_adjust_div % (color_div, content)
                 else:
-                    new_div = div % (color_div, (course.name + '<br>周次[' + course_block.weeks + ']' + get_classes_name_from_course(course.id)))
+                    new_div = div % (color_div, content)
 
                 for section in course_block.sections.split(','):
                     for lab in course_block.new_labs.all():
@@ -966,21 +973,23 @@ class ScheduleView(View):
         return JsonResponse(self.data)
 
 
-# 为前端页面定制的获取课程的班级信息函数
+# 为前端页面定制的获取课程的班级名称函数
 def get_classes_name_from_course(course_id):
     all_classes_str = ''
     for classes_item in Course.objects.get(id=course_id).classes.all():
         all_classes_str = all_classes_str + '<br>' + classes_item.grade.name + '级' + classes_item.grade.department.name + classes_item.name + '班'
-    return all_classes_str
+    return all_classes_str[4:]
 
 
+# 为前端页面定制的获取课程的教师姓名函数
+def get_teachers_name_from_course(course_id):
+    all_teachers_str = ''
+    for teacher in Course.objects.get(id=course_id).teachers.all():
+        all_teachers_str = all_teachers_str + '、' + teacher.name
+    return all_teachers_str[1:]
 
 
-
-
-
-
-
+# 该函数还不太对，等下修改
 # 为前端设计的获取可选实验室的函数
 def get_available_labs_for_course_block(institute_id, course_block):
     all_labs = list(Lab.objects.filter(institute_id=institute_id, dispark=True))
@@ -1004,12 +1013,6 @@ def get_available_labs_for_course_block(institute_id, course_block):
     return free_labs
 
 
-def the_sort(course_blocks, tag):
-    print(tag)
-    for x in course_blocks:
-        print('课程名称：', x, ' 人数：', x.student_sum)
-
-
 # 获取一个实验室列表的总容纳人数
 def get_labs_contain_num(labs):
     contain_num = 0
@@ -1026,7 +1029,19 @@ def find_labs(institute_id, course_block):
     for current_attribute in current_attributes:
         free_labs = []
         for lab in all_labs:
-            if getattr(lab, current_attribute) == course_attribute:
+            if course_attribute:
+                if getattr(lab, current_attribute) == course_attribute:
+                    if not lab_in_used(lab, course_block):
+                        free_labs.clear()
+                    else:
+                        free_labs.append(lab)
+                        if get_labs_contain_num(free_labs) >= course_block.student_sum:
+                            print('为课程块：', course_block, '找到实验室：', free_labs)
+                            return free_labs
+                else:
+                    free_labs.clear()
+            else:
+                print(course_block, '的课程没有属性')
                 if not lab_in_used(lab, course_block):
                     free_labs.clear()
                 else:
@@ -1034,8 +1049,7 @@ def find_labs(institute_id, course_block):
                     if get_labs_contain_num(free_labs) >= course_block.student_sum:
                         print('为课程块：', course_block, '找到实验室：', free_labs)
                         return free_labs
-            else:
-                free_labs.clear()
+
     print('课程块：', course_block, '找不到实验室：')
     return None
 
@@ -1075,6 +1089,13 @@ def lab_in_used(lab, course_block):
     return True
 
 
+# 用于打印课程块集合的方法
+def show_course_blocks(course_blocks, tag):
+    print(tag)
+    for x in course_blocks:
+        print('课程名称：', x, ' 人数：', x.student_sum)
+
+
 def auto_arrange(institute_id, attribute1_id, attribute2_id):
     # 该学院的所有课程块
     all_course_blocks = CourseBlock.objects.filter(course__institute_id=institute_id)
@@ -1084,9 +1105,9 @@ def auto_arrange(institute_id, attribute1_id, attribute2_id):
         course_block.save()
 
     # 最优先排课的课程块
-    course_blocks1 = all_course_blocks.filter(course__attribute_id=attribute1_id).order_by('student_sum')
+    course_blocks1 = all_course_blocks.filter(course__attribute_id=attribute1_id).order_by('-student_sum')
     # 次优先排课的课程块
-    course_blocks2 = all_course_blocks.filter(course__attribute_id=attribute2_id).order_by('student_sum')
+    course_blocks2 = all_course_blocks.filter(course__attribute_id=attribute2_id).order_by('-student_sum')
 
     def get_student_sum(x):
         return x.student_sum
@@ -1094,19 +1115,33 @@ def auto_arrange(institute_id, attribute1_id, attribute2_id):
     course_blocks3 = list(set(all_course_blocks) - set(course_blocks1) - set(course_blocks2))
     course_blocks3.sort(reverse=True, key=get_student_sum)
 
-    # 打印看看有没有出错：
-    the_sort(course_blocks1, '最优先排课课程块：')
-    the_sort(course_blocks2, '次优先排课课程块：')
-    the_sort(course_blocks3, '剩下的课程块：')
+    # 把没有属性的课程提取出来放在最后
+    new_course_block3 = course_blocks3[:]
+    no_attr_course_blocks = []
+    for c in course_blocks3:
+        if not c.course.attribute:
+            no_attr_course_blocks.append(c)
+            new_course_block3.remove(c)
+
+    if no_attr_course_blocks:
+        course_blocks3 = new_course_block3 + no_attr_course_blocks
+
+    # 打印看看排课的顺序有没有出错：
+    show_course_blocks(course_blocks1, '最优先排课课程块：')
+    show_course_blocks(course_blocks2, '次优先排课课程块：')
+    show_course_blocks(course_blocks3, '剩下的课程块：')
 
     for course_blocks in [course_blocks1, course_blocks2, course_blocks3]:
         for course_block in course_blocks:
-            print('为课程块', course_block, '寻找实验室')
+            print('为课程块：', course_block, ' 寻找实验室')
             result_labs = find_labs(institute_id, course_block)
             if result_labs:
                 for lab in result_labs:
                     course_block.new_labs.add(lab)
                 course_block.need_adjust = False
+                # 如果新分配的实验室和需求的实验室一致，则是皆大欢喜
+                if course_block.new_labs.all() == course_block.old_labs.all():
+                    course_block.same_new_old = True
             else:
                 course_block.need_adjust = True
                 for lab in course_block.old_labs.all():
@@ -1137,9 +1172,9 @@ class Arrange(View):
         self.context['attributes'] = LabsAttribute.objects.filter(school=self.context['school'])
 
         # 为用户记住最近编辑的学院
-        if request.GET.get('current_institute_id'):
+        if request.GET.get('current_institute_id', None):
             request.session['current_institute_id'] = request.GET.get('current_institute_id')
-        elif not request.GET.get('current_institute_id') and not request.session.get('current_institute_id', None):
+        elif not request.GET.get('current_institute_id', None) and not request.session.get('current_institute_id', None):
             request.session['current_institute_id'] = self.context['institutes'][0].id
 
         # 为用户记住当前编辑学院排课设置的属性
@@ -1153,8 +1188,8 @@ class Arrange(View):
 
         request.session['arrange_settings'] = {
             'institute_%s' % request.session['current_institute_id']: {
-                'attribute1_id': request.session['attribute1_id'],
-                'attribute2_id': request.session['attribute2_id']
+                'attribute1_id': request.session['current_attribute1_id'],
+                'attribute2_id': request.session['current_attribute2_id']
             }
         }
 

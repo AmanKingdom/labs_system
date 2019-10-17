@@ -339,50 +339,24 @@ class Experiment(models.Model):
         return self.name
 
 
-# # 安排表
-# class Schedule(models.Model):
-#     class Meta:
-#         # 该数据库表名自定义为如下：
-#         db_table = 'schedule'
-#
-#     school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='所属学校', related_name='schedules')
-#     institute = models.ForeignKey(Institute, on_delete=models.CASCADE, verbose_name='开课单位', related_name='schedules')
-#
-#     which_week = models.IntegerField(verbose_name='周次')
-#     days_of_the_week = models.IntegerField(verbose_name='星期')
-#     section = models.IntegerField(verbose_name='节次')
-#     lab = models.ForeignKey(Lab, on_delete=models.CASCADE, verbose_name='实验室')
-#     experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE, verbose_name='实验项目', related_name='schedules')
-#     suitable = models.IntegerField(verbose_name='适合度。默认为0，数值越大越适合', default=0)
-#     conflict = models.BooleanField(verbose_name='是否和其它安排有冲突', default=False)
-#     need_adjust = models.BooleanField(verbose_name='需要人工调整', default=False)
-#
-#     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-#     modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
-#     visible = models.BooleanField(verbose_name='是否可见', default=True)
-#
-#     def __str__(self):
-#         return "%s 第%d周 星期%d - %d节 %s实验室 %s" % (
-#             self.school.name, self.which_week, self.days_of_the_week, self.section, self.lab.name, self.experiment.name)
-
-
-# 一门课程在同一星期和同样节次内、相同实验室的安排集合，暂且叫 课程块 吧
+# 一门课程在同一星期和同样节次、相同实验室的安排集合，暂且叫 课程块 吧
 class CourseBlock(models.Model):
     class Meta:
         # 该数据库表名自定义为如下：
         db_table = 'course_block'
 
     course = models.ForeignKey(Course, on_delete=models.CASCADE, verbose_name='课程')
+
     weeks = models.CharField(max_length=50, verbose_name='所有周次', default='')
     days_of_the_week = models.IntegerField(verbose_name='星期')
     sections = models.CharField(max_length=10, verbose_name='所有节次', default='')
-    max_suitable = models.IntegerField(verbose_name='安排中的最高适合度', default=0)
 
     student_sum = models.IntegerField(verbose_name='课程总人数', default=0)
-
     experiments = models.ManyToManyField(Experiment, verbose_name='包含的实验项目', related_name='course_block')
+
     new_labs = models.ManyToManyField(Lab, verbose_name='新分配的实验室', related_name='course_block_for_new')
     old_labs = models.ManyToManyField(Lab, verbose_name='原来的实验室', related_name='course_block_for_old')
+    same_new_old = models.BooleanField(verbose_name='分配前后实验室是否相同', default=False)
 
     need_adjust = models.BooleanField(verbose_name='需要人工调整', default=False)
 
@@ -394,11 +368,12 @@ class CourseBlock(models.Model):
         return '%s星期:%d节次:%s周次:%s' % (self.course.name, self.days_of_the_week, self.sections, self.weeks)
 
 
-# 排课设置
+# 排课设置记录，要确保每个学院只有一个，如何设计这个单例模式？我还不懂，是使学院和主键联合约束唯一么？
 class ArrangeSettings(models.Model):
     class Meta:
         # 该数据库表名自定义为如下：
         db_table = 'arrange_settings'
+        unique_together = ('id', 'institute',)
 
     institute = models.ForeignKey(Institute, on_delete=models.CASCADE, verbose_name='设置所属学院')
     attribute1 = models.ForeignKey(LabsAttribute, on_delete=models.CASCADE, verbose_name='最优先排课属性', related_name='a1_arrange_settings')

@@ -136,16 +136,8 @@ class SuperUserAdmin(admin.ModelAdmin):
 admin.site.register(SuperUser, SuperUserAdmin)
 
 
-# class ScheduleAdmin(admin.ModelAdmin):
-#     list_display = ('id', 'school', 'which_week', 'days_of_the_week', 'section', 'lab', 'experiment', 'suitable', 'conflict', 'need_adjust', 'create_time', 'modify_time', 'visible')  # 设置展示的列
-#     list_editable = ['conflict', 'need_adjust']  # 设置可行内编辑
-#
-#
-# admin.site.register(Schedule, ScheduleAdmin)
-
-
 class CourseBlockAdmin(admin.ModelAdmin):
-    list_display = ('id', 'course', 'days_of_the_week', 'max_suitable', 'need_adjust', 'create_time', 'modify_time', 'visible')  # 设置展示的列
+    list_display = ('id', 'course', 'days_of_the_week', 'same_new_old', 'need_adjust', 'create_time', 'modify_time', 'visible')  # 设置展示的列
 
 
 admin.site.register(CourseBlock, CourseBlockAdmin)

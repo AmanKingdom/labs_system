@@ -3,7 +3,7 @@ from django.http import HttpResponseRedirect, HttpResponse, JsonResponse, Http40
 from django.shortcuts import render
 
 from apps.manage.models import Course, Classes, Institute, Lab, LabsAttribute, \
-    TotalRequirements, ExperimentType, Experiment, SpecialRequirements
+    TotalRequirements, ExperimentType, Experiment, SpecialRequirements, CourseBlock
 
 from apps.manage.views import get_all_labs, set_user_for_context, STATUS
 
@@ -297,6 +297,10 @@ def change_experiments(request, course_id=None):
     # 这里这样做的原因是防止恶意用户修改js提交错误的 course_id ，我这样值得吗？
     if len(course) == 1:
         course = course[0]
+
+        CourseBlock.objects.filter(course=course).delete()
+        course.has_block = False
+        course.save()
 
         experiments_origin = Experiment.objects.filter(course=course).order_by('-no')
         if len(experiments_origin) > 0:

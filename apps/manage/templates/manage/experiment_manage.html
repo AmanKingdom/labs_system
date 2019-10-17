@@ -1,13 +1,13 @@
-<!--super_manage/experiment_manage.html-->
+<!--manage/experiment_manage.html-->
 
 {% extends 'manage/base.html' %}
-{% block add_css_to_super_manage %}
+{% block add_css_to_manage %}
     <!--多项选择的css依赖-->
     <link href="/static/css_js/css/plugins/select2/select2.min.css" rel="stylesheet" type="text/css">
     <link href="/static/css_js/css/plugins/select2/select2-bootstrap.css" rel="stylesheet" type="text/css">
 {% endblock %}
 
-{% block super_manage_body %}
+{% block manage_body %}
     <div class="ibox float-e-margins">
         <div class="ibox-title row">
             <h5>实验室申请信息管理</h5>/ 课程《{{ course.course.name }}》 的实验项目信息

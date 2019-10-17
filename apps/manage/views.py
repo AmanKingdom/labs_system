@@ -9,7 +9,8 @@ from apps.manage.models import School, SchoolArea, Institute, Department, Grade,
     SchoolYear, Term, Course, LabsAttribute, Lab, Experiment, ExperimentType, CourseBlock, ArrangeSettings
 
 from logging_setting import ThisLogger
-from manage.tools.string_tool import list_to_str, str_to_set
+from manage.tools.setting_tool import set_time_for_context
+from manage.tools.string_tool import list_to_str, str_to_set, get_labs_id_str
 
 this_logger = ThisLogger().logger
 
@@ -989,30 +990,6 @@ def get_teachers_name_from_course(course_id):
     return all_teachers_str[1:]
 
 
-# 该函数还不太对，等下修改
-# 为前端设计的获取可选实验室的函数
-def get_available_labs_for_course_block(institute_id, course_block):
-    all_labs = list(Lab.objects.filter(institute_id=institute_id, dispark=True))
-    # 找同一个星期的课程块进行周次的比较
-    same_day_course_blocks = CourseBlock.objects.filter(course__institute_id=institute_id, days_of_the_week=course_block.days_of_the_week)
-    sections = set(course_block.sections.split(','))
-    conflic_blocks = []
-    for block in same_day_course_blocks:
-        its_sections = block.sections.split(',')
-        if sections.intersection(set(its_sections)):
-            conflic_blocks.append(block)
-
-    aready_used_labs = []
-    for block in conflic_blocks:
-        for lab in block.new_labs.all():
-            if lab not in aready_used_labs:
-                aready_used_labs.append(lab)
-    for lab in aready_used_labs:
-        all_labs.remove(lab)
-    free_labs = all_labs + list(course_block.new_labs.all())
-    return free_labs
-
-
 # 获取一个实验室列表的总容纳人数
 def get_labs_contain_num(labs):
     contain_num = 0
@@ -1154,10 +1131,11 @@ class Arrange(View):
         'title': '实验类型设置',
         'active_3': True,  # 激活导航
         'arrange_active': True,  # 激活导航
+
         'superuser': None,
         'teacher': None,
-
         'school': None,
+
         'labs': None,
         'need_adjust_course_blocks': [],
         'no_need_adjust_course_blocks': [],
@@ -1168,16 +1146,18 @@ class Arrange(View):
     def get(self, request):
         set_user_for_context(request.session['user_account'], self.context)
 
+        set_time_for_context(self.context)
+
         self.context['institutes'] = get_all_institutes(self.context['school'])
         self.context['attributes'] = LabsAttribute.objects.filter(school=self.context['school'])
 
-        # 为用户记住最近编辑的学院
+        # 为用户记住最近编辑的学院，要百分百确保session中包含当前学院id
         if request.GET.get('current_institute_id', None):
             request.session['current_institute_id'] = request.GET.get('current_institute_id')
         elif not request.GET.get('current_institute_id', None) and not request.session.get('current_institute_id', None):
             request.session['current_institute_id'] = self.context['institutes'][0].id
 
-        # 为用户记住当前编辑学院排课设置的属性
+        # 为用户记住当前编辑学院排课设置的属性，如果数据库中没有该学院的排课设置数据，则说明该学院没排过课
         arrange_settings = ArrangeSettings.objects.filter(institute_id=request.session['current_institute_id'])
         if arrange_settings:
             request.session['current_attribute1_id'] = arrange_settings[0].attribute1_id
@@ -1194,39 +1174,67 @@ class Arrange(View):
         }
 
         self.context['labs'] = Lab.objects.filter(institute_id=request.session['current_institute_id'], dispark=True)
-        courses = Course.objects.filter(institute_id=request.session['current_institute_id'])
-        self.context['need_adjust_course_blocks'] = self.set_course_blocks(courses, True, request.session['current_institute_id'])
-        self.context['no_need_adjust_course_blocks'] = self.set_course_blocks(courses, False, request.session['current_institute_id'])
+        # 获取有课程块的课程，有课程块说明已经通过了审核
+        courses = Course.objects.filter(institute_id=request.session['current_institute_id'], has_block=True)
+        self.context['need_adjust_course_blocks'] = self.get_course_blocks(courses, True)
+        self.context['no_need_adjust_course_blocks'] = self.get_course_blocks(courses, False)
 
         return render(request, 'manage/arrange.html', self.context)
 
     # 生成前端人工调整课程块列表的数据的方法
-    def set_course_blocks(self, the_courses, need_adjust, institute_id):
+    def get_course_blocks(self, the_courses, need_adjust):
         blocks_list = []
         i = 0
         for course in the_courses:
             course_blocks = CourseBlock.objects.filter(course=course, need_adjust=need_adjust)
             for course_block in course_blocks:
-                i = i + 1
                 new_dict = {
                     "no": i,
+                    "weeks": course_block.weeks.replace('、', ','),
                     "course_block": course_block,
                     "classes": get_classes_name_from_course(course_block.course.id),
-                    "free_labs": get_available_labs_for_course_block(institute_id, course_block)
+                    # "labs": self.have_selected_labs_list(course_block, self.context['labs'], need_adjust)
+                    "labs": self.get_labs_ids_for_course_block(course_block, need_adjust),
                 }
                 blocks_list.append(new_dict)
+                i = i + 1
         return blocks_list
 
-    def post(self, request):  # 创建
-        print(self.context)
-        return render(request, 'manage/arrange.html', self.context)
+    def get_labs_ids_for_course_block(self, course_block, need_adjust):
+        if need_adjust:
+            old_or_new = 'old_labs'
+        else:
+            old_or_new = 'new_labs'
+        return get_labs_id_str(getattr(course_block, old_or_new).all())
 
-    def put(self, request):  # 更新
+    def have_selected_labs_list(self, course_block, labs, need_adjust):
+        """
+        生成前端所需的含有课程块原来实验室选择标记的实验室列表数据（其实是字典）
+        :param course_block:
+        :param labs:
+        :param need_adjust: 需要人工调整的课程块则要选择原来需求的实验室，不需人工调整的那些则选择新的实验室
+        :return:
+        """
+        return_labs = []
+        if need_adjust:
+            old_or_new = 'old_labs'
+        else:
+            old_or_new = 'new_labs'
+        for lab in labs:
+            if lab in getattr(course_block, old_or_new).all():
+                new_dict = {'selected': True}
+            else:
+                new_dict = {'selected': False}
+            new_dict['lab'] = lab
+            return_labs.append(new_dict)
+        return return_labs
+
+    def put(self, request):  # 更新，在这里就是执行排课的意思，更新课程表
         put_data = QueryDict(request.body)
         attribute1_id = put_data.get('attribute1_id')
         attribute2_id = put_data.get('attribute2_id')
 
-        change = False
+        change = False  # change用于标记用户是否有修改排课属性，如果没修改，则不用修改session和数据库中的数据
         arrange_settings = ArrangeSettings.objects.filter(institute_id=request.session['current_institute_id'])
         if arrange_settings:
             if attribute1_id != arrange_settings[0].attribute1_id or attribute2_id != arrange_settings[0].attribute2_id:
@@ -1247,7 +1255,7 @@ class Arrange(View):
                     'attribute2_id': attribute2_id
                 }
             }
-
-            auto_arrange(request.session['current_institute_id'], attribute1_id, attribute2_id)
+        # 只要用户点击了排课按钮，则不管如何都要排课
+        auto_arrange(request.session['current_institute_id'], attribute1_id, attribute2_id)
 
         return render(request, 'manage/arrange.html', self.context)

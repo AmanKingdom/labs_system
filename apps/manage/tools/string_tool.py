@@ -13,3 +13,10 @@ def str_to_set(str_data, tag):
         if x != tag:
             temp.append(x)
     return set(temp)
+
+
+def get_labs_id_str(labs):
+    labs_ids = ""
+    for lab in labs:
+        labs_ids = labs_ids + ',%d' % lab.id
+    return labs_ids[1:]

@@ -8,6 +8,8 @@ from apps.manage.models import Course, Classes, Institute, Lab, LabsAttribute, \
 from apps.manage.views import get_all_labs, set_user_for_context, STATUS
 
 from apps.manage.views import this_logger
+from manage.tools.setting_tool import set_time_for_context
+from manage.tools.string_tool import get_labs_id_str
 
 
 def set_choices_context(context):
@@ -16,12 +18,6 @@ def set_choices_context(context):
     context['experiments_type'] = ExperimentType.objects.all() if ExperimentType.objects.all() else ""
     # 学时
     context['lecture_time'] = [x for x in range(1, 11)]
-    # 周次
-    context['which_week'] = [x for x in range(1, 21)]
-    # 星期
-    context['days_of_the_week'] = [x for x in range(1, 8)]
-    # 节次
-    context['section'] = [x for x in range(1, 12)]
 
     context['labs_of_institute'] = Institute.objects.all() if Institute.objects.all() else ""
     context['labs_attribute'] = LabsAttribute.objects.all() if LabsAttribute.objects.all() else ""
@@ -77,6 +73,8 @@ def apply(request):
                                                                                          'grade__department__name')
 
     set_choices_context(context)
+    set_time_for_context(context)
+
     return render(request, 'apply_experiments/apply.html', context)
     # else:
     #     return HttpResponseRedirect('/browse/login')
@@ -318,15 +316,11 @@ def change_experiments(request, course_id=None):
                 for labs_attribute in labs_attributes_of_experiment:
                     labs_attributes = labs_attributes + ',%d' % labs_attribute.id
 
-                labs_ids = ""
-                for lab in labs:
-                    labs_ids = labs_ids + ',%d' % lab.id
-
                 temp_experiment = {
                     'experiment': experiment,
                     'labs_of_institute': labs_of_institute,
                     'labs_attribute': labs_attributes[1:],
-                    'labs': labs_ids[1:]
+                    'labs': get_labs_id_str(labs)
                 }
                 experiments.append(temp_experiment)
 
@@ -355,6 +349,7 @@ def change_experiments(request, course_id=None):
         context['message'] = '出错，该课程存在异常'
 
     set_choices_context(context)
+    set_time_for_context(context)
 
     return render(request, 'manage/experiment_manage.html', context)
     # else:

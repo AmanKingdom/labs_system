@@ -1,4 +1,5 @@
 import json
+import apps.manage.models as models
 from datetime import datetime
 
 from django.http import JsonResponse, HttpResponseRedirect, QueryDict
@@ -10,7 +11,7 @@ from apps.manage.models import School, SchoolArea, Institute, Department, Grade,
 
 from logging_setting import ThisLogger
 from manage.tools.setting_tool import set_time_for_context
-from manage.tools.string_tool import list_to_str, str_to_set, get_labs_id_str
+from manage.tools.string_tool import list_to_str, str_to_set, get_labs_id_str, non_repetitive_strlist
 
 this_logger = ThisLogger().logger
 
@@ -1008,7 +1009,7 @@ def find_labs(institute_id, course_block):
         for lab in all_labs:
             if course_attribute:
                 if getattr(lab, current_attribute) == course_attribute:
-                    if not lab_in_used(lab, course_block):
+                    if lab_in_used(lab, course_block):
                         free_labs.clear()
                     else:
                         free_labs.append(lab)
@@ -1019,7 +1020,7 @@ def find_labs(institute_id, course_block):
                     free_labs.clear()
             else:
                 print(course_block, '的课程没有属性')
-                if not lab_in_used(lab, course_block):
+                if lab_in_used(lab, course_block):
                     free_labs.clear()
                 else:
                     free_labs.append(lab)
@@ -1061,9 +1062,9 @@ def lab_in_used(lab, course_block):
                 if its_weeks.intersection(my_weeks):
                     print('要对比课程块', course_block_for_new, '和本身的课程块', course_block, '的周次相同')
                     print(lab, '该实验室被占用了')
-                    return False
-    print('没有被占用')
-    return True
+                    return True
+    print('该实验室没有被占用')
+    return False
 
 
 # 用于打印课程块集合的方法
@@ -1259,3 +1260,108 @@ class Arrange(View):
         auto_arrange(request.session['current_institute_id'], attribute1_id, attribute2_id)
 
         return render(request, 'manage/arrange.html', self.context)
+
+
+def get_model_field_ids(obj, field_name):
+    """
+    获取某个模型的某个多对多字段的所有数据的id
+    :param obj:
+    :param field_name: 字符串形式的模型对应字段名称
+    :return: 返回id列表
+    """
+    field = getattr(obj, field_name)
+    print('获取到：', obj, field)
+    temp = []
+    for x in field.all():
+        temp.append(x.id)
+    return temp
+
+
+class NeedAdjustCourseBlock(View):
+    context = {
+        'status': True,
+        'message': "",
+    }
+
+    def put(self, request, course_block_id):    # 更新需要调整的课程数据
+        put_data = dict(QueryDict(request.body))
+        print('接收到的数据转化为字典后：', put_data)
+        course_block = CourseBlock.objects.filter(id=course_block_id)
+
+        if course_block:
+            course_block = course_block[0]
+            temp_data = {}  # 暂存数据，用于临时存放课程块原来的数据
+
+            change = False
+            if 'weeks' in put_data.keys():
+                weeks = non_repetitive_strlist(put_data['weeks'][0], ',').replace(',', '、')
+                this_logger.info('修改后的所有周次去重后的转化出来的字符串：'+weeks)
+                if weeks != course_block.weeks:
+                    temp_data['weeks'] = course_block.weeks
+                    course_block.weeks = weeks
+                    change = True
+
+            if 'days_of_the_week' in put_data.keys():
+                if put_data['days_of_the_week'][0] != course_block.days_of_the_week:
+                    temp_data['days_of_the_week'] = course_block.days_of_the_week
+                    course_block.days_of_the_week = int(put_data['days_of_the_week'][0])
+                    change = True
+
+            old_lab_ids = get_model_field_ids(course_block, 'old_labs')
+            if 'lab_ids' in put_data.keys():
+                lab_ids = non_repetitive_strlist(put_data['lab_ids'][0], ',')
+                print('用户提交的实验室id列表：', lab_ids, type(lab_ids), ' 课程块的实验室id列表：', old_lab_ids)
+
+                if lab_ids != old_lab_ids:
+                    temp_data['lab_ids'] = old_lab_ids
+                    change = True
+            else:
+                # 如果用户没有申请新的实验室，而如果下面change=True，则说明用户修改了时间，
+                # 所以要检查新时间下原来的实验室是否还可用
+                lab_ids = old_lab_ids
+
+            print('暂存数据：', temp_data)
+
+            if change:
+                # 课程块原来在数据库内的新实验室不能丢，因为判断实验室是否可用的算法是会判断自身课程的。。这个以后得改进
+                # 但现在的作用很大，用于在实验室获取不成功时还原数据
+                temp_data['course_block_new_labs'] = course_block.new_labs.all()
+                course_block.new_labs.clear()
+                course_block.save()     # 如果有数据改变，则暂时更新一下课程的数据，然后通过检查新申请的实验室是否可用
+
+                lab_ok = True
+                for lab_id in lab_ids:
+                    lab = Lab.objects.get(id=int(lab_id))
+                    # 只要有一个实验室被占用都不可以为这个课程块设置新的实验室
+                    if lab_in_used(lab, course_block):
+                        lab_ok = False
+                        break
+                if lab_ok:
+                    # 如果新申请的实验室都可用，则课程块的新实验室数据更新即可，
+                    # 同时设置不需人工调整了，时间信息由于在上面已经更新，所以不用变
+                    course_block.new_labs.add(*lab_ids)
+                    course_block.need_adjust = False
+                    course_block.save()
+
+                    self.context['status'] = True
+                    self.context['message'] = ""
+                else:
+                    # 如果新申请的实验室不满足条件，就要将这个课程块通过暂存数据恢复课程块原来的信息
+                    if 'weeks' in temp_data.keys():
+                        course_block.weeks = temp_data['weeks']
+                    if 'days_of_the_week' in temp_data.keys():
+                        course_block.days_of_the_week = temp_data['days_of_the_week']
+
+                    course_block.new_labs.clear()
+                    for lab in temp_data['course_block_new_labs']:
+                        course_block.new_labs.add(lab)
+
+                    course_block.save()
+
+                    self.context['status'] = False
+                    self.context['message'] = '您所填的实验室已被占用'
+        else:
+            self.context['status'] = False
+            self.context['message'] = '传入的课程块id有误，请重新提交'
+
+        return JsonResponse(self.context)

@@ -41,7 +41,7 @@
     {% if need_adjust_course_blocks %}
         <div class="ibox float-e-margins">
             <div class="ibox-title">
-                <h5>需要人工调整的课程信息表<span class="need">（下面是通过智能编排无法解决的冲突，冲突的课程显示在其申请的实验室的位置）</span> </h5>
+                <h5>需要人工调整的课程信息表<span class="need">（下面是通过智能编排无法解决的冲突，冲突的课程显示在其申请的实验室的位置上）</span> </h5>
                 <div class="ibox-tools">
                     <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                 </div>
@@ -103,8 +103,7 @@
                         {% endfor %}
                     </select>
 
-                    <button onclick="arrange(this)" class="btn btn-primary">按属性智能排课</button>
-                    {#                    <button onclick="re_arrange(this)" class="btn btn-primary">重新智能排课</button>#}
+                    <button onclick="arrange(this)" class="btn btn-primary" title="可能会对实验室有所调整，但不会改动课程的时间">按属性智能排课</button>
                     <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                 </div>
             </div>
@@ -131,48 +130,10 @@
             </div>
             <div class="ibox-content">
                 <div class="table-responsive">
-                    <table id="need_adjust_info_table"
-                           data-toggle="table"
-                           class="table">
-                        <thead><tr>
-                            <th>序号</th>
-                            <th>所有周次</th>
-                            <th>星期</th>
-                            <th>节次</th>
-                            <th>课程</th>
-                            <th>授课班级</th>
-                            <th>人工选择实验室<span class="need">（默认已选课程的排课结果实验室）</span></th>
-                            <th>操作</th>
-                        </tr></thead>
-                        <tbody>
-                        {% for course_block in no_need_adjust_course_blocks %}
-                            <tr>
-                                <td>{{ course_block.no }}</td>
-                                <td>{{ course_block.course_block.weeks }}</td>
-                                <td>{{ course_block.course_block.days_of_the_week }}</td>
-                                <td>{{ course_block.course_block.sections }}</td>
-                                <td id="{{ course_block.course_block.course.id }}">{{ course_block.course_block.course }}</td>
-                                <td>{{ course_block.classes|safe }}</td>
-                                <td>
-                                    <select multiple="multiple" class="form-control" name="labs_selected">
-                                        {% for l in course_block.labs %}
-                                            {% if l.selected %}
-                                                <option id={{ l.lab.id }} value={{ l.lab.id }} selected>{{ l.lab }}</option>
-                                            {% else %}
-                                                <option id={{ l.lab.id }} value={{ l.lab.id }}>{{ l.lab }}</option>
-                                            {% endif %}
-                                        {% empty %}
-                                            没有空闲的实验室了
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                                <td>
-                                    <button class="btn btn-primary btn-xs" onclick="not_pass(this)">驳回重申</button>
-                                    <button class="btn btn-primary btn-xs" onclick="save(this)">保存修改</button>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
+                    <table id="no_need_adjust_table"
+                           data-id-field="id"
+                           data-side-pagination="server"
+                           data-response-handler="responseHandler">
                     </table>
                 </div>
             </div>
@@ -183,13 +144,14 @@
 {% block add_js_to_manage %}
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
 
-    <!--配置人工调整的信息表格-->
+    <!--配置人工调整的信息表格 通用方法-->
     <script>
         var need_adjust_table = $('#need_adjust_table');
+        var no_need_adjust_table = $('#no_need_adjust_table');
 
-        function init_need_adjust_table() {
-            console.log('init_need_adjust_table()执行');
-            need_adjust_table.bootstrapTable('destroy').bootstrapTable({
+        function init_table(table) {
+            console.log('init_table()执行');
+            table.bootstrapTable('destroy').bootstrapTable({
                 locale: $('#locale').val(),
                 columns: [
                     [{
@@ -236,20 +198,20 @@
                         title:'授课班级',
                     },{
                         field: 'labs',
-                        title: '人工选择实验室<span class="need">（默认为课程申请的实验室）</span>',
+                        title: '实验室',
                         editable:{
                             type:'select2',
                             source: [
                                 {% for x in labs %}
-                                    {value: {{ x.id }}, text: '{{ x.name }}' },
+                                    {id:{{ x.id }}, value: {{ x.id }}, text: '{{ x.name }}' },
                                 {% empty %}
                                     {value:"", text: '暂无数据'}
                                 {% endfor %}
                             ],
                             select2 : {
                                 multiple : true,
-                                width : '180px' //设置宽，这个一定要，不然显示框很窄
-                            }
+                                width : '180px', //设置宽，这个一定要，不然显示框很窄
+                            },
                         }
                     }, {
                         field: 'operate',
@@ -262,25 +224,50 @@
 
             function operateFormatter(value, row, index) {
                 return [
-                    '<button class="btn btn-primary btn-xs" onclick="save(this)">保存修改</button>',
+                    '<button class="btn btn-primary btn-xs" onclick="save(this)" title="本按钮只对这一行起作用">保存修改</button>',
                 ].join('')
             }
         }
 
-        function load_need_adjust_course_blocks(){
+        function load_need_adjust_table(table){
             {% for course_block in need_adjust_course_blocks %}
                 var new_row = {
                     "id": {{ course_block.no }},
                     "weeks": '{{ course_block.weeks }}',
                     "days_of_the_week": '{{ course_block.course_block.days_of_the_week }}',
                     "sections": '{{ course_block.course_block.sections }}',
-                    "course": '<span id="{{ course_block.course_block.course.id }}">{{ course_block.course_block.course }}<span>',
+                    "course": '{{ course_block.course_block.course.name }}',
+                    "course_block_id": '{{ course_block.course_block.id }}',
+                    {#course_block_id是不在表格上展示的数据，这里要传course_block的id，因为这些数据都是基于课程块的#}
                     "classes": '{{ course_block.classes|safe }}',
                     "labs": '{{ course_block.labs }}',
                     {#"labs": "1",    //要传id，字符串类型的id，而不要直接传下拉列表里的text值#}
                 };
                 // 插入该行
-                need_adjust_table.bootstrapTable('insertRow', {
+                table.bootstrapTable('insertRow', {
+                    index: Number({{ course_block.no }}),
+                    row: new_row
+                });
+            {% empty %}
+            {% endfor %}
+        }
+
+        function load_no_need_adjust_table(table){
+            {% for course_block in no_need_adjust_course_blocks %}
+                var new_row = {
+                    "id": {{ course_block.no }},
+                    "weeks": '{{ course_block.weeks }}',
+                    "days_of_the_week": '{{ course_block.course_block.days_of_the_week }}',
+                    "sections": '{{ course_block.course_block.sections }}',
+                    "course": '{{ course_block.course_block.course.name }}',
+                    "course_block_id": '{{ course_block.course_block.id }}',
+                    {#course_block_id是不在表格上展示的数据，这里要传course_block的id，因为这些数据都是基于课程块的#}
+                    "classes": '{{ course_block.classes|safe }}',
+                    "labs": '{{ course_block.labs }}',
+                    {#"labs": "1",    //要传id，字符串类型的id，而不要直接传下拉列表里的text值#}
+                };
+                // 插入该行
+                table.bootstrapTable('insertRow', {
                     index: Number({{ course_block.no }}),
                     row: new_row
                 });
@@ -289,9 +276,12 @@
         }
 
         $(function() {
-            init_need_adjust_table();
-            load_need_adjust_course_blocks();
-            $('#locale').change(init_need_adjust_table)
+            init_table(need_adjust_table);
+            init_table(no_need_adjust_table);
+            load_need_adjust_table(need_adjust_table);
+            load_no_need_adjust_table(no_need_adjust_table);
+
+            $('#locale').change(init_table);
         })
     </script>
 
@@ -328,30 +318,75 @@
 
 
     <script>
-        var from_url = '{% url "manage:arrange" %}';
+        // 给某个标签添加 提示信息子标签
+        function add_tip_for_cell(cell) {
+            console.log('给元素：',  cell, ' 添加提示信息');
+            var tag = document.createElement('span');
+            var br = document.createElement('br');
+            tag.innerText = can_not_be_null;
+            tag.className = 'not_null';
+            br.className = 'not_null';
+            cell.appendChild(br);
+            cell.appendChild(tag);
+        }
 
         function save(save_button){
-            var course_id = save_button.parentNode.parentNode.cells[4].children[0].id;
-            console.log('获取课程id：', course_id);
+            var row_id = save_button.parentNode.parentNode.cells[0].innerText;
+            var current_row = need_adjust_table.bootstrapTable('getData')[row_id];
+            console.log('按钮所在行的数据：', current_row);
 
-            var the_selector = save_button.parentNode.parentNode.getData();
-            console.log(the_selector);
-            {#console.log(the_selector[0]);#}
+            var index_list = [1,2,6];   // 目前取周次、星期、实验室的data-value值，对应位置分别是1,2,6
+            var pri_list = [];  // 原始数据列表
+            for(var i=0; i < index_list.length; i++){
+                pri_list.push(save_button.parentNode.parentNode.cells[index_list[i]].children[0].getAttribute('data-value'))
+            }
 
-            selected_labs_id = [];
-            if(the_selector[0].selectedOptions.length < 1){
-                alert('请选择实验室');
-            }else{
-                for(var i=0; i < the_selector[0].selectedOptions.length; i++){
-                    selected_labs_id.push(the_selector[0].selectedOptions[i].value);
+            var new_list = [current_row.weeks, current_row.days_of_the_week, current_row.labs]; // 可能有修改的新数据列表
+
+            var pass = true;
+            $('.not_null').remove();	 // 清除掉以前的错误信息
+            $.each(new_list, function (index, value) {
+                console.log('判断新数据是否为空，index:', index, ' value：', value);
+
+                if(value === empty_text || value === "" || value === null){
+                    pass = false;
+                    var cell = save_button.parentNode.parentNode.cells[index_list[index]];
+                    add_tip_for_cell(cell);
                 }
-                console.log('选中的实验室id为：', selected_labs_id);
-                var data = {
-                    "course_id":course_id,
-                    "selected_labs_id":selected_labs_id
-                };
-                {#var to_url = '{% url "manage:adjust_labs_for_schedule" %}';#}
-                base_ajax(from_url, to_url, data)
+            });
+
+            if(pass){
+                var name_list = ["weeks", "days_of_the_week", "lab_ids"];   // 数据键名称列表，后台靠这个名称获取数据
+                console.log('原始数据：', pri_list, '新数据：', new_list);
+
+                var change = false;
+                var data = {};
+                for(var i=0; i<index_list.length; i++){
+                    if(pri_list[i] !== new_list[i]){
+                        change = true;
+                        data[name_list[i]] = new_list[i];
+                    }
+                }
+                console.log('是否有更改：', change, '更改的数据：', data);
+
+                if(change){
+                    var url = '{% url "manage:need_adjust_course_block" "course_block_id" %}';
+                    url = url.replace("course_block_id", current_row['course_block_id']);
+
+                    $.ajax({
+                        url: url,
+                        data: data,
+                        type: "PUT",
+                        headers:{'X-CSRFToken':'{{ csrf_token }}'},
+                        success: function (return_data) {
+                            if(return_data.status){
+                                window.location.reload();
+                            }else{
+                                alert(return_data.message);
+                            }
+                        }
+                    });
+                }
             }
         }
 

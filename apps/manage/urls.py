@@ -3,7 +3,7 @@ from django.urls import path
 from apps.manage.views import school_manage, create_or_modify_school_ajax, remove_ajax, \
     save_ajax, classes_manage, teacher_manage, save_term_ajax, become_a_teacher, cancel_the_teacher, course_manage, \
     labs_attribute_manage, experiment_type_manage, lab_manage, system_settings, personal_info, application_manage, \
-    application_check, ScheduleView, Arrange, NeedAdjustCourseBlock
+    application_check, ScheduleView, ArrangeView, CourseBlockView
 from apps.browse.views import require_login
 
 app_name = 'manage'
@@ -29,7 +29,7 @@ urlpatterns = [
 
     path('application_check/<course_id>/<status>/', application_check, name='application_check'),
 
-    path('arrange', require_login(Arrange.as_view()), name='arrange'),
+    path('arrange', require_login(ArrangeView.as_view()), name='arrange'),
     path('schedule', ScheduleView.as_view(), name='schedule'),
-    path('need_adjust_course_block/<course_block_id>/', NeedAdjustCourseBlock.as_view(), name='need_adjust_course_block'),
+    path('need_adjust_course_block/<course_block_id>/', CourseBlockView.as_view(), name='need_adjust_course_block'),
 ]

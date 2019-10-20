@@ -358,7 +358,10 @@ class CourseBlock(models.Model):
     old_labs = models.ManyToManyField(Lab, verbose_name='原来的实验室', related_name='course_block_for_old')
     same_new_old = models.BooleanField(verbose_name='分配前后实验室是否相同', default=False)
 
+    # 目前计划：需要人工调整的课程都属于未编排
+    aready_arrange = models.BooleanField(verbose_name='是否已经被编排', default=False)
     need_adjust = models.BooleanField(verbose_name='需要人工调整', default=False)
+    no_change = models.BooleanField(verbose_name='不再改动', default=False)
 
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')

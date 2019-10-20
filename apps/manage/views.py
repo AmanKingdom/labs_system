@@ -1004,40 +1004,53 @@ def find_labs(institute_id, course_block):
     current_attributes = ['attribute1', 'attribute2', 'attribute3']
     # 暂且按照实验室的创建来作为实验室相邻的依据
     all_labs = Lab.objects.filter(institute_id=institute_id, dispark=True)
+
+    def judge(free_labs, lab, course_block):
+        if lab_in_used(lab, course_block):
+            free_labs.clear()
+            return False
+        else:
+            free_labs.append(lab)
+            if get_labs_contain_num(free_labs) >= course_block.student_sum:
+                print('为课程块：', course_block, '找到实验室：', free_labs)
+                return free_labs
+
+    # 严谨模式
     for current_attribute in current_attributes:
         free_labs = []
         for lab in all_labs:
             if course_attribute:
                 if getattr(lab, current_attribute) == course_attribute:
-                    if lab_in_used(lab, course_block):
-                        free_labs.clear()
-                    else:
-                        free_labs.append(lab)
-                        if get_labs_contain_num(free_labs) >= course_block.student_sum:
-                            print('为课程块：', course_block, '找到实验室：', free_labs)
-                            return free_labs
+                    if judge(free_labs, lab, course_block):
+                        return free_labs
                 else:
                     free_labs.clear()
             else:
                 print(course_block, '的课程没有属性')
-                if lab_in_used(lab, course_block):
-                    free_labs.clear()
-                else:
-                    free_labs.append(lab)
-                    if get_labs_contain_num(free_labs) >= course_block.student_sum:
-                        print('为课程块：', course_block, '找到实验室：', free_labs)
-                        return free_labs
+                if judge(free_labs, lab, course_block):
+                    return free_labs
 
-    print('课程块：', course_block, '找不到实验室：')
+    print('课程块：', course_block, '通过严谨模式找不到实验室，下面将通过宽松模式寻找实验室：')
+    # 宽松模式
+    free_labs = []
+    for lab in all_labs:
+        attributes = [lab.attribute1, lab.attribute2, lab.attribute3]
+        if course_attribute in attributes:
+            if judge(free_labs, lab, course_block):
+                return free_labs
+        else:
+            free_labs.clear()
+
+    print('课程块：', course_block, '通过宽松模式还是找不到实验室')
     return None
 
 
 def lab_in_used(lab, course_block):
     """
-    判断符合某个课程块的某个实验室是否被占用
+    判断符合某个课程块的某个实验室是否被占用,被占用则返回其中一个冲突课程，否则返回False
     :param lab: 要判断的实验室（单个）
     :param course_block: 要对比的课程块（单个）
-    :return: 被占用则返回True，否则返回False
+    :return: 被占用则返回其中一个冲突课程，否则返回False
     """
     print('为课程块', course_block, '判断实验室', lab, '是否被占用')
     for course_block_for_new in lab.course_block_for_new.all():
@@ -1062,7 +1075,7 @@ def lab_in_used(lab, course_block):
                 if its_weeks.intersection(my_weeks):
                     print('要对比课程块', course_block_for_new, '和本身的课程块', course_block, '的周次相同')
                     print(lab, '该实验室被占用了')
-                    return True
+                    return course_block_for_new
     print('该实验室没有被占用')
     return False
 
@@ -1076,7 +1089,7 @@ def show_course_blocks(course_blocks, tag):
 
 def auto_arrange(institute_id, attribute1_id, attribute2_id):
     # 该学院的所有课程块
-    all_course_blocks = CourseBlock.objects.filter(course__institute_id=institute_id)
+    all_course_blocks = CourseBlock.objects.filter(course__institute_id=institute_id, no_change=False)
     # 每次排课前，一定要先将所有课程块的新实验室删掉
     for course_block in all_course_blocks:
         course_block.new_labs.clear()
@@ -1084,8 +1097,11 @@ def auto_arrange(institute_id, attribute1_id, attribute2_id):
 
     # 最优先排课的课程块
     course_blocks1 = all_course_blocks.filter(course__attribute_id=attribute1_id).order_by('-student_sum')
-    # 次优先排课的课程块
-    course_blocks2 = all_course_blocks.filter(course__attribute_id=attribute2_id).order_by('-student_sum')
+    if attribute1_id == attribute2_id:
+        course_blocks2 = []
+    else:
+        # 次优先排课的课程块
+        course_blocks2 = all_course_blocks.filter(course__attribute_id=attribute2_id).order_by('-student_sum')
 
     def get_student_sum(x):
         return x.student_sum
@@ -1117,6 +1133,7 @@ def auto_arrange(institute_id, attribute1_id, attribute2_id):
                 for lab in result_labs:
                     course_block.new_labs.add(lab)
                 course_block.need_adjust = False
+                course_block.aready_arrange = True  # 目前计划：需要人工调整的课程都属于未编排
                 # 如果新分配的实验室和需求的实验室一致，则是皆大欢喜
                 if course_block.new_labs.all() == course_block.old_labs.all():
                     course_block.same_new_old = True
@@ -1126,10 +1143,24 @@ def auto_arrange(institute_id, attribute1_id, attribute2_id):
                     course_block.new_labs.add(lab)
             course_block.save()
 
+    # 排完课后，再来个偷天换日，把不需调整、新安排实验室和申请实验室不同的课程块原来申请的实验室检查一遍是否可用，可用则换过来
+    temp_course_blocks = all_course_blocks.filter(same_new_old=False, need_adjust=False)
+    for course_block_item in temp_course_blocks:
+        labs_can_be_used = True
+        for lab_item in course_block_item.old_labs.all():
+            if lab_in_used(lab_item, course_block_item):
+                labs_can_be_used = False
+                break
+        if labs_can_be_used:
+            course_block_item.new_labs.clear()
+            for old_lab in course_block_item.old_labs.all():
+                course_block_item.new_labs.add(old_lab)
+            course_block_item.save()
 
-class Arrange(View):
+
+class ArrangeView(View):
     context = {
-        'title': '实验类型设置',
+        'title': '智能排课',
         'active_3': True,  # 激活导航
         'arrange_active': True,  # 激活导航
 
@@ -1208,28 +1239,6 @@ class Arrange(View):
             old_or_new = 'new_labs'
         return get_labs_id_str(getattr(course_block, old_or_new).all())
 
-    def have_selected_labs_list(self, course_block, labs, need_adjust):
-        """
-        生成前端所需的含有课程块原来实验室选择标记的实验室列表数据（其实是字典）
-        :param course_block:
-        :param labs:
-        :param need_adjust: 需要人工调整的课程块则要选择原来需求的实验室，不需人工调整的那些则选择新的实验室
-        :return:
-        """
-        return_labs = []
-        if need_adjust:
-            old_or_new = 'old_labs'
-        else:
-            old_or_new = 'new_labs'
-        for lab in labs:
-            if lab in getattr(course_block, old_or_new).all():
-                new_dict = {'selected': True}
-            else:
-                new_dict = {'selected': False}
-            new_dict['lab'] = lab
-            return_labs.append(new_dict)
-        return return_labs
-
     def put(self, request):  # 更新，在这里就是执行排课的意思，更新课程表
         put_data = QueryDict(request.body)
         attribute1_id = put_data.get('attribute1_id')
@@ -1256,36 +1265,56 @@ class Arrange(View):
                     'attribute2_id': attribute2_id
                 }
             }
-        # 只要用户点击了排课按钮，则不管如何都要排课
+        re_arrange = put_data.get('re_arrange')
+
+        all_courses = Course.objects.filter(institute_id=request.session['current_institute_id'], has_block=True)
+
+        for course in all_courses:
+            if re_arrange == '1':
+                CourseBlock.objects.filter(course=course).delete()
+                course.has_block = False
+                course.save()
+
+                experiments = course.experiments.all()
+                set_course_block(course, experiments)
+            else:
+                CourseBlock.objects.filter(course=course, aready_arrange=True).update(no_change=True)
+
         auto_arrange(request.session['current_institute_id'], attribute1_id, attribute2_id)
 
         return render(request, 'manage/arrange.html', self.context)
 
 
-def get_model_field_ids(obj, field_name):
+def get_model_field_ids(model, field_name):
     """
     获取某个模型的某个多对多字段的所有数据的id
-    :param obj:
-    :param field_name: 字符串形式的模型对应字段名称
+    :param model:
+    :param field_name: 模型对应字段名称的字符串
     :return: 返回id列表
     """
-    field = getattr(obj, field_name)
-    print('获取到：', obj, field)
+    field = getattr(model, field_name)
+    print('获取到：', model, field)
     temp = []
     for x in field.all():
         temp.append(x.id)
     return temp
 
 
-class NeedAdjustCourseBlock(View):
+class CourseBlockView(View):
     context = {
         'status': True,
         'message': "",
     }
 
-    def put(self, request, course_block_id):    # 更新需要调整的课程数据
-        put_data = dict(QueryDict(request.body))
-        print('接收到的数据转化为字典后：', put_data)
+    def put(self, request, course_block_id):
+        """
+        更新课程块数据，通过request传入更新的数据即可
+        :param request: request中可能存在的课程块更新数据字段：'weeks'、'days_of_the_week'、'lab_ids'
+        :param course_block_id:
+        :return: 返回json，包含status和message
+        """
+        put_data = QueryDict(request.body)
+        print('接收到的数据：', put_data)
         course_block = CourseBlock.objects.filter(id=course_block_id)
 
         if course_block:
@@ -1325,22 +1354,23 @@ class NeedAdjustCourseBlock(View):
             if change:
                 # 课程块原来在数据库内的新实验室不能丢，因为判断实验室是否可用的算法是会判断自身课程的。。这个以后得改进
                 # 但现在的作用很大，用于在实验室获取不成功时还原数据
-                temp_data['course_block_new_labs'] = course_block.new_labs.all()
+                temp_data['course_block_new_labs'] = [lab for lab in course_block.new_labs.all()]
                 course_block.new_labs.clear()
                 course_block.save()     # 如果有数据改变，则暂时更新一下课程的数据，然后通过检查新申请的实验室是否可用
 
-                lab_ok = True
+                lab_in_used_return = False
                 for lab_id in lab_ids:
                     lab = Lab.objects.get(id=int(lab_id))
                     # 只要有一个实验室被占用都不可以为这个课程块设置新的实验室
-                    if lab_in_used(lab, course_block):
-                        lab_ok = False
+                    lab_in_used_return = lab_in_used(lab, course_block)
+                    if lab_in_used_return:
                         break
-                if lab_ok:
+                if not lab_in_used_return:
                     # 如果新申请的实验室都可用，则课程块的新实验室数据更新即可，
                     # 同时设置不需人工调整了，时间信息由于在上面已经更新，所以不用变
                     course_block.new_labs.add(*lab_ids)
                     course_block.need_adjust = False
+                    course_block.aready_arrange = True
                     course_block.save()
 
                     self.context['status'] = True
@@ -1356,10 +1386,11 @@ class NeedAdjustCourseBlock(View):
                     for lab in temp_data['course_block_new_labs']:
                         course_block.new_labs.add(lab)
 
+                    course_block.aready_arrange = False
                     course_block.save()
 
                     self.context['status'] = False
-                    self.context['message'] = '您所填的实验室已被占用'
+                    self.context['message'] = '课程：《' + lab_in_used_return.course.name + '》与其冲突，请将其移走再修改本课程'
         else:
             self.context['status'] = False
             self.context['message'] = '传入的课程块id有误，请重新提交'

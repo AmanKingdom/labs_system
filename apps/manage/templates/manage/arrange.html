@@ -38,10 +38,55 @@
 {% endblock %}
 
 {% block manage_body %}
+    <div class="form-inline" style="margin-left: 15px; margin-bottom: 10px">
+        <label for="institutes">选择排课学院：</label>
+        <select name="institutes" class="form-control" id="institutes" style="margin-right: 40px;margin-bottom: 5px;">
+            {% for institute in institutes %}
+                {% if institute.id|urlencode:"" == request.session.current_institute_id %}
+                    <option value="{{ institute.id }}" selected>{{ institute.name }}</option>
+                {% else %}
+                    <option value="{{ institute.id }}">{{ institute.name }}</option>
+                {% endif %}
+            {% empty %}
+                <option>暂无数据</option>
+            {% endfor %}
+        </select>
+
+        <div class="pull-right" style="margin-bottom: 5px;margin-right: 15px;">
+            <label for="attribute1">最优先排课属性：</label>
+            <select name="attribute1" class="form-control" id="attribute1" style="margin-right: 20px;">
+                {% for attribute in attributes %}
+                    {% if attribute.id|urlencode:"" == request.session.current_attribute1_id|urlencode:"" %}
+                        <option value="{{ attribute.id }}" selected>{{ attribute.name }}</option>
+                    {% else %}
+                        <option value="{{ attribute.id }}">{{ attribute.name }}</option>
+                    {% endif %}
+                {% empty %}
+                    <option>暂无数据</option>
+                {% endfor %}
+            </select>
+
+            <label for="attribute2">次优先排课属性：</label>
+            <select name="attribute2" class="form-control" id="attribute2" style="margin-right: 20px;">
+                {% for attribute in attributes %}
+                    {% if attribute.id|urlencode:"" == request.session.current_attribute2_id|urlencode:"" %}
+                        <option value="{{ attribute.id }}" selected>{{ attribute.name }}</option>
+                    {% else %}
+                        <option value="{{ attribute.id }}">{{ attribute.name }}</option>
+                    {% endif %}
+                {% empty %}
+                    <option>暂无数据</option>
+                {% endfor %}
+            </select>
+
+            <button onclick="arrange(this, 0)" class="btn btn-primary" title="在当前已排好课程的基础上对新课程或冲突课程进行排课，已排好的课程不受影响" style="margin-right: 40px;">在当前排课基础上按属性智能排课</button>
+            <button onclick="arrange(this, 1)" class="btn btn-outline btn-danger" title="忽略现有排课结果，重新排课">按属性重新智能排课</button>
+        </div>
+    </div>
     {% if need_adjust_course_blocks %}
         <div class="ibox float-e-margins">
             <div class="ibox-title">
-                <h5>需要人工调整的课程信息表<span class="need">（下面是通过智能编排无法解决的冲突，冲突的课程显示在其申请的实验室的位置上）</span> </h5>
+                <h5>需要人工调整的课程信息表<span class="need">（下面是通过智能编排无法解决的冲突，冲突课程已在课程表中用红色方框标记出来）</span> </h5>
                 <div class="ibox-tools">
                     <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                 </div>
@@ -60,54 +105,15 @@
 
     <div class="ibox float-e-margins">
         <div class="ibox-title">
-            <h5>排课结果</h5>
+            <h5>课程表</h5>
             <div class="ibox-tools">
                 <div class="row form-inline" style="margin-right: 2px">
                     {% if need_adjust_course_blocks %}<span class="need pull-left" style="margin-left: 5px">（带红色边框的表示需要人工调整的课程）</span>{% endif %}
-                    <label for="institutes">选择排课学院：</label>
-                    <select name="institutes" class="form-control" id="institutes" style="margin-right: 40px;margin-bottom: 5px;">
-                        {% for institute in institutes %}
-                            {% if institute.id|urlencode:"" == request.session.current_institute_id %}
-                                <option value="{{ institute.id }}" selected>{{ institute.name }}</option>
-                            {% else %}
-                                <option value="{{ institute.id }}">{{ institute.name }}</option>
-                            {% endif %}
-                        {% empty %}
-                            <option>暂无数据</option>
-                        {% endfor %}
-                    </select>
-
-                    <label for="attribute1">最优先排课属性：</label>
-                    <select name="attribute1" class="form-control" id="attribute1" style="margin-right: 40px;margin-bottom: 5px;">
-                        {% for attribute in attributes %}
-                            {% if attribute.id|urlencode:"" == request.session.current_attribute1_id|urlencode:"" %}
-                                <option value="{{ attribute.id }}" selected>{{ attribute.name }}</option>
-                            {% else %}
-                                <option value="{{ attribute.id }}">{{ attribute.name }}</option>
-                            {% endif %}
-                        {% empty %}
-                            <option>暂无数据</option>
-                        {% endfor %}
-                    </select>
-
-                    <label for="attribute2">次优先排课属性：</label>
-                    <select name="attribute2" class="form-control" id="attribute2" style="margin-right: 40px;margin-bottom: 5px;">
-                        {% for attribute in attributes %}
-                            {% if attribute.id|urlencode:"" == request.session.current_attribute2_id|urlencode:"" %}
-                                <option value="{{ attribute.id }}" selected>{{ attribute.name }}</option>
-                            {% else %}
-                                <option value="{{ attribute.id }}">{{ attribute.name }}</option>
-                            {% endif %}
-                        {% empty %}
-                            <option>暂无数据</option>
-                        {% endfor %}
-                    </select>
-
-                    <button onclick="arrange(this)" class="btn btn-primary" title="可能会对实验室有所调整，但不会改动课程的时间">按属性智能排课</button>
                     <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                 </div>
             </div>
         </div>
+
         <div class="ibox-content">
             <div class="table-responsive">
                 <table class="table table-bordered table-hover" id="week_schedule_table"
@@ -390,8 +396,8 @@
             }
         }
 
-        // 按属性智能排课按钮点击：
-        function arrange(arrange_button){
+        // 按属性智能排课按钮点击，re_arrange用于标记 在当前已排好课的基础上排课-0:flase的意思 还是 重新排课-1:true的意思
+        function arrange(arrange_button, re_arrange){
             var attribute1_id = $('#attribute1 option:selected').val();
             var attribute1 = $('#attribute1 option:selected').text();
 
@@ -401,13 +407,22 @@
             console.log(attribute1_id, attribute2_id);
 
             if (attribute1_id !== null) {
-                var pass = confirm('下面是您的选择：\n最优先排课属性为：'+attribute1+'，\n次优先排课属性为：'+attribute2 +'，\n确定要按这些属性智能排课吗？');
+                var pass = false;
+                if(re_arrange === 1){
+                    pass = confirm('下面是您的选择：\n最优先排课属性为：'+attribute1+'，\n次优先排课属性为：'+attribute2 +'，\n确定要按这些属性重新智能排课吗？\n（本智能排课不会改变课程时间，只调整实验室）');
+                    if(pass){
+                        pass = confirm('严重警告！！即将删除所有已排课记录重新排课！！\n重新排课后，原有排课记录将不能找回。请再次确认是否要重新排课！')
+                    }
+                }else{
+                    pass = confirm('下面是您的选择：\n最优先排课属性为：'+attribute1+'，\n次优先排课属性为：'+attribute2 +'，\n确定要按这些属性在当前排课基础上智能排课吗？\n（本智能排课不会改变课程时间，只调整实验室）');
+                }
+
                 if(pass){
                     var to_url = '{% url "manage:arrange" %}';
                     $.ajax({
                         url:to_url,
                         type:'PUT',
-                        data:{"attribute1_id": attribute1_id, "attribute2_id":attribute2_id},
+                        data:{"attribute1_id": attribute1_id, "attribute2_id":attribute2_id , "re_arrange":re_arrange},
                         headers:{'X-CSRFToken':'{{ csrf_token }}'},
                         success:function (data) {
                             window.location.reload();

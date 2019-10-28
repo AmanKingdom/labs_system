@@ -1,4 +1,4 @@
-<!--super_user/course_manage.html-->
+<!--manage/course_manage.html-->
 
 {% extends 'manage/base.html' %}
 
@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block manage_body %}
-    {% if classes %}
+    {% if institutes %}
         <div class="row">
             <div class="col-md-12">
                 <br>
@@ -27,8 +27,8 @@
                         <table id="course_table"
                                class="table-responsive"
                                data-id-field="id"
-                               data-response-handler="responseHandler"
-                               data-click-to-select="true">
+                               data-click-to-select="true"
+                               data-url="{% url 'manage:courses' request.session.school_id %}">
                         </table>
                     </div>
                 </div>
@@ -36,7 +36,7 @@
         </div>
     {% else %}
         <hr>
-        请先添加班级信息，有班级信息后可进行下一步设置 <a href="{% url 'manage:classes_manage' %}">>>>前往添加</a>
+        请先添加学院信息，有学院信息后可进行下一步设置 <a href="{% url 'manage:school_manage' %}">>>>前往添加</a>
     {% endif %}
     <div align="left" style="margin-left: 20px">
         <a href="#" onClick="history.back(-1);">
@@ -49,28 +49,23 @@
 
 {% block add_js_to_manage %}
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
-    <!--当前页面的全局设置-->
+     <!--全局的参数或函数-->
     <script>
-        var from_url = "{% url 'manage:course_manage' %}";
+        var course_url = "{% url 'manage:teachers' request.session.school_id %}";
     </script>
-
-
 
     <!--课程信息表设置相关  开始-->
     <script>
         var course_table = $('#course_table');
         var remove_course_button = $('#remove_course_button');
-        var selections = [];
 
         function init_course_table() {
-            console.log('init_course_table()执行');
             course_table.bootstrapTable('destroy').bootstrapTable({
-                locale: $('#locale').val(),
                 columns: [
                     [{
                         field: 'state',
                         checkbox: true,
-                    }, {
+                    },{
                         title: '序号',
                         field: 'id',
                     },{
@@ -148,32 +143,8 @@
             set_a_table(from_url, course_table, remove_course_button, 'courses');
         }
 
-        function load_course(){
-            console.log('load_courses()执行');
-            var index = 0;
-            {% for c in courses %}
-                var new_row = {
-                    "id": index,
-                    'institute': '{{ c.course.institute.id }}',
-                    'course_name': '{{ c.course.name }}',
-                    'attribute': '{{ c.course.attribute.id }}',
-                    'classes': {% if c.classes %}'{{ c.classes }}'{% else %}''{% endif %},
-                    'teachers': {% if c.teachers %}'{{ c.teachers }}'{% else %}''{% endif %},
-                    "id_in_database": '{{ c.course.id }}',
-                };
-                // 插入该行
-                course_table.bootstrapTable('insertRow', {
-                    index: index,
-                    row: new_row
-                });
-                index = index + 1;
-            {% empty %}
-            {% endfor %}
-        }
-
         $(function() {
             init_course_table();
-            load_course();
             $('#locale').change(init_course_table);
         })
     </script>
@@ -188,7 +159,7 @@
 
             var new_row = null;
 
-            if(index == 0){
+            if(index === 0){
                 new_row = {
                     "id": index,
                     "institute": {% if institutes %}{{ institutes.0.id }}{% else %}""{% endif %},
@@ -221,15 +192,12 @@
     <script>
         $('#save_course_button').click(function () {
             var courses = course_table.bootstrapTable('getData');
-
             var pass = true;
 
             $('.not_null').remove();	 // 清除掉以前的错误信息
 
             $.each(courses, function (index, value) {
-                console.log(index, value);
-
-                if(value['grade'] === empty_text || value['grade'] == ""){
+                if(value['institute'] === empty_text || value['institute'] == ""){
                     pass = false;
                     add_tip('course_table', index, 2)
                 }
@@ -240,7 +208,6 @@
                 }
             });
             if(pass){
-                save_ajax(from_url, 'courses', courses, '{{ school.id }}')
             }
         })
     </script>

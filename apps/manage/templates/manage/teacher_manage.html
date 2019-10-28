@@ -1,4 +1,4 @@
-<!--super_user/teacher_manage.html-->
+<!--manage/teacher_manage.html-->
 
 {% extends 'manage/base.html' %}
 
@@ -23,8 +23,8 @@
                         <table id="teacher_table"
                                class="table-responsive"
                                data-id-field="id"
-                               data-response-handler="responseHandler"
-                               data-click-to-select="true">
+                               data-click-to-select="true"
+                               data-url="{% url 'manage:teachers' request.session.school_id %}">
                         </table>
                     </div>
                 </div>
@@ -44,23 +44,18 @@
 {% endblock %}
 
 {% block add_js_to_manage %}
-    <!--当前页面的全局设置-->
+    <!--全局的参数或函数-->
     <script>
-        var from_url = "{% url 'manage:teacher_manage' %}";
+        var teacher_url = "{% url 'manage:teachers' request.session.school_id %}";
     </script>
-
-
 
     <!--教师信息表设置相关  开始-->
     <script>
         var teacher_table = $('#teacher_table');
         var remove_teacher_button = $('#remove_teacher_button');
-        var selections = [];
 
         function init_teacher_table() {
-            console.log('init_teacher_table()执行');
             teacher_table.bootstrapTable('destroy').bootstrapTable({
-                locale: $('#locale').val(),
                 columns: [
                     [{
                         field: 'state',
@@ -106,40 +101,31 @@
                             type:'text',
                         },
                     },{
+                        field:'hide_department_id',
+                    },{
+                        field:'hide_teacher_name',
+                    },{
+                        field:'hide_account',
+                    },{
+                        field:'hide_password',
+                    },{
+                        field:'hide_phone',
+                    },{
                         field:'id_in_database',
                     }]
                 ]
             });
-
-            set_a_table(from_url, teacher_table, remove_teacher_button, 'teachers');
-        }
-
-        function load_teacher(){
-            console.log('load_teacher()执行');
-            var index = 0;
-            {% for teacher in teachers %}
-                var new_row = {
-                    "id": index,
-                    'department': '{{ teacher.department.id }}',
-                    'teacher_name': '{{ teacher.name }}',
-                    'account': '{{ teacher.account }}',
-                    'password': '{{ teacher.password }}',
-                    'phone': {% if teacher.phone %}'{{ teacher.phone }}'{% else %}''{% endif %},
-                    "id_in_database": '{{ teacher.id }}',
-                };
-                // 插入该行
-                teacher_table.bootstrapTable('insertRow', {
-                    index: index,
-                    row: new_row
-                });
-                index = index + 1;
-            {% empty %}
-            {% endfor %}
+            // 隐藏一些id和名称隐藏列
+            teacher_table.bootstrapTable('hideColumn', 'hide_department_id');
+            teacher_table.bootstrapTable('hideColumn', 'hide_teacher_name');
+            teacher_table.bootstrapTable('hideColumn', 'hide_account');
+            teacher_table.bootstrapTable('hideColumn', 'hide_password');
+            teacher_table.bootstrapTable('hideColumn', 'hide_phone');
+            set_a_table(teacher_table, remove_teacher_button, '教师');
         }
 
         $(function() {
             init_teacher_table();
-            load_teacher();
             $('#locale').change(init_teacher_table);
         })
     </script>
@@ -154,7 +140,7 @@
 
             var new_row = null;
 
-            if(index == 0){
+            if(index === 0){
                 new_row = {
                     "id": index,
                     "department": {% if departments %}{{ departments.0.id }}{% else %}""{% endif %},
@@ -186,15 +172,12 @@
     <!--保存修改或增加教师信息后的表格 事件 开始 -->
     <script>
         $('#save_teacher_button').click(function () {
-            var teachers = teacher_table.bootstrapTable('getData');
-
+            var teacher_table_data = teacher_table.bootstrapTable('getData');
             var pass = true;
 
             $('.not_null').remove();	 // 清除掉以前的错误信息
 
-            $.each(teachers, function (index, value) {
-                console.log(index, value);
-
+            $.each(teacher_table_data, function (index, value) {
                 if(value['department'] === empty_text || value['department'] == ""){
                     pass = false;
                     add_tip('teacher_table', index, 2)
@@ -216,7 +199,60 @@
                 }
             });
             if(pass){
-                save_ajax(from_url, 'teachers', teachers, '{{ school.id }}')
+                var put_data = [];
+                var post_data = [];
+                for(var i = 0; i < teacher_table_data.length; i++){
+                    console.log('教师', '-通过数据行是否有数据库id来作为新旧数据的依据， 序号：', i, '行的数据库id：', teacher_table_data[i]['id_in_database']);
+
+                    if(teacher_table_data[i]['id_in_database']){
+                        // 数据有修改才需要提交
+                        var temp = {'id': teacher_table_data[i]['id_in_database'],};
+                        var change = false;
+                        if(teacher_table_data[i]['hide_department_id'] !== teacher_table_data[i]['department']){
+                            temp['department_id'] = teacher_table_data[i]['department'];
+                            change = true;
+                        }
+                        if(teacher_table_data[i]['hide_teacher_name'] !== teacher_table_data[i]['teacher_name']){
+                            temp['name'] = teacher_table_data[i]['teacher_name'];
+                            change = true;
+                        }
+                        if(teacher_table_data[i]['hide_account'] !== teacher_table_data[i]['account']){
+                            temp['account'] = teacher_table_data[i]['account'];
+                            change = true;
+                        }
+                        if(teacher_table_data[i]['hide_password'] !== teacher_table_data[i]['password']){
+                            temp['password'] = teacher_table_data[i]['password'];
+                            change = true;
+                        }
+                        if(teacher_table_data[i]['hide_phone'] !== teacher_table_data[i]['phone']){
+                            temp['phone'] = teacher_table_data[i]['phone'];
+                            change = true;
+                        }
+                        if(change) {
+                            put_data.push(temp)
+                        }
+                    }else{
+                        var temp = {};
+                        temp['department_id'] = teacher_table_data[i]['department'];
+                        temp['name'] = teacher_table_data[i]['teacher_name'];
+                        temp['account'] = teacher_table_data[i]['account'];
+                        temp['password'] = teacher_table_data[i]['password'];
+                        temp['phone'] = teacher_table_data[i]['phone'];
+                        post_data.push(temp)
+                    }
+                }
+                if(put_data.length > 0){
+                    console.log('教师', '-存在修改数据：', put_data);
+                    common_ajax(teacher_url, 'PUT', put_data);
+                }
+                if(post_data.length > 0){
+                    console.log('教师', '-存在新增数据：', post_data);
+                    common_ajax(teacher_url, 'POST', post_data);
+                }
+                if(delete_ids_in_database.length > 0){
+                    console.log('教师', '-删除的ids：', delete_ids_in_database);
+                    common_ajax(teacher_url, 'DELETE', delete_ids_in_database);
+                }
             }
         })
     </script>

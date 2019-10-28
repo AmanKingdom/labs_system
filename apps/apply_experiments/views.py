@@ -5,7 +5,7 @@ from django.shortcuts import render
 from apps.manage.models import Course, Classes, Institute, Lab, LabsAttribute, \
     TotalRequirements, ExperimentType, Experiment, SpecialRequirements, CourseBlock
 
-from apps.manage.views import get_all_labs, set_user_for_context, STATUS
+from apps.manage.views import STATUS
 
 from apps.manage.views import this_logger
 from manage.tools.setting_tool import set_time_for_context
@@ -54,7 +54,6 @@ def apply(request):
         'labs_attribute': None,
         'all_labs': None,
     }
-    user = set_user_for_context(request.session['user_account'], context)
 
     # if user == 'superuser_is_teacher' or user == 'teacher':
     temp_courses = Course.objects.filter(teachers=context['teacher'])
@@ -213,8 +212,6 @@ def manage_application(request):
 
         'courses': [],
     }
-    user = set_user_for_context(request.session['user_account'], context)
-    # if user == 'superuser_is_teacher' or user == 'teacher':
     try:
         courses_of_the_user = Course.objects.filter(teachers__account__contains=context['teacher'].account)
         this_logger.info('获取到课程：' + str(courses_of_the_user))
@@ -288,8 +285,6 @@ def change_experiments(request, course_id=None):
         'all_labs': None,
     }
 
-    user = set_user_for_context(request.session['user_account'], context)
-    # if user == 'superuser_is_teacher' or user == 'teacher':
     course = Course.objects.filter(id=course_id)
 
     # 这里这样做的原因是防止恶意用户修改js提交错误的 course_id ，我这样值得吗？
@@ -389,7 +384,6 @@ def weeks_analyze(request):
         'labs': None,
     }
 
-    set_user_for_context(request.session['user_account'], context)
 
     if context['superuser']:
         if context['superuser'].school:
@@ -399,7 +393,7 @@ def weeks_analyze(request):
             context['school'] = context['teacher'].department.institute.school_area.school
 
     # 实验室数据用来前端生成表头
-    context['labs'] = get_all_labs(context['school'])
+    # context['labs'] = get_all_labs(context['school'])
 
     return render(request, 'apply_experiments/weeks_analyze.html', context)
 
@@ -413,6 +407,5 @@ def rooms_analyze(request):
         'teacher': None,
     }
 
-    set_user_for_context(request.session['user_account'], context)
 
     return render(request, 'apply_experiments/rooms_analyze.html', context)

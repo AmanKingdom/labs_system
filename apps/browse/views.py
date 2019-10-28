@@ -1,104 +1,67 @@
-from django.http import HttpResponseRedirect, Http404, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.views import View
-from django.views.decorators.csrf import csrf_exempt
 
 from apps.browse.models import Assistant
-from apps.manage.models import Teacher, SuperUser, School
+from apps.manage.models import Teacher, SuperUser
 from browse.forms import LoginForm
 
-from manage.views import create_default_term_for_school
+from manage.views import require_login
 
 from apps.manage.views import this_logger
 
 
-# 基础视图，检查登录
-def require_login(view):
-    def new_view(request, *args, **kwargs):
-        if 'user_account' in request.session and 'user_type' in request.session:
-            if not request.session['user_account'] or not request.session['user_type']:
-                return HttpResponseRedirect('/browse/login')
-            else:
-                return view(request, *args, **kwargs)
-        else:
-            return HttpResponseRedirect('/browse/login')
-    return new_view
-
-
+@require_login
 def homepage(request):
-    if request.session['user_type'] == 'assistant':
-        return HttpResponseRedirect('/browse/assistant_view')
-    elif request.session['user_type'] == 'teacher':
-        return HttpResponseRedirect('/apply_experiments/apply')
-    elif request.session['user_type'] == 'superuser':
-        return HttpResponseRedirect('/manage/school_manage')
-    else:
-        return HttpResponseRedirect('/browse/login')
+    this_logger.debug('主页获取用户类型：' + request.session['user_type'])
+    if request.session.get('user_type', None):
+        if request.session['user_type'] == 'assistant':
+            return HttpResponseRedirect('/browse/assistant_view')
+        elif request.session['user_type'] == 'teacher':
+            return HttpResponseRedirect('/apply_experiments/apply')
+        elif request.session['user_type'] == 'superuser':
+            return HttpResponseRedirect('/manage/school_manage')
+    return HttpResponseRedirect('/browse/login')
 
 
-@csrf_exempt
-def register(request):
+# 只能是管理员注册，教师和学生不需要注册
+class RegisterView(View):
     context = {
         'title': '注册',
         'status': True,
         'message': None,
     }
-    if request.is_ajax():
+
+    def get(self, request):
+        return render(request, 'browse/register.html', self.context)
+
+    def post(self, request):
         name = request.POST.get('name', None)
         if name:
             account = request.POST.get('account', None)
             if account.startswith('1') and len(account) == 11:
                 if SuperUser.objects.filter(account=account):
-                    context['status'] = False
-                    context['message'] = '该手机账号已被人注册'
+                    self.context['status'] = False
+                    self.context['message'] = '该手机账号已被人注册'
                 else:
                     password = request.POST.get('password', None)
                     if len(password) >= 6:
                         superuser = SuperUser.objects.create(name=name, account=account, password=password)
                         request.session['user_account'] = superuser.account
                         request.session['user_type'] = 'superuser'
-                        this_logger.info(superuser.name + '超级管理员注册并直接登录')
+                        request.session['user_id'] = superuser.id
+                        request.session['user_name'] = superuser.name
+                        this_logger.info(superuser.name + '超级管理员注册成功')
                     else:
-                        context['status'] = False
-                        context['message'] = '密码太短了'
+                        self.context['status'] = False
+                        self.context['message'] = '密码太短了'
             else:
-                context['status'] = False
-                context['message'] = '请输入正确的手机号码'
+                self.context['status'] = False
+                self.context['message'] = '请输入正确的手机号码'
         else:
-            context['status'] = False
-            context['message'] = '请输入昵称'
-    else:
-        return render(request, 'browse/register.html', context)
-    return JsonResponse(context)
-
-
-@csrf_exempt
-def set_school(request):
-    context = {
-        'title': '设置学校',
-        'status': True,
-        'message': None,
-    }
-    if request.is_ajax():
-        school_name = request.POST.get('school_name', None)
-        if school_name:
-            if School.objects.filter(name=school_name):
-                this_logger.info('已存在学校：' + school_name)
-                context['status'] = False
-                context['message'] = '该学校名称已经被人注册'
-            else:
-                school = School.objects.create(name=school_name)
-                superuser = SuperUser.objects.get(account=request.session['user_account'])
-                superuser.school = school
-                superuser.save()
-                # 创建一个学校的同时应该创建一个默认的学年学期给它
-                create_default_term_for_school(school)
-        else:
-            context['status'] = False
-            context['message'] = '请输入学校名称'
-        return JsonResponse(context)
-    else:
-        return render(request, 'browse/set_school.html', context)
+            self.context['status'] = False
+            self.context['message'] = '请输入昵称'
+        return JsonResponse(self.context)
 
 
 class LoginView(View):
@@ -110,90 +73,67 @@ class LoginView(View):
     def post(self, request):
         login_form = LoginForm(request.POST)
         if login_form.is_valid():
+            def set_user_info_to_session(request, user_account, user_type, user_name, user_id):
+                request.session['user_account'] = user_account
+                request.session['user_type'] = user_type
+                request.session['user_name'] = user_name
+                request.session['user_id'] = user_id
             try:
                 superuser = SuperUser.objects.get(**login_form.cleaned_data)
-                if superuser:
-                    this_logger.info(superuser.name + '超级管理员登录成功')
-                    request.session['user_account'] = superuser.account
-                    request.session['user_type'] = 'superuser'
+                this_logger.info(superuser.name + '超级管理员登录成功')
+                set_user_info_to_session(request, superuser.account, 'superuser', superuser.name, superuser.id)
+                # request.session['user_account'] = superuser.account
+                # request.session['user_type'] = 'superuser'
+                # request.session['user_name'] = superuser.name
+                # request.session['user_id'] = superuser.id
+                if superuser.school:
+                    request.session['school_id'] = superuser.school_id
 
-                    request.session['user_id'] = superuser.id
-                    if superuser.school:
-                        request.session['school_id'] = superuser.school_id
-
-                    return HttpResponseRedirect('/manage/school_manage')
-            except:
+                return HttpResponseRedirect('/manage/school_manage')
+            except SuperUser.DoesNotExist:
                 try:
                     teacher = Teacher.objects.get(**login_form.cleaned_data)
-                    if teacher:
-                        this_logger.info(teacher.name + '教师登录成功')
-                        request.session['user_account'] = teacher.account
-                        request.session['user_type'] = 'teacher'
+                    this_logger.info(teacher.name + '教师登录成功')
+                    set_user_info_to_session(request, teacher.account, 'superuser', teacher.name, teacher.id)
 
-                        request.session['user_id'] = teacher.id
+                    # request.session['user_account'] = teacher.account
+                    # request.session['user_type'] = 'teacher'
+                    # request.session['user_name'] = teacher.name
+                    # request.session['user_id'] = teacher.id
 
-                        return HttpResponseRedirect('/apply_experiments/apply')
-                except:
+                    # 教师所属的学校id由将来在前端登录时选择学校后传入
+
+                    return HttpResponseRedirect('/apply_experiments/apply')
+                except Teacher.DoesNotExist:
                     try:
                         assistant = Assistant.objects.get(**login_form.cleaned_data)
-                        if assistant:
-                            this_logger.info(assistant.name + '助理登录成功')
-                            request.session['user_account'] = assistant.account
-                            request.session['user_type'] = 'assistant'
+                        this_logger.info(assistant.name + '助理登录成功')
+                        set_user_info_to_session(request, assistant.account, 'superuser', assistant.name, assistant.id)
 
-                            request.session['user_id'] = assistant.id
+                        # request.session['user_account'] = assistant.account
+                        # request.session['user_type'] = 'assistant'
+                        # request.session['user_name'] = assistant.name
+                        # request.session['user_id'] = assistant.id
 
-                            return HttpResponseRedirect('/browse/assistant_view')
-                    except:
+                        # 助理所属的学校id由将来在前端登录时选择学校后传入
+
+                        return HttpResponseRedirect('/browse/assistant_view')
+                    except Assistant.DoesNotExist:
                         this_logger.info('登录失败')
 
-            self.context['message'] = '登录失败，请检查账号或重新输入密码，助理忘记密码请向老师申请找回。'
+            self.context['message'] = '登录失败，请检查账号或重新输入密码'
         return render(request, 'browse/login.html', self.context)
 
 
-@csrf_exempt
-def login(request):
-    context = {'title': '登录', 'message': None}
-
-    if request.method == 'POST':
-        # 建议用get()获取，不要用['xxx']获取
-        account = request.POST.get('account')
-        password = request.POST.get('password')
-        try:
-            superuser = SuperUser.objects.get(account=account, password=password)
-            if superuser:
-                this_logger.info(superuser.name + '超级管理员登录成功')
-                request.session['user_account'] = superuser.account
-                request.session['user_type'] = 'superuser'
-                return HttpResponseRedirect('/manage/school_manage')
-        except:
-            try:
-                teacher = Teacher.objects.get(account=account, password=password)
-                if teacher:
-                    this_logger.info(teacher.name + '教师登录成功')
-                    request.session['user_account'] = teacher.account
-                    request.session['user_type'] = 'teacher'
-                    return HttpResponseRedirect('/apply_experiments/apply')
-            except:
-                try:
-                    assistant = Assistant.objects.get(account=account, password=password)
-                    if assistant:
-                        this_logger.info(assistant.name + '助理登录成功')
-                        request.session['user_account'] = assistant.account
-                        request.session['user_type'] = 'assistant'
-                        return HttpResponseRedirect('/browse/assistant_view')
-                except:
-                    this_logger.info('登录失败')
-
-        context['message'] = '登录失败，请检查账号或重新输入密码，助理忘记密码请向老师申请找回。'
-    return render(request, 'browse/login.html', context)
-
-
+@require_login
 def assistant_view(request):
     return render(request, 'browse/assistant_view.html')
 
 
 def logout(request):
-    request.session['user_account'] = None
-    request.session['user_type'] = None
+    del request.session['user_account']
+    del request.session['user_type']
+    del request.session['user_name']
+    del request.session['user_id']
+    del request.session['school_id']
     return HttpResponseRedirect('/browse/login')

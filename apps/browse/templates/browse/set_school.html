@@ -31,10 +31,11 @@
             $.ajax({
                 cache:true,//保留缓存数据
                 type:"POST",
-                url:"{% url 'browse:set_school' %}",
+                url:"{% url 'manage:set_school' %}",
                 data:$('#set_school_form').serialize(),
                 dataType:'JSON',
                 async:false, //异步为真，ajax提交的过程中，同时可以做其他的操作
+                headers:{'X-CSRFToken':'{{ csrf_token }}'},
                 error:function(request){
                     console.log("无法提交", request);
                 },

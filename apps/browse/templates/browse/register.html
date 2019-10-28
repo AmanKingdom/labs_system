@@ -51,16 +51,14 @@
                 dataType:'JSON',
                 async:false, //异步为真，ajax提交的过程中，同时可以做其他的操作
                 error:function(request){
-                    console.log("无法提交", request);
+                    console.log("注册出错?", request);
+                    alert('不好意思哈，出了点小问题，请重新提交一下');
                 },
                 success:function(data){
-                    console.log("已提交");
                     if(data.status){
-                        console.log('注册成功！');
-                        window.location.href="{% url 'browse:set_school' %}"
+                        window.location.href="{% url 'manage:set_school' %}"
                     }
                     else{
-                        console.log('注册信息有问题：'+data.message);
                         $('#tip').html(data.message);
                     }
                 }

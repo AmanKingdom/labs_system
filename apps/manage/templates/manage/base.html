@@ -1,4 +1,4 @@
-<!--super_manage/base.html-->
+<!--manage/base.html-->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -9,7 +9,7 @@
 
     <link rel="icon" href="/static/image/default/logo.svg">
 
-    <title>{% if title %}{{ title }}{% else %}实验室管理系统{% endif %}</title>
+    <title>{% if title %}{{ title }}{% else %}实验室与实验课程管理系统{% endif %}</title>
 
     <link href="/static/css_js/css/bootstrap.min.css" rel="stylesheet">
 
@@ -69,20 +69,16 @@
                             <span class="clear">
                                 <span class="block m-t-xs">
                                     <strong class="font-bold">
-                                        {% if superuser %}
-                                            {{ superuser.name }}
-                                        {% endif %} &nbsp
-                                        {% if teacher %}
-                                            {{ teacher.name }}
-                                        {% endif%}
+                                        {{ request.session.user_name }}
                                     </strong>
                                 </span>
                                 <span class="text-muted text-xs block">
-                                    {% if superuser %}
+                                    {% if request.session.user_type == 'superuser' %}
                                         超级管理员
-                                    {% endif %} &nbsp
-                                    {% if teacher %}
+                                    {% elif request.session.user_type == 'teacher' %}
                                         教师
+                                    {% elif request.session.user_type == 'assistant' %}
+                                        助理
                                     {% endif %}
                                     <b class="caret"></b>
                                 </span>
@@ -93,7 +89,7 @@
                         </ul>
                     </div>
                     <div class="logo-element">
-                        <img alt="image" class="img-circle" src="/static/image/default/head.svg" style="width: 40px"/>
+                        <img alt="image" class="img-circle" src="/static/image/default/dog.jpg" style="width: 40px"/>
                     </div>
                 </li>
 
@@ -102,16 +98,14 @@
                         <i class="fa fa-user-circle-o"></i><span class="nav-label">个人信息</span>
                     </a>
                 </li>
-                {% if superuser %}
+
+                <!--管理员所使用的导航块-->
+                {% if request.session.user_type == 'superuser' %}
                     <li {% if system_settings_active %}class="active"{% endif %}>
                         <a href="{% url 'manage:system_settings' %}">
                             <i class="fa fa-cog"></i><span class="nav-label">系统设置</span>
                         </a>
                     </li>
-                {% endif %}
-
-                <!--超级管理员所使用的导航块-->
-                {% if superuser %}
                     <li {% if active_1 %}class="active"{% endif %}>
                         <a href="#"><i class="fa fa-bank"></i> <span class="nav-label">教学信息管理</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
@@ -145,7 +139,6 @@
                         <li {% if apply_info_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:manage_application' %}">申请信息管理</a></li>
                     </ul>
                 </li>
-
                 <li {% if active_5 %}class="active"{% endif %}>
                     <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">统计分析</span><span class="fa arrow"></span></a>
                     <ul class="nav nav-second-level collapse">
@@ -353,7 +346,7 @@
 <!--通用的设置表信息和动态事件方法-->
 <script>
     // 此处的model传入字符串，用于标识对象是什么类型的模型
-    function set_a_table(from_url, table, remove_button, model){
+    function set_a_table(table, remove_button, model_name){
         function get_id_selections(table) {
             return $.map(table.bootstrapTable('getSelections'), function (row) {
                 return row.id
@@ -385,44 +378,86 @@
         remove_button.click(function () {
             var ids = get_id_selections(table);
             var ids_in_database = get_id_in_database_selections(table);
-            var model_name = "";
-            if(model == 'school_areas'){
-                model_name = '校区'
-            }else if(model == 'institutes'){
-                model_name = '学院'
-            }else if(model == 'departments'){
-                model_name = '系别'
-            }else if(model == 'grades'){
-                model_name = '年级'
-            }else if(model == 'classes'){
-                model_name = '班级'
-            }else if(model == 'teachers'){
-                model_name = '教师'
-            }else if(model == 'courses'){
-                model_name = '课程'
-            }
-
-            var remove_flag = confirm('您正在删除'+model_name+ids+'，将会连同该'+model_name+'下的所有子关联表都删除（如果有的话），确定删除吗？');
+            var remove_flag = confirm('您正在删除'+model_name+ids+'，将会连同该'+model_name+'下的所有子关联表信息都删除（如果有的话），确定删除吗？');
 
             if(remove_flag) {
-                /*var remove_json = {
-                    "remove_objects_model": model,
-                    "remove_ids": ids_in_database,
-                };
-
-                remove_ajax(from_url, remove_json);*/
-
                 table.bootstrapTable('remove', {
                     field: 'id',
                     values: ids
                 });
                 delete_ids_in_database = ids_in_database;
                 remove_button.prop('disabled', true)
-
             }else{
                 alert('我就知道你不想删除她的')
             }
         })
+    }
+</script>
+
+
+<!--最新的通用方法-->
+<script>
+    function common_ajax(url, submit_type, data) {
+        $.ajax({
+            url: url,
+            type: submit_type,
+            data: JSON.stringify(data),
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            success: function (return_data) {
+                if(return_data.status){
+                    window.location.reload();
+                }else{
+                    alert(return_data.message);
+                }
+            }
+        })
+    }
+
+    function common_create_put_post_data(table_data, tag, foreign_model_name, hide_foreign_model_id_name, model_field_name, hide_model_field_name, submit_url) {
+        // 通过rag传入表格信息类别标记（比如：学院、系别）
+        // 新增的数据和原来修改的数据要分别通过post和put方式提交
+        var put_data = [];
+        var post_data = [];
+
+        var foreign_model_name_id_name = foreign_model_name + '_id';
+
+        for(var i = 0; i < table_data.length; i++){
+            console.log(tag, '-通过数据行是否有数据库id来作为新旧数据的依据， 序号：', i, '行的数据库id：', table_data[i]['id_in_database']);
+
+            if(table_data[i]['id_in_database']){
+                // 数据有修改才需要提交
+                var temp = {'id': table_data[i]['id_in_database'],};
+                var change = false;
+                if(table_data[i][hide_model_field_name] !== table_data[i][model_field_name]){
+                    temp['name'] = table_data[i][model_field_name];
+                    change = true;
+                }
+                if(table_data[i][hide_foreign_model_id_name] !== table_data[i][foreign_model_name]){
+                    temp[foreign_model_name_id_name] = table_data[i][foreign_model_name];
+                    change = true;
+                }
+                if(change) {
+                    put_data.push(temp)
+                }
+            }else{
+                var temp = {};
+                temp[foreign_model_name_id_name] = table_data[i][foreign_model_name];
+                temp['name'] = table_data[i][model_field_name];
+                post_data.push(temp)
+            }
+        }
+        if(put_data.length > 0){
+            console.log(tag, '-存在修改数据：', put_data);
+            common_ajax(submit_url, 'PUT', put_data);
+        }
+        if(post_data.length > 0){
+            console.log(tag, '-存在新增数据：', post_data);
+            common_ajax(submit_url, 'POST', post_data);
+        }
+        if(delete_ids_in_database.length > 0){
+            console.log(tag, '-删除的ids：', delete_ids_in_database);
+            common_ajax(submit_url, 'DELETE', delete_ids_in_database);
+        }
     }
 </script>
 

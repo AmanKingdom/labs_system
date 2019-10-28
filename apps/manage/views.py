@@ -1,16 +1,17 @@
 import json
-import apps.manage.models as models
 from datetime import datetime
+from functools import wraps
 
-from django.http import JsonResponse, HttpResponseRedirect, QueryDict
+from django.http import JsonResponse, HttpResponseRedirect, QueryDict, Http404, HttpResponse
 from django.shortcuts import render
+from django.utils.decorators import method_decorator
 from django.views import View
 
 from apps.manage.models import School, SchoolArea, Institute, Department, Grade, SuperUser, Classes, Teacher, \
     SchoolYear, Term, Course, LabsAttribute, Lab, Experiment, ExperimentType, CourseBlock, ArrangeSettings
 
 from logging_setting import ThisLogger
-from manage.tools.setting_tool import set_time_for_context
+from manage.tools.setting_tool import set_time_for_context, set_system_school_year
 from manage.tools.string_tool import list_to_str, str_to_set, get_labs_id_str, non_repetitive_strlist
 
 this_logger = ThisLogger().logger
@@ -26,44 +27,15 @@ COLOR_DIVS = ['color1_div','color2_div','color3_div','color4_div','color5_div','
               'color7_div','color8_div','color9_div','color10_div','color11_div','color12_div','color13_div']
 
 
-# 设置本系统的唯一学年，当当前月份为8月份时，如果有超级管理员登录本系统，即可更新数据库的学年表的唯一一条学年数据
-def set_system_school_year():
-    year_now = datetime.now().year
-    school_year = SchoolYear.objects.all()
-    if school_year:
-        school_year = school_year[0]
-        # 如果是一年中的八月份之后，则学年的起始年份为当前年份，否则学年的结束年份为当前年份
-        # 而是否需要对数据库进行修改，则根据这条学年数据是否符合以上所述情况
-        if 7 < datetime.now().month:
-            if school_year.since != year_now:
-                # 学年的起始年份不是当前年份，需要更新
-                SchoolYear.objects.filter(id=school_year.id).update(since=year_now, to=year_now + 1)
-        else:
-            if school_year.to != year_now:
-                # 学年的结束年份不是当前年份，需要更新
-                SchoolYear.objects.filter(id=school_year.id).update(since=year_now - 1, to=year_now)
-    else:
-        SchoolYear.objects.create(since=year_now, to=year_now + 1)
-
-
-def set_user_for_context(user_account, context):
-    context['superuser'] = SuperUser.objects.filter(account=user_account)
-    if context['superuser']:
-        context['superuser'] = context['superuser'][0]
-        context['teacher'] = context['superuser'].is_teacher
-        if context['superuser'].school:
-            context['school'] = context['superuser'].school
-        if context['teacher']:
-            return 'superuser_is_teacher'
-        else:
-            return 'superuser'
-    else:
-        context['teacher'] = Teacher.objects.filter(account=user_account)
-        if context['teacher']:
-            context['teacher'] = context['teacher'][0]
-            return 'teacher'
-        else:
-            return None
+# 验证登录视图
+def require_login(view):
+    @wraps(view)
+    def new_view(request, *args, **kwargs):
+        if request.session.get('user_account', None):
+            this_logger.debug('验证登录视图：' + request.session['user_name'] + ' 用户已登录')
+            return view(request, *args, **kwargs)
+        return HttpResponseRedirect('/browse/login')
+    return new_view
 
 
 # 本方法应该在每次创建一个新学校时被调用
@@ -78,114 +50,311 @@ def create_default_term_for_school(school):
     return True
 
 
-def get_all_school_areas(school):
-    if school:
-        return school.school_areas.all()
+# 该视图应该在注册时设置学校 和 跳过设置学校后在院校设置页面 被使用
+@method_decorator(require_login, name='put')
+class SetSchoolView(View):
+    context = {
+        'title': '设置学校',
+        'status': True,
+        'message': None,
+    }
+
+    def get(self, request):
+        return render(request, 'browse/set_school.html', self.context)
+
+    def post(self, request):    # 创建学校
+        school_name = request.POST.get('school_name', None)
+        if school_name:
+            if School.objects.filter(name=school_name):
+                this_logger.debug('已存在学校：' + school_name)
+                return JsonResponse({'status': False, 'message': '该学校名称已经被人注册'})
+            else:
+                school = School.objects.create(name=school_name)
+                try:
+                    superuser = SuperUser.objects.get(account=request.session.get('user_account', None))
+                    superuser.school = school
+                    superuser.save()
+                    request.session['school_id'] = superuser.school_id
+                    # 创建一个学校的同时应该创建一个默认的学期给它
+                    create_default_term_for_school(school)
+                    return JsonResponse({'status': True})
+                except SuperUser.DoesNotExist:
+                    # 如果是用户恶意设置信息使得找不到管理员信息，那么刚注册的学校也应该删掉
+                    school.delete()
+                    raise Http404('管理员信息找不到，请重试')
+        else:
+            return JsonResponse({'status': False, 'message': '请输入学校名称'})
+
+    def put(self, request):  # 修改学校信息
+        put_data = QueryDict(request.body)
+        this_logger.debug('设置学校视图：接收到put_data：' + str(put_data))
+        put_data = json.loads(list(put_data.keys())[0])
+
+        if School.objects.filter(name=put_data['school_name']):
+            this_logger.debug('已存在学校：' + put_data['school_name'])
+            return JsonResponse({'status': False, 'message': '该学校名称已经被人注册'})
+        else:
+            try:
+                school = School.objects.get(id=request.session['school_id'])
+                school.name = put_data['school_name']
+                school.save()
+                return JsonResponse({'status': True})
+            except Exception as e:
+                print(e)
+                return JsonResponse({'status': False, 'message': '出错了，请重试'})
 
 
-def get_all_institutes(school):
-    institutes = []
-    school_areas = get_all_school_areas(school)
-    if school_areas:
-        for school_area in school_areas:
-            if school_area:
-                temp_institutes = school_area.institutes.all()
-                for institute in temp_institutes:
-                    if institute:
-                        institutes.append(institute)
-    return institutes
+@method_decorator(require_login, name='dispatch')
+class SystemSettingsView(View):
+    context = {
+        'title': '系统设置',
+        'system_settings_active': True,  # 激活导航
+
+        'school_year': None,
+        'term': None,
+    }
+
+    def get(self, request):
+        # 学年学期数据要在判断设置完系统学年信息后才能获取
+        self.context['school_year'] = SchoolYear.objects.all()[0]
+        if request.session.get('school_id', None):
+            self.context['term'] = Term.objects.get(school_id=request.session['school_id'])
+        return render(request, 'manage/system_settings.html', self.context)
+
+    def put(self, request):
+        put_data = QueryDict(request.body)
+        this_logger.debug('系统设置--接收到put数据：' + str(put_data))
+        put_data = json.loads(list(put_data.keys())[0])
+
+        try:
+            term_name = put_data.get('term_name', None)
+            begin_date = put_data.get('begin_date', None)
+            this_logger.debug('term_name:'+ term_name+ '，begin_date:' + begin_date)
+            self.context['term'].name = term_name
+            self.context['term'].begin_date = begin_date
+            self.context['term'].save()
+            return JsonResponse({'status': True})
+        except Exception as e:
+            print(e)
+            return JsonResponse({'status': False, 'message': '保存的信息有误'})
 
 
-def get_all_departments(school):
-    departments = []
-    institutes = get_all_institutes(school)
-    if institutes:
-        for institute in institutes:
-            if institute:
-                temp_departments = institute.departments.all()
-                for department in temp_departments:
-                    if department:
-                        departments.append(department)
-    return departments
+def test_school_areas_view(request):
+    request.session['school_id'] = 1
+    return render(request, 'manage/test_json_table.html')
 
 
-def get_all_grades(school):
-    grades = []
-    departments = get_all_departments(school)
-    if departments:
-        for department in departments:
-            if department:
-                temp_grades = department.grades.all()
-                for grade in temp_grades:
-                    if grade:
-                        grades.append(grade)
-    return grades
+class LittleSameModelBaseView(View):
+    # 以下是默认的参数
+    model_Chinese_name = '校区'
+    model = SchoolArea
+    get_all_what_func_name = 'get_all_school_areas'
+
+    # 通常，该方法被其他模型的视图使用时要重写
+    def make_return_data(self, objects):
+        return_data = []
+        for obj, i in zip(objects, range(0, len(objects))):
+            new_dict = {
+                'id': i,
+                'school_area_name': obj.name,
+                'hide_school_area_name': obj.name,
+                'id_in_database': obj.id
+            }
+            return_data.append(new_dict)
+        return return_data
+
+    def get(self, request, school_id):
+        return_data = []
+        if school_id:
+            try:
+                objects = getattr(School.objects.get(id=school_id), self.get_all_what_func_name)()
+                return_data = self.make_return_data(objects)
+            except Exception as e:
+                this_logger.debug(str(e))
+                raise Http404('找不到学校id为'+school_id+'的相关信息')
+        # 这里的content_type="application/json"其实可有可无
+        return HttpResponse(json.dumps(return_data), content_type="application/json")
+
+    def put(self, request, school_id):     # 修改信息
+        put_data = QueryDict(request.body)
+        put_data = json.loads(list(put_data.keys())[0])
+        this_logger.debug(self.model_Chinese_name + '信息--接收到put数据：' + str(put_data))
+
+        for data in put_data:
+            self.model.objects.filter(id=data['id']).update(**data)
+        return JsonResponse({'status': True})
+
+    def post(self, request, school_id):       # 创建信息
+        post_data = json.loads(list(request.POST.keys())[0])
+        this_logger.debug(self.model_Chinese_name + '信息--接收到post数据：' + str(post_data))
+
+        for data in post_data:
+            if self.model is SchoolArea:
+                self.model.objects.create(**data, school_id=school_id)
+            else:
+                self.model.objects.create(**data)
+        return JsonResponse({'status': True})
+
+    def delete(self, request, school_id):
+        delete_data = QueryDict(request.body)
+        delete_data = json.loads(list(delete_data.keys())[0])
+        this_logger.debug(self.model_Chinese_name + '信息--接收到delete数据：' + str(delete_data))
+
+        for id in delete_data:
+            self.model.objects.filter(id=id).delete()
+        return JsonResponse({'status': True})
 
 
-def get_all_classes(school):
-    classes = []
-    grades = get_all_grades(school)
-    if grades:
-        for grade in grades:
-            if grade:
-                temp_classes = grade.classes.all()
-                for classes_item in temp_classes:
-                    if classes_item:
-                        classes.append(classes_item)
-    return classes
+class SchoolAreasView(LittleSameModelBaseView):
+    model_Chinese_name = '校区'
+    model = SchoolArea
+    get_all_what_func_name = 'get_all_school_areas'
+
+    def make_return_data(self, objects):
+        return_data = []
+        for obj, i in zip(objects, range(0, len(objects))):
+            new_dict = {
+                'id': i,
+                'school_area_name': obj.name,
+                'hide_school_area_name': obj.name,
+                'id_in_database': obj.id
+            }
+            return_data.append(new_dict)
+        return return_data
 
 
-def get_all_teachers(school):
-    teachers = []
-    departments = get_all_departments(school)
-    if departments:
-        for department in departments:
-            if department:
-                temp_teachers = department.teachers.all()
-                for teacher in temp_teachers:
-                    if teacher:
-                        teachers.append(teacher)
-    return teachers
+class InstitutesView(LittleSameModelBaseView):
+    model_Chinese_name = '学院'
+    model = Institute
+    get_all_what_func_name = 'get_all_institutes'
+
+    def make_return_data(self, objects):
+        return_data = []
+        for obj, i in zip(objects, range(0, len(objects))):
+            new_dict = {
+                'id': i,
+                'school_area': obj.school_area_id,
+                'hide_school_area_id': obj.school_area_id,
+                'institute_name': obj.name,
+                'hide_institute_name': obj.name,
+                'id_in_database': obj.id
+            }
+            return_data.append(new_dict)
+        return return_data
 
 
-def get_all_courses(school):
-    courses = []
-    institutes = get_all_institutes(school)
-    if institutes:
-        for institute in institutes:
-            if institute:
-                temp_courses = institute.courses.all()
-                for course in temp_courses:
-                    if course:
-                        courses.append(course)
-    return courses
+class DepartmentsView(LittleSameModelBaseView):
+    model_Chinese_name = '系别'
+    model = Department
+    get_all_what_func_name = 'get_all_departments'
+
+    def make_return_data(self, objects):
+        return_data = []
+        for obj, i in zip(objects, range(0, len(objects))):
+            new_dict = {
+                'id': i,
+                'institute': obj.institute_id,
+                'hide_institute_id': obj.institute_id,
+                'department_name': obj.name,
+                'hide_department_name': obj.name,
+                'id_in_database': obj.id
+            }
+            return_data.append(new_dict)
+        return return_data
 
 
-def get_all_labs(school):
-    labs = []
-    institutes = get_all_institutes(school)
-    if institutes:
-        for institute in institutes:
-            if institute:
-                temp_labs = institute.labs.all()
-                for lab in temp_labs:
-                    if lab:
-                        labs.append(lab)
-    return labs
+class GradesView(LittleSameModelBaseView):
+    model_Chinese_name = '年级'
+    model = Grade
+    get_all_what_func_name = 'get_all_grades'
+
+    def make_return_data(self, objects):
+        return_data = []
+        for obj, i in zip(objects, range(0, len(objects))):
+            new_dict = {
+                'id': i,
+                'department': obj.department_id,
+                'hide_department_id': obj.department_id,
+                'grade_name': obj.name,
+                'hide_grade_name': obj.name,
+                'id_in_database': obj.id
+            }
+            return_data.append(new_dict)
+        return return_data
 
 
-def get_all_labs_dispark(school):
-    labs = []
-    institutes = get_all_institutes(school)
-    if institutes:
-        for institute in institutes:
-            if institute:
-                temp_labs = institute.labs.all()
-                for lab in temp_labs:
-                    if lab:
-                        if lab.dispark:
-                            labs.append(lab)
-    return labs
+class ClassesView(LittleSameModelBaseView):
+    model_Chinese_name = '班级'
+    model = Classes
+    get_all_what_func_name = 'get_all_classes'
+
+    def make_return_data(self, objects):
+        return_data = []
+        for obj, i in zip(objects, range(0, len(objects))):
+            new_dict = {
+                'id': i,
+                'grade': obj.grade_id,
+                'hide_grade_id': obj.grade_id,
+                'classes_name': obj.name,
+                'hide_classes_name': obj.name,
+                'id_in_database': obj.id
+            }
+            return_data.append(new_dict)
+        return return_data
+
+
+class TeachersView(LittleSameModelBaseView):
+    model_Chinese_name = '教师'
+    model = Teacher
+    get_all_what_func_name = 'get_all_teachers'
+
+    def make_return_data(self, objects):
+        return_data = []
+        for obj, i in zip(objects, range(0, len(objects))):
+            new_dict = {
+                'id': i,
+                'department': obj.department_id,
+                'hide_department_id': obj.department_id,
+                'teacher_name': obj.name,
+                'hide_teacher_name': obj.name,
+                'account': obj.account,
+                'hide_account': obj.account,
+                'password': obj.password,
+                'hide_password': obj.password,
+                'phone': obj.phone,
+                'hide_phone': obj.phone,
+                'id_in_database': obj.id
+            }
+            return_data.append(new_dict)
+        return return_data
+
+
+class CoursesView(LittleSameModelBaseView):
+    model_Chinese_name = '课程'
+    model = Course
+    get_all_what_func_name = 'get_all_courses'
+
+    def make_return_data(self, objects):
+        return_data = []
+        for obj, i in zip(objects, range(0, len(objects))):
+            new_dict = {
+                'id': i,
+                'department': obj.department_id,
+                'hide_department_id': obj.department_id,
+                'teacher_name': obj.name,
+                'hide_teacher_name': obj.name,
+                'account': obj.account,
+                'hide_account': obj.account,
+                'password': obj.password,
+                'hide_password': obj.password,
+                'phone': obj.phone,
+                'hide_phone': obj.phone,
+                'id_in_database': obj.id
+            }
+            return_data.append(new_dict)
+        return return_data
+
+
 
 
 # 个人主页
@@ -201,143 +370,89 @@ def personal_info(request):
         'term': None,
     }
 
-    user = set_user_for_context(request.session['user_account'], context)
-    if user == 'superuser_is_teacher' or user == 'teacher':
-        context['course_amount'] = len(Course.objects.filter(teachers__account=context['teacher'].account))
-        context['term'] = Term.objects.filter(school=context['superuser'].school)[0]
-
-    if context['superuser']:
-        school = context['superuser'].school
-        if school:
-            school_areas = school.school_areas.all()
-            if school_areas:
-                for school_area in school_areas:
-                    institutes = school_area.institutes.all()
-                    if institutes:
-                        for institute in institutes:
-                            departments = institute.departments.all()
-                            if departments:
-                                for department in departments:
-                                    context['departments'].append(department)
+    if request.session.get('school_id', None):
+        context['departments'] = School.objects.get(id=request.session['school_id']).get_all_departments()
 
     return render(request, 'manage/personal_info.html', context)
 
 
-def system_settings(request):
-    context = {
-        'title': '系统设置',
-        'system_settings_active': True,  # 激活导航
-        'superuser': None,
-        'teacher': None,
-        'school': None,
-
-        'school_year': None,
-        'term': None,
-        'term_begin_date': None,
-    }
-
-    set_user_for_context(request.session['user_account'], context)
-    if context['superuser'].school:
-        context['school'] = context['superuser'].school
-
-    # 学年学期数据要在判断设置完系统学年信息后才能获取
-    context['school_year'] = SchoolYear.objects.all()[0]
-
-    if context['school']:
-        context['term'] = Term.objects.filter(school=context['school'])[0]
-        context['term_begin_date'] = context['term'].begin_date
-
-    return render(request, 'manage/system_settings.html', context)
-
-
-def school_manage(request):
+@method_decorator(require_login, name='dispatch')
+class SchoolManageView(View):
     context = {
         'title': '学校管理',
         'active_1': True,  # 激活导航
         'school_active': True,  # 激活导航
-        'superuser': None,
-        'teacher': None,
 
         'school': None,
         'school_areas': None,
-        'institutes': [],
-        'departments': [],
-        'grades': [],
+        'institutes': None,
+        'departments': None,
+        'grades': None,
         'years': None,
     }
 
-    set_user_for_context(request.session['user_account'], context)
+    def get(self, request):
+        if request.session.get('school_id', None):
+            self.context['school'] = School.objects.get(id=request.session['school_id'])
 
-    if context['superuser']:
-        context['school'] = context['superuser'].school
+        # 每次管理员登录就自动更新一下数据库的学年信息
+        set_system_school_year()
 
-    # 放在这里的作用是使得每次管理员登录就自动更新一下数据库的学年信息
-    set_system_school_year()
+        if self.context['school']:
+            self.context['school_areas'] = self.context['school'].school_areas.all()
 
-    if context['school']:
-        context['school_areas'] = context['school'].school_areas.all()
+        if self.context['school_areas']:
+            self.context['institutes'] = self.context['school'].get_all_institutes()
 
-    if context['school_areas']:
-        for school_area in context['school_areas']:
-            for institute in school_area.institutes.all():
-                context['institutes'].append(institute)
+        if self.context['institutes']:
+            self.context['departments'] = self.context['school'].get_all_departments()
 
-    if context['institutes']:
-        for institute in context['institutes']:
-            for department in institute.departments.all():
-                context['departments'].append(department)
+        if self.context['departments']:
+            self.context['grades'] = self.context['school'].get_all_grades()
 
-    if context['departments']:
-        for department in context['departments']:
-            for grade in department.grades.all():
-                context['grades'].append(grade)
-
-    context['years'] = [x for x in range(datetime.now().year - 5, datetime.now().year + 5)]
-
-    return render(request, 'manage/school_manage.html', context)
+        # 用于年级选择的年份
+        self.context['years'] = [x for x in range(datetime.now().year - 5, datetime.now().year + 5)]
+        return render(request, 'manage/school_manage.html', self.context)
 
 
-def classes_manage(request):
+@method_decorator(require_login, name='dispatch')
+class ClassesManageView(View):
     context = {
         'title': '班级管理',
         'active_1': True,  # 激活导航
         'classes_active': True,  # 激活导航
-        'superuser': None,
-        'teacher': None,
 
-        'grades': [],
-        'classes': [],
+        'departments': None,
+        'grades': None,
         'classes_numbers': [x for x in range(1, 9)]
     }
 
-    set_user_for_context(request.session['user_account'], context)
+    def get(self, request):
+        if request.session.get('school_id', None):
+            self.context['school'] = School.objects.get(id=request.session['school_id'])
+            if self.context['school']:
+                    self.context['grades'] = self.context['school'].get_all_grades()
+        return render(request, 'manage/classes_manage.html', self.context)
 
-    school = context['superuser'].school
-    context['grades'] = get_all_grades(school)
-    context['classes'] = get_all_classes(school)
 
-    return render(request, 'manage/classes_manage.html', context)
-
-
-def teacher_manage(request):
+@method_decorator(require_login, name='dispatch')
+class TeacherManageView(View):
     context = {
         'title': '教师管理',
         'active_1': True,  # 激活导航
         'teacher_active': True,  # 激活导航
-        'superuser': None,
-        'teacher': None,
 
         'departments': [],
         'teachers': [],
     }
 
-    set_user_for_context(request.session['user_account'], context)
-
-    school = context['superuser'].school
-    context['departments'] = get_all_departments(school)
-    context['teachers'] = get_all_teachers(school)
-
-    return render(request, 'manage/teacher_manage.html', context)
+    def get(self, request):
+        self.context['school'] = School.objects.get(id=request.session['school_id'])
+        if self.context['school']:
+            self.context['departments'] = self.context['school'].get_all_departments()
+            if self.context['departments']:
+                self.context['teachers'] = self.context['school'].get_all_teachers()
+        return render(request, 'manage/teacher_manage.html', self.context)
 
 
 def course_manage(request):
@@ -355,33 +470,23 @@ def course_manage(request):
         'attributes': None,
     }
 
-    set_user_for_context(request.session['user_account'], context)
-
-    school = context['superuser'].school
-    context['institutes'] = get_all_institutes(school)
-    context['classes'] = get_all_classes(school)
-    context['teachers'] = get_all_teachers(school)
-    context['attributes'] = school.labs_attributes.all()
-
-    courses = get_all_courses(school)
-
-    for course in courses:
-        classes_of_the_course = course.classes.all()
-        classes_ids = ""
-        for classes_item in classes_of_the_course:
-            classes_ids = classes_ids + ',%d' % classes_item.id
-
-        teachers_of_the_course = course.teachers.all()
-        teachers_ids = ""
-        for teacher in teachers_of_the_course:
-            teachers_ids = teachers_ids + ',%d' % teacher.id
-
-        temp = {
-            'course': course,
-            'classes': classes_ids[1:],
-            'teachers': teachers_ids[1:],
-        }
-        context['courses'].append(temp)
+    # for course in courses:
+    #     classes_of_the_course = course.classes.all()
+    #     classes_ids = ""
+    #     for classes_item in classes_of_the_course:
+    #         classes_ids = classes_ids + ',%d' % classes_item.id
+    #
+    #     teachers_of_the_course = course.teachers.all()
+    #     teachers_ids = ""
+    #     for teacher in teachers_of_the_course:
+    #         teachers_ids = teachers_ids + ',%d' % teacher.id
+    #
+    #     temp = {
+    #         'course': course,
+    #         'classes': classes_ids[1:],
+    #         'teachers': teachers_ids[1:],
+    #     }
+    #     context['courses'].append(temp)
 
     return render(request, 'manage/course_manage.html', context)
 
@@ -396,8 +501,6 @@ def labs_attribute_manage(request):
 
         'labs_attributes': None,
     }
-
-    set_user_for_context(request.session['user_account'], context)
 
     if context['superuser'].school:
         context['labs_attributes'] = context['superuser'].school.labs_attributes.all()
@@ -415,8 +518,6 @@ def experiment_type_manage(request):
 
         'experiment_types': None,
     }
-
-    set_user_for_context(request.session['user_account'], context)
 
     if context['superuser'].school:
         context['experiment_types'] = context['superuser'].school.experiment_types.all()
@@ -437,14 +538,10 @@ def lab_manage(request):
         'labs_attributes': [],
     }
 
-    set_user_for_context(request.session['user_account'], context)
 
     school = context['superuser'].school
     if school:
         context['labs_attributes'] = school.labs_attributes.all()
-
-        context['institutes'] = get_all_institutes(school)
-        context['labs'] = get_all_labs(school)
 
     return render(request, 'manage/lab_manage.html', context)
 
@@ -460,48 +557,41 @@ def application_manage(request):
         'courses': [],
     }
 
-    set_user_for_context(request.session['user_account'], context)
-
-    all_courses = None
-    if context['superuser']:
-        if context['superuser'].school:
-            all_courses = get_all_courses(context['superuser'].school)
-
-    if all_courses:
-        i = 1
-        for course in all_courses:
-            experiments_of_the_course = Experiment.objects.filter(course=course)
-            if experiments_of_the_course:
-                experiments_amount = len(experiments_of_the_course)
-
-                classes_name = ""
-                for class_item in course.classes.all():
-                    classes_name = classes_name + '<br>' + class_item.grade.name + "级" + class_item.grade.department.name + str(
-                        class_item.name)
-
-                teaching_materials = ""
-                if course.total_requirements:
-                    teaching_materials = course.total_requirements.teaching_materials
-
-                # 或许不止一个老师上一门课
-                teachers = ""
-                for teacher in course.teachers.all():
-                    teachers = teachers + ',' + teacher.name
-
-                course_item = {
-                    "id": course.id,
-                    "no": i,
-                    "teachers": teachers[1:],
-                    "term": course.term if course.term else "",
-                    "course": course.name,
-                    "teaching_materials": teaching_materials,
-                    "experiments_amount": experiments_amount,
-                    "classes": classes_name[4:],
-                    "create_time": course.modify_time,
-                    "status": STATUS['%d' % experiments_of_the_course[0].status]
-                }
-                context['courses'].append(course_item)
-                i = i + 1
+    # if all_courses:
+    #     i = 1
+    #     for course in all_courses:
+    #         experiments_of_the_course = Experiment.objects.filter(course=course)
+    #         if experiments_of_the_course:
+    #             experiments_amount = len(experiments_of_the_course)
+    #
+    #             classes_name = ""
+    #             for class_item in course.classes.all():
+    #                 classes_name = classes_name + '<br>' + class_item.grade.name + "级" + class_item.grade.department.name + str(
+    #                     class_item.name)
+    #
+    #             teaching_materials = ""
+    #             if course.total_requirements:
+    #                 teaching_materials = course.total_requirements.teaching_materials
+    #
+    #             # 或许不止一个老师上一门课
+    #             teachers = ""
+    #             for teacher in course.teachers.all():
+    #                 teachers = teachers + ',' + teacher.name
+    #
+    #             course_item = {
+    #                 "id": course.id,
+    #                 "no": i,
+    #                 "teachers": teachers[1:],
+    #                 "term": course.term if course.term else "",
+    #                 "course": course.name,
+    #                 "teaching_materials": teaching_materials,
+    #                 "experiments_amount": experiments_amount,
+    #                 "classes": classes_name[4:],
+    #                 "create_time": course.modify_time,
+    #                 "status": STATUS['%d' % experiments_of_the_course[0].status]
+    #             }
+    #             context['courses'].append(course_item)
+    #             i = i + 1
 
     return render(request, 'manage/application_manage.html', context)
 
@@ -765,30 +855,6 @@ def make_ids(ids):
     if ids.startswith(','):
         ids = ids[1:]
     return ids.split(',')
-
-
-def save_term_ajax(request):
-    data = json.loads(list(request.POST.keys())[0])
-
-    context = {
-        'status': True,
-        'message': None,
-    }
-
-    if request.is_ajax():
-
-        try:
-            term_id = data['term_id']
-            term_name = data['term_name']
-            begin_date = data['begin_date']
-
-            Term.objects.filter(id=term_id).update(name=term_name, begin_date=begin_date)
-
-        except:
-            context['status'] = False
-            context['message'] = '修改失败，请重试'
-
-        return JsonResponse(context)
 
 
 def become_a_teacher(request):
@@ -1176,11 +1242,9 @@ class ArrangeView(View):
     }
 
     def get(self, request):
-        set_user_for_context(request.session['user_account'], self.context)
-
         set_time_for_context(self.context)
 
-        self.context['institutes'] = get_all_institutes(self.context['school'])
+        self.context['institutes'] = self.context['school'].get_all_institutes()
         self.context['attributes'] = LabsAttribute.objects.filter(school=self.context['school'])
 
         # 为用户记住最近编辑的学院，要百分百确保session中包含当前学院id

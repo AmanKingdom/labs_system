@@ -1,4 +1,4 @@
-<!--super_user/school_manage.html-->
+<!--manage/school_manage.html-->
 
 {% extends 'manage/base.html' %}
 
@@ -20,6 +20,7 @@
     </div>
 
     {% if school.name %}
+        <!--校区信息表-->
         <div class="row">
             <div class="col-md-12">
                 <br>
@@ -37,14 +38,15 @@
                         <table id="school_area_table"
                                class="table-responsive"
                                data-id-field="id"
-                               data-response-handler="responseHandler"
-                               data-click-to-select="true">
+                               data-click-to-select="true"
+                               data-url="{% url 'manage:school_areas' request.session.school_id %}">
                         </table>
                     </div>
                 </div>
             </div>
         </div>
         {% if school_areas %}
+            <!--学院信息表-->
             <div class="row">
                 <div class="col-md-12">
                     <br>
@@ -62,14 +64,15 @@
                             <table id="institute_table"
                                    class="table-responsive"
                                    data-id-field="id"
-                                   data-response-handler="responseHandler"
-                                   data-click-to-select="true">
+                                   data-click-to-select="true"
+                                   data-url="{% url 'manage:institutes' request.session.school_id %}">
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
             {% if institutes %}
+                <!--系别信息表-->
                 <div class="row">
                     <div class="col-md-12">
                         <br>
@@ -87,14 +90,15 @@
                                 <table id="department_table"
                                        class="table-responsive"
                                        data-id-field="id"
-                                       data-response-handler="responseHandler"
-                                       data-click-to-select="true">
+                                       data-click-to-select="true"
+                                       data-url="{% url 'manage:departments' request.session.school_id %}">
                                 </table>
                             </div>
                         </div>
                     </div>
                 </div>
                 {% if departments %}
+                    <!--年级信息表-->
                     <div class="row">
                         <div class="col-md-12">
                             <br>
@@ -112,13 +116,14 @@
                                     <table id="grade_table"
                                            class="table-responsive"
                                            data-id-field="id"
-                                           data-response-handler="responseHandler"
-                                           data-click-to-select="true">
+                                           data-click-to-select="true"
+                                           data-url="{% url 'manage:grades' request.session.school_id %}">
                                     </table>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                     <div class="pull-right" style="margin-right: 30px">
                         <a href="{% url 'manage:classes_manage' %}">
                             <button id="back" class="btn btn-primary" title="返回上一页">
@@ -153,10 +158,14 @@
 {% endblock %}
 
 {% block add_js_to_manage %}
-    <!--当前页面的全局设置-->
+    <!--全局性的参数或函数-->
     <script>
-        var from_url = "{% url 'manage:school_manage' %}";
+        var school_area_url = '{% url "manage:school_areas" request.session.school_id %}';
+        var institute_url = '{% url "manage:institutes" request.session.school_id %}';
+        var department_url = '{% url "manage:departments" request.session.school_id %}';
+        var grade_url = '{% url "manage:grades" request.session.school_id %}';
     </script>
+
 
     <!--学校信息设置相关  开始-->
     <script>
@@ -171,26 +180,36 @@
         // 提交学校信息
         function submit_school(){
             var school_name = $('#school_name').html();
-            console.log('提交学校名称school_name:', school_name);
-
+            console.log('提交学校信息：', school_name);
             if(school_name == empty_text){
                 alert('请输入学校名称')
             }else{
-                {% if school %}
+                var ajax_type = null;
+                {% if request.session.school_id %}
                     if(school_name != '{{ school.name }}'){
-                        console.log('修改了学校名称');
-                        create_or_modify_school('{{ school.name }}', school_name)
+                        console.log('修改学校名称：', school_name);
+                        ajax_type = 'PUT'
                     }
                 {% else %}
                     console.log('创建学校：', school_name);
-                    create_or_modify_school(school_name, school_name);
+                    ajax_type = 'POST';
                 {% endif %}
+                if(ajax_type){
+                    $.ajax({
+                        url: "{% url 'manage:set_school' %}",
+                        type: ajax_type,
+                        data: JSON.stringify({"school_name":school_name}),
+                        headers:{'X-CSRFToken':'{{ csrf_token }}'},
+                        success: function (return_data) {
+                            if(return_data.status){
+                                window.location.reload();
+                            }else{
+                                alert(return_data.message);
+                            }
+                        }
+                    });
+                }
             }
-        }
-        function create_or_modify_school(old_school_name, new_school_name) {
-            var to_url = "{% url 'manage:create_or_modify_school_ajax' %}";
-            var data = {"old_school_name":old_school_name, "new_school_name":new_school_name};
-            base_ajax(from_url, to_url, data);
         }
     </script>
     <!--学校信息设置相关  结束-->
@@ -201,12 +220,9 @@
     <script>
         var school_area_table = $('#school_area_table');
         var remove_school_area_button = $('#remove_school_area_button');
-        var selections = [];
 
         function init_school_area_table() {
-            console.log('init_school_area_table()执行');
             school_area_table.bootstrapTable('destroy').bootstrapTable({
-                locale: $('#locale').val(),
                 columns: [
                     [{
                         field: 'state',
@@ -220,37 +236,20 @@
                         editable:{
                             type:'text',
                         },
+                    }, {
+                        field: 'hide_school_area_name',
                     },{
-                        field:'id_in_database',
+                        field: 'id_in_database',
                     }]
                 ]
             });
-
-            set_a_table(from_url, school_area_table, remove_school_area_button, 'school_areas');
-        }
-
-        function load_school_area(){
-            console.log('load_school_area()执行');
-            var index = 0;
-            {% for school_area in school_areas %}
-                var new_row = {
-                    "id": index,
-                    "school_area_name": '{{ school_area.name }}',
-                    "id_in_database": '{{ school_area.id }}',
-                };
-                // 插入该行
-                school_area_table.bootstrapTable('insertRow', {
-                    index: index,
-                    row: new_row
-                });
-                index = index + 1;
-            {% empty %}
-            {% endfor %}
+            // 隐藏校区名称隐藏列
+            school_area_table.bootstrapTable('hideColumn', 'hide_school_area_name');
+            set_a_table(school_area_table, remove_school_area_button, '校区');
         }
 
         $(function() {
             init_school_area_table();
-            load_school_area();
             $('#locale').change(init_school_area_table);
         })
     </script>
@@ -278,22 +277,49 @@
     <!--保存 修改或增加校区信息 后的表格 事件 开始 -->
     <script>
         $('#save_school_area_button').click(function () {
-            var school_areas_origin = school_area_table.bootstrapTable('getData');
-
+            var school_areas_table_data = school_area_table.bootstrapTable('getData');
             var pass = true;
 
             $('.not_null').remove();	 // 清除掉以前的错误信息
 
-            $.each(school_areas_origin, function (index, value) {
-                console.log(index, value);
-
+            $.each(school_areas_table_data, function (index, value) {
                 if(value['school_area_name'] === empty_text || value['school_area_name'] == ""){
                     pass = false;
                     add_tip('school_area_table', index, 2)
                 }
             });
             if(pass){
-                save_ajax(from_url, 'school_areas', school_areas_origin, '{{ school.id }}');
+                // 新增的数据和原来修改的数据要分别通过post和put方式提交
+                var put_data = [];
+                var post_data = [];
+                for(var i = 0; i < school_areas_table_data.length; i++){
+                    console.log('通过数据行是否有数据库id来作为新旧数据的依据， 序号：', i, '行的数据库id：', school_areas_table_data[i]['id_in_database']);
+                    if(school_areas_table_data[i]['id_in_database']){
+                        // 数据有修改才需要提交
+                        if(school_areas_table_data[i]['hide_school_area_name'] !== school_areas_table_data[i]['school_area_name']){
+                            put_data.push({
+                                'id': school_areas_table_data[i]['id_in_database'],
+                                'name': school_areas_table_data[i]['school_area_name']
+                            })
+                        }
+                    }else{
+                        post_data.push({
+                            'name': school_areas_table_data[i]['school_area_name'],
+                        })
+                    }
+                }
+                if(put_data.length > 0){
+                    console.log('存在校区修改数据：', put_data);
+                    common_ajax(school_area_url, 'PUT', put_data);
+                }
+                if(post_data.length > 0){
+                    console.log('存在校区新增数据：', post_data);
+                    common_ajax(school_area_url, 'POST', post_data);
+                }
+            }
+            if(delete_ids_in_database.length > 0){
+                console.log('删除校区的ids：', delete_ids_in_database);
+                common_ajax(school_area_url, 'DELETE', delete_ids_in_database);
             }
         })
     </script>
@@ -306,12 +332,9 @@
     <script>
         var institute_table = $('#institute_table');
         var remove_institute_button = $('#remove_institute_button');
-        var selections = [];
 
         function init_institute_table() {
-            console.log('init_institute_table()执行');
             institute_table.bootstrapTable('destroy').bootstrapTable({
-                locale: $('#locale').val(),
                 columns: [
                     [{
                         field: 'state',
@@ -338,38 +361,23 @@
                         editable:{
                             type:'text',
                         },
+                    }, {
+                        field: 'hide_school_area_id',
+                    },{
+                        field: 'hide_institute_name',
                     },{
                         field:'id_in_database',
                     }]
                 ]
             });
-
-            set_a_table(from_url, institute_table, remove_institute_button, 'institutes');
-        }
-
-        function load_institute(){
-            console.log('load_institute()执行');
-            var index = 0;
-            {% for institute in institutes %}
-                var new_row = {
-                    "id": index,
-                    "school_area": '{{ institute.school_area.id }}',
-                    'institute_name': '{{ institute.name }}',
-                    "id_in_database": '{{ institute.id }}',
-                };
-                // 插入该行
-                institute_table.bootstrapTable('insertRow', {
-                    index: index,
-                    row: new_row
-                });
-                index = index + 1;
-            {% empty %}
-            {% endfor %}
+            // 隐藏校区id和学院名称隐藏列
+            institute_table.bootstrapTable('hideColumn', 'hide_school_area_id');
+            institute_table.bootstrapTable('hideColumn', 'hide_institute_name');
+            set_a_table(institute_table, remove_institute_button, '学院');
         }
 
         $(function() {
             init_institute_table();
-            load_institute();
             $('#locale').change(init_institute_table);
         })
     </script>
@@ -384,10 +392,10 @@
 
             var new_row = null;
 
-            if(index == 0){
+            if(index === 0){
                 new_row = {
                     "id": index,
-                    "school_area": {% if school_areas %}{{ school_areas.0.id }}{% else %}""{% endif %},
+                    "school_area": '{{ school_areas.0.id }}',
                     "institute_name": ""
                 };
             }else{
@@ -410,15 +418,12 @@
     <!--保存修改或增加学院信息后的表格 事件 开始 -->
     <script>
         $('#save_institute_button').click(function () {
-            var institutes = institute_table.bootstrapTable('getData');
-
+            var institutes_table_data = institute_table.bootstrapTable('getData');
             var pass = true;
 
             $('.not_null').remove();	 // 清除掉以前的错误信息
 
-            $.each(institutes, function (index, value) {
-                console.log(index, value);
-
+            $.each(institutes_table_data, function (index, value) {
                 if(value['school_area'] === empty_text || value['school_area'] == ""){
                     pass = false;
                     add_tip('institute_table', index, 2)
@@ -429,8 +434,8 @@
                     add_tip('institute_table', index, 3)
                 }
             });
-            if(pass){
-                save_ajax(from_url, 'institutes', institutes, '{{ school.id }}')
+            if(pass) {
+                common_create_put_post_data(institutes_table_data, '学院', 'school_area', 'hide_school_area_id', 'institute_name', 'hide_institute_name', institute_url);
             }
         })
     </script>
@@ -442,12 +447,9 @@
     <script>
         var department_table = $('#department_table');
         var remove_department_button = $('#remove_department_button');
-        var selections = [];
 
         function init_department_table() {
-            console.log('init_department_table()执行');
             department_table.bootstrapTable('destroy').bootstrapTable({
-                locale: $('#locale').val(),
                 columns: [
                     [{
                         field: 'state',
@@ -475,37 +477,22 @@
                             type:'text',
                         },
                     },{
+                        field: 'hide_institute_id',
+                    },{
+                        field: 'hide_department_name',
+                    },{
                         field:'id_in_database',
                     }]
                 ]
             });
-
-            set_a_table(from_url, department_table, remove_department_button, 'departments');
-        }
-
-        function load_department(){
-            console.log('load_department()执行');
-            var index = 0;
-            {% for department in departments %}
-                var new_row = {
-                    "id": index,
-                    'institute': '{{ department.institute.id }}',
-                    'department_name': '{{ department.name }}',
-                    "id_in_database": '{{ department.id }}',
-                };
-                // 插入该行
-                department_table.bootstrapTable('insertRow', {
-                    index: index,
-                    row: new_row
-                });
-                index = index + 1;
-            {% empty %}
-            {% endfor %}
+            // 隐藏学院id和系别名称隐藏列
+            department_table.bootstrapTable('hideColumn', 'hide_institute_id');
+            department_table.bootstrapTable('hideColumn', 'hide_department_name');
+            set_a_table(department_table, remove_department_button, '系别');
         }
 
         $(function() {
             init_department_table();
-            load_department();
             $('#locale').change(init_department_table);
         })
     </script>
@@ -520,7 +507,7 @@
 
             var new_row = null;
 
-            if(index == 0){
+            if(index === 0){
                 new_row = {
                     "id": index,
                     "institute": {% if institutes %}{{ institutes.0.id }}{% else %}""{% endif %},
@@ -546,27 +533,26 @@
     <!--保存修改或增加系别信息后的表格 事件 开始 -->
     <script>
         $('#save_department_button').click(function () {
-            var departments = department_table.bootstrapTable('getData');
-
+            var departments_table_data = department_table.bootstrapTable('getData');
             var pass = true;
 
             $('.not_null').remove();	 // 清除掉以前的错误信息
 
-            $.each(departments, function (index, value) {
+            $.each(departments_table_data, function (index, value) {
                 console.log(index, value);
 
                 if(value['institute'] === empty_text || value['institute'] == ""){
                     pass = false;
                     add_tip('department_table', index, 2)
                 }
-
                 if(value['department_name'] === empty_text || value['department_name'] == ""){
                     pass = false;
                     add_tip('department_table', index, 3)
                 }
             });
-            if(pass){
-                save_ajax(from_url, 'departments', departments, '{{ school.id }}')
+
+            if(pass) {
+                common_create_put_post_data(departments_table_data, '系别', 'institute', 'hide_institute_id', 'department_name', 'hide_department_name', department_url);
             }
         })
     </script>
@@ -575,14 +561,13 @@
 
 
 
+
     <!--年级表设置相关  开始-->
     <script>
         var grade_table = $('#grade_table');
         var remove_grade_button = $('#remove_grade_button');
-        var selections = [];
 
         function init_grade_table() {
-            console.log('init_grade_table()执行');
             grade_table.bootstrapTable('destroy').bootstrapTable({
                 locale: $('#locale').val(),
                 columns: [
@@ -617,37 +602,21 @@
                             ]
                         },
                     },{
+                        field: 'hide_department_id',
+                    },{
+                        field: 'hide_grade_name',
+                    },{
                         field:'id_in_database',
                     }]
                 ]
             });
-
-            set_a_table(from_url, grade_table, remove_grade_button, 'grades');
+            // 隐藏系别id和年级名称隐藏列
+            grade_table.bootstrapTable('hideColumn', 'hide_department_id');
+            grade_table.bootstrapTable('hideColumn', 'hide_grade_name');
+            set_a_table(grade_table, remove_grade_button, '年级');
         }
-
-        function load_grade(){
-            console.log('load_grade()执行');
-            var index = 0;
-            {% for grade in grades %}
-                var new_row = {
-                    "id": index,
-                    'department': '{{ grade.department.id }}',
-                    'grade_name': '{{ grade.name }}',
-                    "id_in_database": '{{ grade.id }}',
-                };
-                // 插入该行
-                grade_table.bootstrapTable('insertRow', {
-                    index: index,
-                    row: new_row
-                });
-                index = index + 1;
-            {% empty %}
-            {% endfor %}
-        }
-
         $(function() {
             init_grade_table();
-            load_grade();
             $('#locale').change(init_grade_table);
         })
     </script>
@@ -662,7 +631,7 @@
 
             var new_row = null;
 
-            if(index == 0){
+            if(index === 0){
                 new_row = {
                     "id": index,
                     "department": {% if departments %}{{ departments.0.id }}{% else %}""{% endif %},
@@ -688,27 +657,25 @@
     <!--保存修改或增加年级信息后的表格 事件 开始 -->
     <script>
         $('#save_grade_button').click(function () {
-            var grades = grade_table.bootstrapTable('getData');
-
+            var grades_table_data = grade_table.bootstrapTable('getData');
             var pass = true;
 
             $('.not_null').remove();	 // 清除掉以前的错误信息
 
-            $.each(grades, function (index, value) {
+            $.each(grades_table_data, function (index, value) {
                 console.log(index, value);
 
                 if(value['department'] === empty_text || value['department'] == ""){
                     pass = false;
                     add_tip('grade_table', index, 2)
                 }
-
                 if(value['grade_name'] === empty_text || value['grade_name'] == ""){
                     pass = false;
                     add_tip('grade_table', index, 3)
                 }
             });
             if(pass){
-                save_ajax(from_url, 'grades', grades, '{{ school.id }}')
+                common_create_put_post_data(grades_table_data, '年级', 'department', 'hide_department_id', 'grade_name', 'hide_grade_name', grade_url);
             }
         })
     </script>

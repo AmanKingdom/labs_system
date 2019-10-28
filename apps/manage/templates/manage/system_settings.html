@@ -1,4 +1,4 @@
-<!--super_user/system_settings.html-->
+<!--manage/system_settings.html-->
 
 {% extends 'manage/base.html' %}
 
@@ -15,7 +15,7 @@
 {% endblock %}
 
 {% block manage_body %}
-    {% if school.name %}
+    {% if request.session.school_id %}
         <div class="row">
             <div class="col-md-3">
                 <label>当前学年学期：</label>{{ school_year }} &nbsp;<a id="term"></a>
@@ -27,7 +27,7 @@
         </div>
         {% else %}
         <hr>
-        请先设置您的学校名称，设置完学校名称即可进行下一步设置
+        请先设置您的学校名称，设置完学校名称即可进行下一步设置 <a href="{% url 'manage:school_manage' %}">>>></a>
     {% endif %}
 {% endblock %}
 
@@ -42,12 +42,6 @@
     <!--学期信息设置相关  开始-->
     <script>
         $(document).ready(function() {
-            $('#school_name').editable({
-                type: 'text',
-                placeholder:'请设置您的学校',
-                emptytext: '请设置您的学校',
-            });
-
             $('#term').editable({
                 type: 'select',
                 value: {% if term.name %}'{{ term.name }}'{% else %}'第一学期'{% endif %},
@@ -69,7 +63,7 @@
                     maxYear: 2025,
                     minuteStep: 1,
                 },
-                value: '{{ term_begin_date }}', // 要求后台传入的term_begin_date格式为YYYY-MM-DD
+                value: '{{ term.begin_date }}', // 要求后台传入的term_begin_date格式为YYYY-MM-DD
                 mode:"popup",   // 设置为弹出方式
                 placement: 'bottom',    // 设置弹出框的位置
                 showbuttons: 'bottom',
@@ -80,35 +74,21 @@
         function save_term() {
             var begin_date = $('#begin_date').html();
             var term_name = $('#term').html();
-            console.log('保存学期开始时间：', begin_date, '保存学期：', term_name);
-            var to_url = "{% url 'manage:save_term_ajax' %}";
-            var data = {'term_id':'{{ term.id }}', 'term_name': term_name, 'begin_date': begin_date};
-            base_ajax(from_url, to_url, data);
-        }
+            console.log( '保存学期：', term_name, '保存学期开始时间：', begin_date);
 
-        // 提交学校信息
-        function submit_school(){
-            var school_name = $('#school_name').html();
-            console.log('提交学校名称school_name:', school_name);
-
-            if(school_name == empty_text){
-                alert('请输入学校名称')
-            }else{
-                {% if school %}
-                    if(school_name != '{{ school.name }}'){
-                        console.log('修改了学校名称');
-                        create_or_modify_school('{{ school.name }}', school_name)
+            $.ajax({
+                url: "{% url 'manage:system_settings' %}",
+                type: 'PUT',
+                data: JSON.stringify({'term_name': term_name, 'begin_date': begin_date}),
+                headers:{'X-CSRFToken':'{{ csrf_token }}'},
+                success: function (return_data) {
+                    if(return_data.status){
+                        window.location.reload();
+                    }else{
+                        alert('\n出错了，请重新保存' + return_data.message)
                     }
-                {% else %}
-                    console.log('创建学校：', school_name);
-                    create_or_modify_school(school_name, school_name);
-                {% endif %}
-            }
-        }
-        function create_or_modify_school(old_school_name, new_school_name) {
-            var to_url = "{% url 'manage:create_or_modify_school_ajax' %}";
-            var data = {"old_school_name":old_school_name, "new_school_name":new_school_name};
-            base_ajax(from_url, to_url, data);
+                }
+            })
         }
     </script>
     <!--学期信息设置相关  结束-->

@@ -18,10 +18,11 @@ from django.urls import path, include
 from apps.browse.views import *
 
 urlpatterns = [
-    path('', require_login(homepage), name='homepage'),
+    path('', homepage, name='homepage'),
 
-    path('admin/', admin.site.urls),
+    path('manage/', include('apps.manage.urls')),
     path('apply_experiments/', include('apps.apply_experiments.urls')),
     path('browse/', include('apps.browse.urls')),
-    path('manage/', include('apps.manage.urls')),
+
+    path('admin/', admin.site.urls),
 ]

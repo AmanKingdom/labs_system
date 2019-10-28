@@ -1,4 +1,4 @@
-<!--super_user/classes_manage.html-->
+<!--manage/classes_manage.html-->
 
 {% extends 'manage/base.html' %}
 
@@ -23,8 +23,8 @@
                         <table id="classes_table"
                                class="table-responsive"
                                data-id-field="id"
-                               data-response-handler="responseHandler"
-                               data-click-to-select="true">
+                               data-click-to-select="true"
+                               data-url="{% url 'manage:classes' request.session.school_id %}">
                         </table>
                     </div>
                 </div>
@@ -44,20 +44,17 @@
 {% endblock %}
 
 {% block add_js_to_manage %}
-    <!--当前页面的全局设置-->
+    <!--全局的参数或函数-->
     <script>
-        var from_url = "{% url 'manage:classes_manage' %}";
+        var classes_url = "{% url 'manage:classes' request.session.school_id %}";
     </script>
-
 
     <!--班级表设置相关  开始-->
     <script>
         var classes_table = $('#classes_table');
         var remove_classes_button = $('#remove_classes_button');
-        var selections = [];
 
         function init_classes_table() {
-            console.log('init_classes_table()执行');
             classes_table.bootstrapTable('destroy').bootstrapTable({
                 locale: $('#locale').val(),
                 columns: [
@@ -92,37 +89,22 @@
                             ]
                         },
                     },{
+                        field: 'hide_grade_id',
+                    },{
+                        field: 'hide_classes_name',
+                    },{
                         field:'id_in_database',
                     }]
                 ]
             });
-
-            set_a_table(from_url, classes_table, remove_classes_button, 'classes');
-        }
-
-        function load_classes(){
-            console.log('load_classes()执行');
-            var index = 0;
-            {% for classes_item in classes %}
-                var new_row = {
-                    "id": index,
-                    'grade': '{{ classes_item.grade.id }}',
-                    'classes_name': '{{ classes_item.name }}',
-                    "id_in_database": '{{ classes_item.id }}',
-                };
-                // 插入该行
-                classes_table.bootstrapTable('insertRow', {
-                    index: index,
-                    row: new_row
-                });
-                index = index + 1;
-            {% empty %}
-            {% endfor %}
+            // 隐藏年级id和班级名称隐藏列
+            classes_table.bootstrapTable('hideColumn', 'hide_grade_id');
+            classes_table.bootstrapTable('hideColumn', 'hide_classes_name');
+            set_a_table(classes_table, remove_classes_button, '班级');
         }
 
         $(function() {
             init_classes_table();
-            load_classes();
             $('#locale').change(init_classes_table);
         })
     </script>
@@ -137,7 +119,7 @@
 
             var new_row = null;
 
-            if(index == 0){
+            if(index === 0){
                 new_row = {
                     "id": index,
                     "grade": {% if grades %}{{ grades.0.id }}{% else %}""{% endif %},
@@ -163,13 +145,12 @@
     <!--保存修改或增加班级信息后的表格 事件 开始 -->
     <script>
         $('#save_classes_button').click(function () {
-            var classes = classes_table.bootstrapTable('getData');
-
+            var classes_table_data = classes_table.bootstrapTable('getData');
             var pass = true;
 
             $('.not_null').remove();	 // 清除掉以前的错误信息
 
-            $.each(classes, function (index, value) {
+            $.each(classes_table_data, function (index, value) {
                 console.log(index, value);
 
                 if(value['grade'] === empty_text || value['grade'] == ""){
@@ -183,7 +164,7 @@
                 }
             });
             if(pass){
-                save_ajax(from_url, 'classes', classes, '{{ school.id }}')
+                common_create_put_post_data(classes_table_data, '班级', 'grade', 'hide_grade_id', 'classes_name', 'hide_classes_name', classes_url);
             }
         })
     </script>

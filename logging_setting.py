@@ -11,14 +11,17 @@ class ThisLogger(object):
         'critical': logging.CRITICAL
     }
 
-    # 默认的日志文件为 logging.log，默认等级为 info
-    def __init__(self, filename='logging/logging.log', level='info', when='D', backup_count=3,
-                 formatter_str='[%(asctime)s] %(pathname)s %(module)s:%(lineno)d行: %(message)s'):
-        self.logger = logging.getLogger(filename)
+    def __init__(self, filename='logging/logging.log', level='debug', when='D', backup_count=3,
+                 formatter_str='[%(asctime)s] %(levelname)s %(pathname)s %(module)s:%(lineno)d行: %(message)s'):
+        """
+        默认的日志文件路径为 logging/logging.log，默认等级为 debug
+        """
+        self.logger = logging.getLogger(__name__)
+        self.logger.handlers.clear()    # 如果不清除handlers，则可能会使日志重复输出
 
         self.logger.setLevel(self.level_relations.get(level))
 
-        formatter = logging.Formatter(formatter_str)
+        formatter = logging.Formatter(formatter_str, datefmt='%Y-%m-%d %H:%M:%S')
 
         # 往屏幕上输出
         sh = logging.StreamHandler()
@@ -51,7 +54,7 @@ def test():
     log.logger.error('报错')
     log.logger.critical('严重')
 
-    ThisLogger('error.log', level='error').logger.error('error')
+    ThisLogger('logging/error.log', level='error').logger.error('error')
 
 
 if __name__ == '__main__':

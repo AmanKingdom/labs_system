@@ -5,7 +5,7 @@ from apps.manage.views import become_a_teacher, cancel_the_teacher, personal_inf
     InstitutesView, DepartmentsView, GradesView, SchoolManageView, ClassesView, \
     ClassesManageView, TeachersView, TeacherManageView, CoursesView, CourseManageView, LabAttributesView, \
     LabAttributeManageView, LabManageView, LabsView, ExperimentTypesView, ExperimentTypeManageView, \
-    ApplicationManageView
+    ApplicationManageView, ApplicationDetailsView
 from apps.browse.views import require_login
 
 app_name = 'manage'
@@ -39,7 +39,7 @@ urlpatterns = [
     path('experiment_type_manage', ExperimentTypeManageView.as_view(), name='experiment_type_manage'),
 
     path('application_manage', ApplicationManageView.as_view(), name='application_manage'),
-
+    path('application_details', ApplicationDetailsView.as_view(), name='application_details'),
     path('application_check/<course_id>/<status>/', application_check, name='application_check'),
 
     path('arrange', require_login(ArrangeView.as_view()), name='arrange'),

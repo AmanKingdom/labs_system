@@ -346,7 +346,7 @@ def change_experiments(request, course_id=None):
     set_choices_context(context)
     set_time_for_context(context)
 
-    return render(request, 'manage/experiment_manage.html', context)
+    return render(request, 'manage/application_details.html', context)
     # else:
     #     return HttpResponseRedirect('/browse/login')
 

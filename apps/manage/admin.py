@@ -1,7 +1,8 @@
 from django.contrib import admin
 
 from apps.manage.models import School, Institute, SchoolArea, Lab, Department, Grade, Classes, Teacher, \
-    TotalRequirements, Course, LabsAttribute, SchoolYear, Term, SuperUser, CourseBlock, ArrangeSettings
+    TotalRequirements, Course, LabsAttribute, SchoolYear, Term, SuperUser, CourseBlock, ArrangeSettings, ExperimentType, \
+    Experiment, SpecialRequirements
 
 admin.site.site_header = '实验室数据后台管理系统'
 admin.site.site_title = '实验室数据管理'
@@ -47,10 +48,9 @@ admin.site.register(Department, DepartmentAdmin)
 
 
 class LabsAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'institute', 'number_of_people', 'dispark', 'create_time', 'modify_time', 'visible')  # 设置展示的列
+    list_display = ('id', 'name', 'institute', 'number_of_people', 'dispark', 'attribute1', 'attribute2', 'attribute3', 'create_time', 'modify_time', 'visible')  # 设置展示的列
     search_fields = ('name', 'institute__name')  # 设置可对校区名称或学校名称进行搜索
     list_filter = ('institute', 'dispark')  # 对学院和开放情况设置可筛选
-    filter_horizontal = ('attributes',)  # 多对多选项的更好界面，也可垂直排列：filter_vertical
 
 
 admin.site.register(Lab, LabsAdmin)
@@ -95,7 +95,7 @@ admin.site.register(Teacher, TeacherAdmin)
 
 
 class TotalRequirementsAdmin(admin.ModelAdmin):
-    list_display = ('id', 'teaching_materials', 'total_consume_requirements', 'total_system_requirements',
+    list_display = ('id', 'course', 'teaching_materials', 'total_consume_requirements', 'total_system_requirements',
                     'total_soft_requirements', 'create_time', 'modify_time', 'visible')  # 设置展示的列
 
 
@@ -143,3 +143,34 @@ class CourseBlockAdmin(admin.ModelAdmin):
 admin.site.register(CourseBlock, CourseBlockAdmin)
 
 admin.site.register(ArrangeSettings)
+
+
+class ExperimentTypeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'school', 'create_time', 'modify_time', 'visible')
+    list_editable = ['name', 'school', 'visible']  # 设置可行内编辑
+
+
+admin.site.register(ExperimentType, ExperimentTypeAdmin)
+
+
+class ExperimentAdmin(admin.ModelAdmin):
+    list_display = ('id', 'no', 'name', 'course', 'experiment_type', 'lecture_time', 'which_week', 'days_of_the_week',
+                    'section', 'status', 'create_time', 'modify_time', 'visible')
+    search_fields = ('name', 'course__name')  # 设置可对校区名称或学校名称进行搜索
+    list_filter = ('course__name', 'experiment_type')  # 对学校设置可筛选
+    list_editable = ['no', 'name', 'course', 'experiment_type', 'lecture_time', 'which_week', 'days_of_the_week',
+                     'section', 'status', 'visible']  # 设置可行内编辑
+
+
+admin.site.register(Experiment, ExperimentAdmin)
+
+
+class SpecialRequirementsAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'experiment', 'special_consume_requirements', 'special_system_requirements', 'special_soft_requirements', 'create_time',
+        'modify_time', 'visible')
+    list_editable = ['special_consume_requirements', 'special_system_requirements',
+                     'special_soft_requirements']  # 设置可行内编辑
+
+
+admin.site.register(SpecialRequirements, SpecialRequirementsAdmin)

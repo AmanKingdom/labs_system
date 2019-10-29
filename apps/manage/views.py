@@ -25,8 +25,8 @@ STATUS = {
 }
 
 # 设计13个可用的课程块背景颜色
-COLOR_DIVS = ['color1_div','color2_div','color3_div','color4_div','color5_div','color6_div',
-              'color7_div','color8_div','color9_div','color10_div','color11_div','color12_div','color13_div']
+COLOR_DIVS = ['color1_div', 'color2_div', 'color3_div', 'color4_div', 'color5_div', 'color6_div',
+              'color7_div', 'color8_div', 'color9_div', 'color10_div', 'color11_div', 'color12_div', 'color13_div']
 
 
 # 验证登录视图
@@ -37,6 +37,7 @@ def require_login(view):
             this_logger.debug('验证登录视图：' + request.session['user_name'] + ' 用户已登录')
             return view(request, *args, **kwargs)
         return HttpResponseRedirect('/browse/login')
+
     return new_view
 
 
@@ -64,7 +65,7 @@ class SetSchoolView(View):
     def get(self, request):
         return render(request, 'browse/set_school.html', self.context)
 
-    def post(self, request):    # 创建学校
+    def post(self, request):  # 创建学校
         school_name = request.POST.get('school_name', None)
         if school_name:
             if School.objects.filter(name=school_name):
@@ -131,7 +132,7 @@ class SystemSettingsView(View):
         try:
             term_name = put_data.get('term_name', None)
             begin_date = put_data.get('begin_date', None)
-            this_logger.debug('term_name:'+ term_name+ '，begin_date:' + begin_date)
+            this_logger.debug('term_name:' + term_name + '，begin_date:' + begin_date)
             self.context['term'].name = term_name
             self.context['term'].begin_date = begin_date
             self.context['term'].save()
@@ -168,11 +169,11 @@ class LittleSameModelBaseView(View):
                 return_data = self.make_return_data(objects)
             except Exception as e:
                 this_logger.debug(str(e))
-                raise Http404('找不到学校id为'+school_id+'的相关信息')
+                raise Http404('找不到学校id为' + school_id + '的相关信息')
         # 这里的content_type="application/json"其实可有可无
         return HttpResponse(json.dumps(return_data), content_type="application/json")
 
-    def put(self, request, school_id):     # 修改信息
+    def put(self, request, school_id):  # 修改信息
         put_data = QueryDict(request.body)
         put_data = json.loads(list(put_data.keys())[0])
         this_logger.debug(self.model_Chinese_name + '信息--接收到put数据：' + str(put_data))
@@ -181,7 +182,7 @@ class LittleSameModelBaseView(View):
             self.model.objects.filter(id=data['id']).update(**data)
         return JsonResponse({'status': True})
 
-    def post(self, request, school_id):       # 创建信息
+    def post(self, request, school_id):  # 创建信息
         post_data = json.loads(list(request.POST.keys())[0])
         this_logger.debug(self.model_Chinese_name + '信息--接收到post数据：' + str(post_data))
 
@@ -356,7 +357,7 @@ class CoursesView(LittleSameModelBaseView):
             return_data.append(new_dict)
         return return_data
 
-    def put(self, request, school_id):     # 修改信息
+    def put(self, request, school_id):  # 修改信息
         put_data = QueryDict(request.body)
         put_data = json.loads(list(put_data.keys())[0])
         this_logger.debug(self.model_Chinese_name + '信息--接收到put数据：' + str(put_data))
@@ -386,7 +387,7 @@ class CoursesView(LittleSameModelBaseView):
             me.save()
         return JsonResponse({'status': True})
 
-    def post(self, request, school_id):       # 创建信息
+    def post(self, request, school_id):  # 创建信息
         post_data = json.loads(list(request.POST.keys())[0])
         this_logger.debug(self.model_Chinese_name + '信息--接收到post数据：' + str(post_data))
 
@@ -439,24 +440,24 @@ class LabsView(LittleSameModelBaseView):
             return_data.append(new_dict)
         return return_data
 
-    def put(self, request, school_id):     # 修改信息
+    def put(self, request, school_id):  # 修改信息
         put_data = QueryDict(request.body)
         put_data = json.loads(list(put_data.keys())[0])
         this_logger.debug(self.model_Chinese_name + '信息--接收到put数据：' + str(put_data))
 
         for data in put_data:
             if 'dispark' in data.keys():
-                data['dispark'] = True if data['dispark']=='1' else False
+                data['dispark'] = True if data['dispark'] == '1' else False
             self.model.objects.filter(id=data['id']).update(**data)
         return JsonResponse({'status': True})
 
-    def post(self, request, school_id):       # 创建信息
+    def post(self, request, school_id):  # 创建信息
         post_data = json.loads(list(request.POST.keys())[0])
         this_logger.debug(self.model_Chinese_name + '信息--接收到post数据：' + str(post_data))
 
         for data in post_data:
             if 'dispark' in data.keys():
-                data['dispark'] = True if data['dispark']=='1' else False
+                data['dispark'] = True if data['dispark'] == '1' else False
             self.model.objects.create(**data)
         return JsonResponse({'status': True})
 
@@ -495,9 +496,6 @@ class ExperimentTypesView(LittleSameModelBaseView):
             }
             return_data.append(new_dict)
         return return_data
-
-
-
 
 
 # 个人主页
@@ -563,9 +561,6 @@ def cancel_the_teacher(request):
             context['message'] = '修改失败，请重试'
 
         return JsonResponse(context)
-
-
-
 
 
 @method_decorator(require_login, name='dispatch')
@@ -672,6 +667,27 @@ class CourseManageView(View):
 
 
 @method_decorator(require_login, name='dispatch')
+class LabManageView(View):
+    context = {
+        'title': '实验室管理',
+        'active_2': True,  # 激活导航
+        'lab_active': True,  # 激活导航
+
+        'institutes': [],
+        'labs': [],
+        'lab_attributes': [],
+    }
+
+    def get(self, request):
+        school = School.objects.get(id=request.session['school_id'])
+        if school:
+            self.context['institutes'] = school.get_all_institutes()
+            self.context['lab_attributes'] = school.get_all_lab_attributes()
+
+        return render(request, 'manage/lab_manage.html', self.context)
+
+
+@method_decorator(require_login, name='dispatch')
 class LabAttributeManageView(View):
     context = {
         'title': '实验室属性管理',
@@ -701,25 +717,10 @@ class ExperimentTypeManageView(View):
         return render(request, 'manage/experiment_type_manage.html', self.context)
 
 
-@method_decorator(require_login, name='dispatch')
-class LabManageView(View):
-    context = {
-        'title': '实验室管理',
-        'active_2': True,  # 激活导航
-        'lab_active': True,  # 激活导航
 
-        'institutes': [],
-        'labs': [],
-        'lab_attributes': [],
-    }
 
-    def get(self, request):
-        school = School.objects.get(id=request.session['school_id'])
-        if school:
-            self.context['institutes'] = school.get_all_institutes()
-            self.context['lab_attributes'] = school.get_all_lab_attributes()
 
-        return render(request, 'manage/lab_manage.html', self.context)
+
 
 
 @method_decorator(require_login, name='dispatch')
@@ -760,6 +761,11 @@ class ApplicationManageView(View):
         return render(request, 'manage/application_manage.html', self.context)
 
 
+class ApplicationDetailsView(View):
+    def get(self, request):
+        return render(request, 'manage/')
+
+
 def application_check(request, course_id=None, status=None):
     this_logger.info('审核:接收到course_id：' + str(course_id) + '和status：' + status)
 
@@ -780,6 +786,15 @@ def application_check(request, course_id=None, status=None):
             course.save()
 
     return HttpResponseRedirect('/manage/application_manage')
+
+
+
+
+
+
+
+
+
 
 
 # 根据实验项目的扎堆情况设置课程块，课程块根据 星期、节次和实验室 区分
@@ -877,8 +892,10 @@ class ScheduleView(View):
 
                 for section in course_block.sections.split(','):
                     for lab in course_block.new_labs.all():
-                        if new_div not in base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name]:
-                            base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name] = base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name] + new_div
+                        if new_div not in base_dict['d%d_s%s' % (course_block.days_of_the_week, section)][
+                            '%s' % lab.name]:
+                            base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name] = \
+                            base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name] + new_div
 
         self.data['rows'] = [empty_row] + list(base_dict.values())
         # print('整理后，前端所需要的json数据：\n', self.data['rows'])
@@ -1015,6 +1032,7 @@ def auto_arrange(institute_id, attribute1_id, attribute2_id):
 
     def get_student_sum(x):
         return x.student_sum
+
     # 剩下的课程块
     course_blocks3 = list(set(all_course_blocks) - set(course_blocks1) - set(course_blocks2))
     course_blocks3.sort(reverse=True, key=get_student_sum)
@@ -1097,7 +1115,8 @@ class ArrangeView(View):
         # 为用户记住最近编辑的学院，要百分百确保session中包含当前学院id
         if request.GET.get('current_institute_id', None):
             request.session['current_institute_id'] = request.GET.get('current_institute_id')
-        elif not request.GET.get('current_institute_id', None) and not request.session.get('current_institute_id', None):
+        elif not request.GET.get('current_institute_id', None) and not request.session.get('current_institute_id',
+                                                                                           None):
             request.session['current_institute_id'] = self.context['institutes'][0].id
 
         # 为用户记住当前编辑学院排课设置的属性，如果数据库中没有该学院的排课设置数据，则说明该学院没排过课
@@ -1221,7 +1240,7 @@ class CourseBlockView(View):
             change = False
             if 'weeks' in put_data.keys():
                 weeks = non_repetitive_strlist(put_data['weeks'][0], ',').replace(',', '、')
-                this_logger.info('修改后的所有周次去重后的转化出来的字符串：'+weeks)
+                this_logger.info('修改后的所有周次去重后的转化出来的字符串：' + weeks)
                 if weeks != course_block.weeks:
                     temp_data['weeks'] = course_block.weeks
                     course_block.weeks = weeks
@@ -1253,7 +1272,7 @@ class CourseBlockView(View):
                 # 但现在的作用很大，用于在实验室获取不成功时还原数据
                 temp_data['course_block_new_labs'] = [lab for lab in course_block.new_labs.all()]
                 course_block.new_labs.clear()
-                course_block.save()     # 如果有数据改变，则暂时更新一下课程的数据，然后通过检查新申请的实验室是否可用
+                course_block.save()  # 如果有数据改变，则暂时更新一下课程的数据，然后通过检查新申请的实验室是否可用
 
                 lab_in_used_return = False
                 for lab_id in lab_ids:

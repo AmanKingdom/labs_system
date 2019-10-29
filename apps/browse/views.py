@@ -78,6 +78,8 @@ class LoginView(View):
                 request.session['user_type'] = user_type
                 request.session['user_name'] = user_name
                 request.session['user_id'] = user_id
+                if user_type == 'teacher':
+                    request.session['department_name'] = Teacher.objects.get(id=user_id).department.name
             try:
                 superuser = SuperUser.objects.get(**login_form.cleaned_data)
                 this_logger.info(superuser.name + '超级管理员登录成功')
@@ -94,7 +96,7 @@ class LoginView(View):
                 try:
                     teacher = Teacher.objects.get(**login_form.cleaned_data)
                     this_logger.info(teacher.name + '教师登录成功')
-                    set_user_info_to_session(request, teacher.account, 'superuser', teacher.name, teacher.id)
+                    set_user_info_to_session(request, teacher.account, 'teacher', teacher.name, teacher.id)
 
                     # request.session['user_account'] = teacher.account
                     # request.session['user_type'] = 'teacher'
@@ -108,7 +110,7 @@ class LoginView(View):
                     try:
                         assistant = Assistant.objects.get(**login_form.cleaned_data)
                         this_logger.info(assistant.name + '助理登录成功')
-                        set_user_info_to_session(request, assistant.account, 'superuser', assistant.name, assistant.id)
+                        set_user_info_to_session(request, assistant.account, 'assistant', assistant.name, assistant.id)
 
                         # request.session['user_account'] = assistant.account
                         # request.session['user_type'] = 'assistant'

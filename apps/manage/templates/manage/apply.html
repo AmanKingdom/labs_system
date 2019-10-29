@@ -1,14 +1,14 @@
-<!--apply.html-->
+<!--manage/apply.html-->
 
-{% extends 'apply_experiments/base.html' %}
+{% extends 'manage/base.html' %}
 
-{% block add_css_to_apply_experiments %}
+{% block add_css_to_manage %}
     <!--多项选择的css依赖-->
     <link href="/static/css_js/css/plugins/select2/select2.min.css" rel="stylesheet" type="text/css">
     <link href="/static/css_js/css/plugins/select2/select2-bootstrap.css" rel="stylesheet" type="text/css">
 {% endblock %}
 
-{% block apply_experiments_body %}
+{% block manage_body %}
     <div class="ibox float-e-margins">
         <div class="ibox-title">
             <h5>实验对应的课程信息</h5>
@@ -21,8 +21,8 @@
         <div class="ibox-content">
             <table data-toggle="table" id="course_info_table" class="table-hover" style="table-layout:fixed;word-break:break-all;">
                 <thead><tr>
-                    <th data-field="department">教师所属系<span class="need">*</span></th>
-                    <th data-field="teacher_name">教师姓名<span class="need">*</span></th>
+                    <th data-field="department">教师所属系别<span class="need">*</span></th>
+                    <th data-field="teacher">教师<span class="need">*</span></th>
                     <th data-field="course">课程<span class="need">*</span></th>
                     <th data-field="classes">授课班级<span class="need">*</span></th>
                     <th data-field="teaching_materials">实验教材</th>
@@ -31,41 +31,58 @@
                     <th data-field="soft_requirements">总体软件需求</th>
                 </tr></thead>
                 <tbody><tr>
-                    <td id="department">{% if teacher %}{{ teacher.department.name }}{% else %}无{% endif %}</td>
-                    <td id="teacher_name">{% if teacher %}{{ teacher.name }}{% else %}{{ superuser.name }}{% endif %}</td>
-                    <td>
-                        {#<a href="#" id="course" data-type="select" data-title="Select status"></a>#}
-                        <select id="course" class="form-control">
-                            {% for x in courses %}
-                                {% if forloop.first %}
-                                    <option value={{ x.id }} selected>{{ x.name }}</option>
-                                {% else %}
-                                    <option value={{ x.id }}>{{ x.name }}</option>
-                                {% endif %}
-                            {% empty %}
-                                <option>暂无课程数据</option>
-                            {% endfor %}
-                            {#                                <option>请先选择课程</option>#}
-                            {#                                {% for x in courses %}#}
-                            {#                                    <option value={{ x.id }}>{{ x.name }}</option>#}
-                            {#                                {% empty %}#}
-                            {#                                    <option>暂无课程数据</option>#}
-                            {#                                {% endfor %}#}
-                        </select>
+                    <td id="department">
+                        {% if request.session.user_type == 'superuser' %}
+                            <select id="departments_select" class="form-control">
+                                {% for department in departments %}
+                                    {% if forloop.first %}
+                                        <option value={{ department.id }} selected>{{ department.name }}</option>
+                                    {% else %}
+                                        <option value={{ department.id }}>{{ department.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        {% elif request.session.user_type == 'teacher' %}
+                            {{ request.session.department_name }}
+                        {% else %}
+                            无
+                        {% endif %}
+                    </td>
+                    <td id="teacher">
+                        {% if request.session.user_type == 'superuser' %}
+                            <select id="teachers_select" class="form-control"></select>
+                        {% elif request.session.user_type == 'teacher' %}
+                            {{ request.session.user_name }}
+                        {% else %}
+                            无
+                        {% endif %}
                     </td>
                     <td>
-                        {#<a href="#" id="classes" data-type="select" data-title="Select status"></a>#}
-                        {#<select id="classes" class="form-control" multiple="multiple" size="1"></select>#}
-                        <div id="classes">
-                            {% if courses %}
-                                {% for x in classes %}
-                                    {{ x.grade__name }}级{{ x.grade__department__name }}{{ x.name }}班<br>
+                        {% if request.session.user_type == 'superuser' %}
+                            <select id="courses_select" class="form-control"></select>
+                        {% elif request.session.user_type == 'teacher' %}
+                            <select id="course_select" class="form-control">
+                                {% for course in courses %}
+                                    {% if forloop.first %}
+                                        <option value={{ course.id }} selected>{{ course.name }}</option>
+                                    {% else %}
+                                        <option value={{ course.id }}>{{ course.name }}</option>
+                                    {% endif %}
                                 {% empty %}
-                                    暂无数据
+                                    <option>暂无课程数据</option>
                                 {% endfor %}
-                            {% else %}
+                            </select>
+                        {% else %}
+                            无
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div id="classes">
+                            {% for x in classes %}
+                                {{ x.grade__name }}级{{ x.grade__department__name }}{{ x.name }}班<br>
+                            {% empty %}
                                 暂无数据
-                            {% endif %}
+                            {% endfor %}
                         </div>
                     </td>
                     <td><a id="teaching_materials" data-type="textarea"></a></td>
@@ -92,16 +109,16 @@
             <table
                     id="experiment_info_table"
                     class="table-responsive"
-                    data-detail-formatter="detailFormatter"
+{#                    data-detail-formatter="detailFormatter"#}
                     data-minimum-count-columns="2"
                     data-id-field="id"
-                    data-side-pagination="server"
-                    data-response-handler="responseHandler"
+{#                    data-side-pagination="server"#}
+{#                    data-response-handler="responseHandler"#}
                     data-click-to-select="true">
             </table>
             <div align="right">
                 <br>
-                <button id="submit" class="btn btn-primary" data-target="#all_info_after_submit_modal_table" title="提交后会显示所有提交的信息" data-toggle="modal">提交</button>
+                <button id="submit" class="btn btn-primary" data-target="#all_info_after_submit_modal_table" title="提交前会预览所有提交的信息" data-toggle="modal">提交</button>
             </div>
 
             <!--单独添加特殊需求的模态表格-->
@@ -195,7 +212,7 @@
 
 {% endblock %}
 
-{% block add_js_to_apply_experiments %}
+{% block add_js_to_manage %}
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
 
     <!--本页面的一些全局配置-->
@@ -208,40 +225,19 @@
         $(document).ready(function() {
 
             // 选择课程后的授课班级联动数据刷新
-            $("#course").change(function () {
+            $("#courses_select").change(function () {
                 var course_id = $(this).val();
                 console.log('选择的课程 ID 为：' + course_id);
 
-                $.ajax({    // 通过 AJAX 请求联动数据
-                    url: '{% url 'apply_experiments:ajax_load_classes_of_course' %}',
-                    data: {
-                        'course_id': course_id  // course_id 传到GET参数
-                    },
-                    success: function (data) {  // 由 load_classes_of_course 返回的 classes 作为 data
-                        $("#classes").empty();  // 清空原来选中但未提交的内容
-                        /*var classes= $("#classes").select2({
-                            language: {
-                                noResults: function (params) {
-                                    return "请先选择课程";
-                                }
-                            },
-                            width:200,
-                        });*/
-                        {#classes.val(classes.dataType).trigger("change");#}
-                        $("#classes").html(data);  // 用返回的数据替换班级选择栏的内容
+                $.ajax({
+                    url: '{% url 'manage:ajax_load_classes_of_course' %}',
+                    data: {'course_id': course_id},
+                    success: function (data) {
+                        {#$("#classes").empty();  // 清空原来内容#}
+                        $("#classes").html(data);  // 用返回的数据替换班级的内容
                     }
                 });
             });
-
-            // 授课班级设置为多选select
-            /*$("#classes").select2({
-                language: {
-                    noResults: function (params) {
-                        return "请先选择课程";
-                    }
-                },
-                //width:200,
-            });*/
 
             // 实验教材
             $('#teaching_materials').editable({
@@ -272,14 +268,13 @@
 
     <!--实验项目表的配置 开始-->
     <script>
-        var $experiment_info_table = $('#experiment_info_table');
-        var $remove_experiment_button = $('#remove_experiment_button');
+        var experiment_info_table = $('#experiment_info_table');
+        var remove_experiment_button = $('#remove_experiment_button');
         var selections = [];
 
         // 初始化实验项目表
         function init_experiment_info_table() {
-            console.log('init_experiment_info_table()执行');
-            $experiment_info_table.bootstrapTable('destroy').bootstrapTable({
+            experiment_info_table.bootstrapTable('destroy').bootstrapTable({
                 locale: $('#locale').val(),
                 columns: [
                     [{
@@ -294,17 +289,9 @@
                         editable:{
                             type:'text',
                         },
-                        cellStyle:function(value,row,index) {
-                            return {
-                                "css":{
-                                    padding:'0px',
-                                    margin:'0px',
-                                }
-                            };
-                        },
                     }, {
                         field: 'experiment_type',
-                        title: '类型<span class="need">*</span>',
+                        title: '实验类型<span class="need">*</span>',
                         editable:{
                             type:'select',
                             source: [
@@ -451,51 +438,39 @@
                     '<a class="add_special_requirements" href="javascript:void(0)" title="为该项单独添加耗材、系统、软件需求" data-toggle="modal" data-target="#add_special_requirements_modal_table">',
                     '<i class="glyphicon glyphicon-plus-sign"></i>',
                     '</a>',
-                    {#'<a class="remove_experiment_button" href="javascript:void(0)" title="删除该项">',#}
-                    {#'<i class="glyphicon glyphicon-trash"></i>',#}
-                    {#'</a>'#}
                 ].join('')
             }
 
-            $experiment_info_table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table', function () {
-                $remove_experiment_button.prop('disabled', !$experiment_info_table.bootstrapTable('getSelections').length);
+            experiment_info_table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table', function () {
+                remove_experiment_button.prop('disabled', !experiment_info_table.bootstrapTable('getSelections').length);
                 // save your data, here just save the current page
                 selections = getIdSelections()
                 // push or splice the selections if you want to save all data selections
             });
-            $experiment_info_table.on('all.bs.table', function (e, name, args) {
+            experiment_info_table.on('all.bs.table', function (e, name, args) {
                 console.log(name, args)
             });
 
             // 删除实验项目的点击事件
-            $remove_experiment_button.click(function () {
+            remove_experiment_button.click(function () {
                 var ids = getIdSelections();
-                $experiment_info_table.bootstrapTable('remove', {
+                experiment_info_table.bootstrapTable('remove', {
                     field: 'id',
                     values: ids
                 });
-                $remove_experiment_button.prop('disabled', true)
+                remove_experiment_button.prop('disabled', true)
             })
         }
 
         function getIdSelections() {
-            return $.map($experiment_info_table.bootstrapTable('getSelections'), function (row) {
+            return $.map(experiment_info_table.bootstrapTable('getSelections'), function (row) {
                 console.log('getIdSelections()执行');
                 return row.id
             })
         }
 
-        function responseHandler(res) {
-            $.each(res.rows, function (i, row) {
-                row.state = $.inArray(row.id, selections) !== -1
-            });
-            console.log('responseHandler()执行');
-            return res
-        }
-
         $(function() {
             init_experiment_info_table();
-
             $('#locale').change(init_experiment_info_table)
         })
     </script>
@@ -508,7 +483,7 @@
                 alert('没有课程可以申请了哦，您可以到申请信息页面看看已经申请了的课程')
             }else{
                 // 用index实现编号自增
-                var data = $experiment_info_table.bootstrapTable('getData');
+                var data = experiment_info_table.bootstrapTable('getData');
                 console.log('获取上一行实验项目数据：', data);
                 var index = data.length;
                 var new_row = JSON.stringify(data[index-1]);
@@ -547,7 +522,7 @@
                     new_row["id"] = index;
                 }
                 // 最后插入该行
-                $experiment_info_table.bootstrapTable('insertRow', {
+                experiment_info_table.bootstrapTable('insertRow', {
                     index: index,
                     row: new_row
                 });
@@ -564,13 +539,6 @@
                 global_current_special_requirements_row = eval('(' + JSON.stringify(row) + ')');
                 $('#experiment_info_table').bootstrapTable('updateRow', row=global_current_special_requirements_row)
             },
-            /*// 点击删除单项实验的事件
-            'click .remove_experiment_button': function (e, value, row, index) {
-                $experiment_info_table.bootstrapTable('remove', {
-                    field: 'id',
-                    values: [row.id]
-                })
-            }*/
         };
     </script>
     <!--单项点击事件配置 结束-->
@@ -636,7 +604,7 @@
     <!--整理所有信息并存储到session 开始-->
     <script>
         $('#submit').click(function () {
-            var experiments = $experiment_info_table.bootstrapTable('getData');
+            var experiments = experiment_info_table.bootstrapTable('getData');
             var consume_requirements = check_empty(document.getElementById("consume_requirements").innerText);
             var system_requirements = check_empty(document.getElementById("system_requirements").innerText);
             var soft_requirements = check_empty(document.getElementById("soft_requirements").innerText);

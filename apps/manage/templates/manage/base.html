@@ -413,6 +413,40 @@
         })
     }
 
+    // 这个是没有外键需要修改的模型的表格信息处理函数
+    function common_create_put_post_data_simple(table_data, tag, model_field_name, hide_model_field_name, submit_url) {
+        var put_data = [];
+        var post_data = [];
+        for(var i = 0; i < table_data.length; i++){
+            console.log('通过数据行是否有数据库id来作为新旧数据的依据， 序号：', i, '行的数据库id：', table_data[i]['id_in_database']);
+            if(table_data[i]['id_in_database']){
+                // 数据有修改才需要提交
+                if(table_data[i][hide_model_field_name] !== table_data[i][model_field_name]){
+                    put_data.push({
+                        'id': table_data[i]['id_in_database'],
+                        'name': table_data[i][model_field_name]
+                    })
+                }
+            }else{
+                post_data.push({
+                    'name': table_data[i][model_field_name],
+                })
+            }
+        }
+        if(put_data.length > 0){
+            console.log(tag + '存在修改数据：', put_data);
+            common_ajax(submit_url, 'PUT', put_data);
+        }
+        if(post_data.length > 0){
+            console.log(tag + '存在新增数据：', post_data);
+            common_ajax(submit_url, 'POST', post_data);
+        }
+        if(delete_ids_in_database.length > 0){
+            console.log(tag + '删除的ids：', delete_ids_in_database);
+            common_ajax(submit_url, 'DELETE', delete_ids_in_database);
+        }
+    }
+
     function common_create_put_post_data(table_data, tag, foreign_model_name, hide_foreign_model_id_name, model_field_name, hide_model_field_name, submit_url) {
         // 通过rag传入表格信息类别标记（比如：学院、系别）
         // 新增的数据和原来修改的数据要分别通过post和put方式提交

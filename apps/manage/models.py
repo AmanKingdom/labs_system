@@ -61,6 +61,13 @@ class School(models.Model):
     def get_all_courses(self):
         return self.get_all_what('courses', 'get_all_institutes')
 
+    def get_all_lab_attributes(self):
+        """
+        这是为方便统一获取信息而设计的方法
+        :return:
+        """
+        return self.labs_attributes.all()
+
     def __str__(self):
         return self.name
 

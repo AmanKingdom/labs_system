@@ -11,8 +11,10 @@ from apps.manage.models import School, SchoolArea, Institute, Department, Grade,
     SchoolYear, Term, Course, LabsAttribute, Lab, Experiment, ExperimentType, CourseBlock, ArrangeSettings
 
 from logging_setting import ThisLogger
+from manage.tools.list_tool import get_model_field_ids
 from manage.tools.setting_tool import set_time_for_context, set_system_school_year
-from manage.tools.string_tool import list_to_str, str_to_set, get_labs_id_str, non_repetitive_strlist
+from manage.tools.string_tool import list_to_str, str_to_set, get_labs_id_str, non_repetitive_strlist, \
+    str_to_non_repetitive_list
 
 this_logger = ThisLogger().logger
 
@@ -139,11 +141,6 @@ class SystemSettingsView(View):
             return JsonResponse({'status': False, 'message': '保存的信息有误'})
 
 
-def test_school_areas_view(request):
-    request.session['school_id'] = 1
-    return render(request, 'manage/test_json_table.html')
-
-
 class LittleSameModelBaseView(View):
     # 以下是默认的参数
     model_Chinese_name = '校区'
@@ -189,7 +186,7 @@ class LittleSameModelBaseView(View):
         this_logger.debug(self.model_Chinese_name + '信息--接收到post数据：' + str(post_data))
 
         for data in post_data:
-            if self.model is SchoolArea:
+            if self.model is SchoolArea or self.model is LabsAttribute:
                 self.model.objects.create(**data, school_id=school_id)
             else:
                 self.model.objects.create(**data)
@@ -337,24 +334,99 @@ class CoursesView(LittleSameModelBaseView):
     def make_return_data(self, objects):
         return_data = []
         for obj, i in zip(objects, range(0, len(objects))):
+            classes_ids_list = get_model_field_ids(obj, 'classes')
+            classes_ids = list_to_str(classes_ids_list, ',')
+
+            teachers_ids_list = get_model_field_ids(obj, 'teachers')
+            teachers_ids = list_to_str(teachers_ids_list, ',')
             new_dict = {
                 'id': i,
-                'department': obj.department_id,
-                'hide_department_id': obj.department_id,
-                'teacher_name': obj.name,
-                'hide_teacher_name': obj.name,
-                'account': obj.account,
-                'hide_account': obj.account,
-                'password': obj.password,
-                'hide_password': obj.password,
-                'phone': obj.phone,
-                'hide_phone': obj.phone,
+                'institute': obj.institute_id,
+                'hide_institute_id': obj.institute_id,
+                'course_name': obj.name,
+                'hide_course_name': obj.name,
+                'attribute': obj.attribute.id if obj.attribute else None,
+                'hide_attribute': obj.attribute.id if obj.attribute else None,
+                'classes': classes_ids,
+                'hide_classes': classes_ids,
+                'teachers': teachers_ids,
+                'hide_teachers': teachers_ids,
                 'id_in_database': obj.id
             }
             return_data.append(new_dict)
         return return_data
 
+    def put(self, request, school_id):     # 修改信息
+        put_data = QueryDict(request.body)
+        put_data = json.loads(list(put_data.keys())[0])
+        this_logger.debug(self.model_Chinese_name + '信息--接收到put数据：' + str(put_data))
 
+        for data in put_data:
+            me = self.model.objects.get(id=data['id'])
+            if 'institute_id' in data.keys():
+                me.institute = Institute.objects.get(id=data['institute_id'])
+            if 'name' in data.keys():
+                me.name = data['name']
+            if 'attribute' in data.keys():
+                me.attribute = LabsAttribute.objects.get(id=data['attribute'])
+            if 'classes' in data.keys():
+                if data['classes']:
+                    this_logger.debug(self.model_Chinese_name + '--classes：' + str(data['classes']))
+                    classes_ids_list = str_to_non_repetitive_list(data['classes'], ',')
+                    me.classes.set(classes_ids_list)
+                else:
+                    me.classes.clear()
+            if 'teachers' in data.keys():
+                if data['teachers']:
+                    this_logger.debug(self.model_Chinese_name + '--teachers：' + str(data['teachers']))
+                    teachers_ids_list = str_to_non_repetitive_list(data['teachers'], ',')
+                    me.teachers.set(teachers_ids_list)
+                else:
+                    me.teachers.clear()
+            me.save()
+        return JsonResponse({'status': True})
+
+    def post(self, request, school_id):       # 创建信息
+        post_data = json.loads(list(request.POST.keys())[0])
+        this_logger.debug(self.model_Chinese_name + '信息--接收到post数据：' + str(post_data))
+
+        term = Term.objects.get(school_id=school_id)
+
+        for data in post_data:
+            me = self.model.objects.create(institute_id=data['institute_id'], name=data['name'], term=term)
+            if 'attribute' in data.keys():
+                me.attribute = LabsAttribute.objects.get(id=data['attribute'])
+            if 'classes' in data.keys():
+                this_logger.debug(self.model_Chinese_name + '--classes：' + str(data['classes']))
+                classes_ids_list = str_to_non_repetitive_list(data['classes'], ',')
+                me.classes.set(classes_ids_list)
+            if 'teachers' in data.keys():
+                this_logger.debug(self.model_Chinese_name + '--teachers：' + str(data['teachers']))
+                teachers_ids_list = str_to_non_repetitive_list(data['teachers'], ',')
+                me.teachers.set(teachers_ids_list)
+            me.save()
+        return JsonResponse({'status': True})
+
+
+
+
+
+class LabAttributesView(LittleSameModelBaseView):
+    model_Chinese_name = '实验室属性'
+    model = LabsAttribute
+    get_all_what_func_name = 'get_all_lab_attributes'
+
+    def make_return_data(self, objects):
+        return_data = []
+        for obj, i in zip(objects, range(0, len(objects))):
+            new_dict = {
+                'id': i,
+                'lab_attribute_name': obj.name,
+                'hide_lab_attribute_name': obj.name,
+                'id_in_database': obj.id
+            }
+            return_data.append(new_dict)
+        return return_data
 
 
 # 个人主页
@@ -429,9 +501,9 @@ class ClassesManageView(View):
 
     def get(self, request):
         if request.session.get('school_id', None):
-            self.context['school'] = School.objects.get(id=request.session['school_id'])
-            if self.context['school']:
-                    self.context['grades'] = self.context['school'].get_all_grades()
+            school = School.objects.get(id=request.session['school_id'])
+            if school:
+                    self.context['grades'] = school.get_all_grades()
         return render(request, 'manage/classes_manage.html', self.context)
 
 
@@ -447,65 +519,54 @@ class TeacherManageView(View):
     }
 
     def get(self, request):
-        self.context['school'] = School.objects.get(id=request.session['school_id'])
-        if self.context['school']:
-            self.context['departments'] = self.context['school'].get_all_departments()
+        school = School.objects.get(id=request.session['school_id'])
+        if school:
+            self.context['departments'] = school.get_all_departments()
             if self.context['departments']:
-                self.context['teachers'] = self.context['school'].get_all_teachers()
+                self.context['teachers'] = school.get_all_teachers()
         return render(request, 'manage/teacher_manage.html', self.context)
 
 
-def course_manage(request):
+@method_decorator(require_login, name='dispatch')
+class CourseManageView(View):
     context = {
         'title': '课程管理',
         'active_1': True,  # 激活导航
         'course_active': True,  # 激活导航
-        'superuser': None,
-        'teacher': None,
 
-        'institutes': [],
-        'classes': [],
-        'teachers': [],
-        'courses': [],
+        'institutes': None,
+        'classes': None,
+        'teachers': None,
         'attributes': None,
     }
 
-    # for course in courses:
-    #     classes_of_the_course = course.classes.all()
-    #     classes_ids = ""
-    #     for classes_item in classes_of_the_course:
-    #         classes_ids = classes_ids + ',%d' % classes_item.id
-    #
-    #     teachers_of_the_course = course.teachers.all()
-    #     teachers_ids = ""
-    #     for teacher in teachers_of_the_course:
-    #         teachers_ids = teachers_ids + ',%d' % teacher.id
-    #
-    #     temp = {
-    #         'course': course,
-    #         'classes': classes_ids[1:],
-    #         'teachers': teachers_ids[1:],
-    #     }
-    #     context['courses'].append(temp)
+    def get(self, request):
+        school = School.objects.get(id=request.session['school_id'])
+        if school:
+            self.context['institutes'] = school.get_all_institutes()
+            self.context['classes'] = school.get_all_classes()
+            self.context['teachers'] = school.get_all_teachers()
+            self.context['attributes'] = school.labs_attributes.all()
 
-    return render(request, 'manage/course_manage.html', context)
+            return render(request, 'manage/course_manage.html', self.context)
 
 
-def labs_attribute_manage(request):
+@method_decorator(require_login, name='dispatch')
+class LabAttributeManageView(View):
     context = {
         'title': '实验室属性管理',
         'active_2': True,  # 激活导航
         'labs_attribute_active': True,  # 激活导航
-        'superuser': None,
-        'teacher': None,
 
         'labs_attributes': None,
     }
 
-    if context['superuser'].school:
-        context['labs_attributes'] = context['superuser'].school.labs_attributes.all()
+    def get(self, request):
+        school = School.objects.get(id=request.session['school_id'])
+        if school:
+            self.context['labs_attributes'] = school.get_all_lab_attributes()
 
-    return render(request, 'manage/labs_attribute_manage.html', context)
+        return render(request, 'manage/labs_attribute_manage.html', self.context)
 
 
 def experiment_type_manage(request):
@@ -1347,21 +1408,6 @@ class ArrangeView(View):
         auto_arrange(request.session['current_institute_id'], attribute1_id, attribute2_id)
 
         return render(request, 'manage/arrange.html', self.context)
-
-
-def get_model_field_ids(model, field_name):
-    """
-    获取某个模型的某个多对多字段的所有数据的id
-    :param model:
-    :param field_name: 模型对应字段名称的字符串
-    :return: 返回id列表
-    """
-    field = getattr(model, field_name)
-    print('获取到：', model, field)
-    temp = []
-    for x in field.all():
-        temp.append(x.id)
-    return temp
 
 
 class CourseBlockView(View):

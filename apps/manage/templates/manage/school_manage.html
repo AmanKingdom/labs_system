@@ -289,37 +289,7 @@
                 }
             });
             if(pass){
-                // 新增的数据和原来修改的数据要分别通过post和put方式提交
-                var put_data = [];
-                var post_data = [];
-                for(var i = 0; i < school_areas_table_data.length; i++){
-                    console.log('通过数据行是否有数据库id来作为新旧数据的依据， 序号：', i, '行的数据库id：', school_areas_table_data[i]['id_in_database']);
-                    if(school_areas_table_data[i]['id_in_database']){
-                        // 数据有修改才需要提交
-                        if(school_areas_table_data[i]['hide_school_area_name'] !== school_areas_table_data[i]['school_area_name']){
-                            put_data.push({
-                                'id': school_areas_table_data[i]['id_in_database'],
-                                'name': school_areas_table_data[i]['school_area_name']
-                            })
-                        }
-                    }else{
-                        post_data.push({
-                            'name': school_areas_table_data[i]['school_area_name'],
-                        })
-                    }
-                }
-                if(put_data.length > 0){
-                    console.log('存在校区修改数据：', put_data);
-                    common_ajax(school_area_url, 'PUT', put_data);
-                }
-                if(post_data.length > 0){
-                    console.log('存在校区新增数据：', post_data);
-                    common_ajax(school_area_url, 'POST', post_data);
-                }
-            }
-            if(delete_ids_in_database.length > 0){
-                console.log('删除校区的ids：', delete_ids_in_database);
-                common_ajax(school_area_url, 'DELETE', delete_ids_in_database);
+                common_create_put_post_data_simple(school_areas_table_data, '校区', 'school_area_name', 'hide_school_area_name', school_area_url)
             }
         })
     </script>

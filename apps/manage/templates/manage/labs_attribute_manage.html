@@ -1,11 +1,11 @@
-<!--super_user/labs_attribute_manage.html-->
+<!--manage/labs_attribute_manage.html-->
 
 {% extends 'manage/base.html' %}
 
 {% block add_css_to_manage %}{% endblock %}
 
 {% block manage_body %}
-    {% if superuser.school %}
+    {% if request.session.school_id %}
         <div class="row">
             <div class="col-md-12">
                 <br>
@@ -23,8 +23,8 @@
                         <table id="labs_attribute_table"
                                class="table-responsive"
                                data-id-field="id"
-                               data-response-handler="responseHandler"
-                               data-click-to-select="true">
+                               data-click-to-select="true"
+                               data-url="{% url 'manage:lab_attributes' request.session.school_id %}">
                         </table>
                     </div>
                 </div>
@@ -43,23 +43,20 @@
 {% endblock %}
 
 {% block add_js_to_manage %}
-    <!--当前页面的全局设置-->
+    <!--全局的参数或函数-->
     <script>
-        var from_url = "{% url 'manage:labs_attribute_manage' %}";
+        var lab_attribute_url = "{% url 'manage:lab_attributes' request.session.school_id %}";
     </script>
 
 
 
     <!--实验室属性信息表设置相关  开始-->
     <script>
-        var labs_attribute_table = $('#labs_attribute_table');
+        var lab_attribute_table = $('#labs_attribute_table');
         var remove_labs_attribute_button = $('#remove_labs_attribute_button');
-        var selections = [];
 
         function init_labs_attribute_table() {
-            console.log('init_labs_attribute_table()执行');
-            labs_attribute_table.bootstrapTable('destroy').bootstrapTable({
-                locale: $('#locale').val(),
+            lab_attribute_table.bootstrapTable('destroy').bootstrapTable({
                 columns: [
                     [{
                         field: 'state',
@@ -68,42 +65,25 @@
                         title: '序号',
                         field: 'id',
                     },{
-                        field: 'labs_attribute_name',
+                        field: 'lab_attribute_name',
                         title: '属性名称<span class="need">*</span>',
                         editable:{
                             type:'text',
                         },
                     },{
+                        field: 'hide_lab_attribute_name'
+                    },{
                         field:'id_in_database',
                     }]
                 ]
             });
-
-            set_a_table(from_url, labs_attribute_table, remove_labs_attribute_button, 'labs_attributes');
-        }
-
-        function load_labs_attribute(){
-            console.log('load_labs_attribute()执行');
-            var index = 0;
-            {% for labs_attribute in labs_attributes %}
-                var new_row = {
-                    "id": index,
-                    'labs_attribute_name': '{{ labs_attribute.name }}',
-                    "id_in_database": '{{ labs_attribute.id }}',
-                };
-                // 插入该行
-                labs_attribute_table.bootstrapTable('insertRow', {
-                    index: index,
-                    row: new_row
-                });
-                index = index + 1;
-            {% empty %}
-            {% endfor %}
+            // 隐藏一些id和名称隐藏列
+            lab_attribute_table.bootstrapTable('hideColumn', 'hide_lab_attribute_name');
+            set_a_table(lab_attribute_table, remove_labs_attribute_button, '实验室属性');
         }
 
         $(function() {
             init_labs_attribute_table();
-            load_labs_attribute();
             $('#locale').change(init_labs_attribute_table);
         })
     </script>
@@ -113,16 +93,16 @@
     <script>
         $("#add_labs_attribute_button").click(function () {
             // 用index实现编号自增
-            var data = labs_attribute_table.bootstrapTable('getData');
+            var data = lab_attribute_table.bootstrapTable('getData');
             var index = data.length;
 
             var new_row = {
                 "id": index,
-                "labs_attribute_name": "",
+                "lab_attribute_name": "",
             };
 
             // 最后插入该行
-            labs_attribute_table.bootstrapTable('insertRow', {
+            lab_attribute_table.bootstrapTable('insertRow', {
                 index: index,
                 row: new_row
             });
@@ -133,22 +113,19 @@
     <!--保存修改或增加实验室属性信息后的表格 事件 开始 -->
     <script>
         $('#save_labs_attribute_button').click(function () {
-            var labs_attributes = labs_attribute_table.bootstrapTable('getData');
-
+            var lab_attribute_table_data = lab_attribute_table.bootstrapTable('getData');
             var pass = true;
 
             $('.not_null').remove();	 // 清除掉以前的错误信息
 
-            $.each(labs_attributes, function (index, value) {
-                console.log(index, value);
-
-                if(value['labs_attribute_name'] === empty_text || value['labs_attribute_name'] == ""){
+            $.each(lab_attribute_table_data, function (index, value) {
+                if(value['lab_attribute_name'] === empty_text || value['lab_attribute_name'] == ""){
                     pass = false;
-                    add_tip('labs_attribute_table', index, 2)
+                    add_tip('lab_attribute_table', index, 2)
                 }
             });
             if(pass){
-                save_ajax(from_url, 'labs_attributes', labs_attributes, '{{ school.id }}')
+                common_create_put_post_data_simple(lab_attribute_table_data, '实验室属性', 'lab_attribute_name', 'hide_lab_attribute_name', lab_attribute_url)
             }
         })
     </script>

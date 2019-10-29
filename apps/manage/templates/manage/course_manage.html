@@ -49,9 +49,9 @@
 
 {% block add_js_to_manage %}
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
-     <!--全局的参数或函数-->
+    <!--全局的参数或函数-->
     <script>
-        var course_url = "{% url 'manage:teachers' request.session.school_id %}";
+        var course_url = "{% url 'manage:courses' request.session.school_id %}";
     </script>
 
     <!--课程信息表设置相关  开始-->
@@ -107,7 +107,7 @@
                             type:'select2',
                             source: [
                                 {% for classes_item in classes %}
-                                    { value: {{ classes_item.id }}, text: '{{ classes_item.grade.department.name }}{{ classes_item.grade.name }}级{{ classes_item.name }}班'},
+                                    { value: {{ classes_item.id }}, text: '{{ classes_item.grade.institute.name }}{{ classes_item.grade.name }}级{{ classes_item.name }}班'},
                                 {% empty %}
                                     { value:"", text: not_found_data},
                                 {% endfor %}
@@ -119,7 +119,7 @@
                         },
                     },{
                         field:'teachers',
-                        title: '授课教师',
+                        title: '授课课程',
                         editable:{
                             type:'select2',
                             source: [
@@ -135,12 +135,27 @@
                             }
                         },
                     },{
+                        field:'hide_institute_id',
+                    },{
+                        field:'hide_course_name',
+                    },{
+                        field:'hide_attribute',
+                    },{
+                        field:'hide_classes',
+                    },{
+                        field:'hide_teachers',
+                    },{
                         field:'id_in_database',
                     }]
                 ]
             });
-
-            set_a_table(from_url, course_table, remove_course_button, 'courses');
+            // 隐藏一些id和名称隐藏列
+            course_table.bootstrapTable('hideColumn', 'hide_institute_id');
+            course_table.bootstrapTable('hideColumn', 'hide_course_name');
+            course_table.bootstrapTable('hideColumn', 'hide_attribute');
+            course_table.bootstrapTable('hideColumn', 'hide_classes');
+            course_table.bootstrapTable('hideColumn', 'hide_teachers');
+            set_a_table(course_table, remove_course_button, '课程');
         }
 
         $(function() {
@@ -191,23 +206,82 @@
     <!--保存修改或增加课程信息后的表格 事件 开始 -->
     <script>
         $('#save_course_button').click(function () {
-            var courses = course_table.bootstrapTable('getData');
+            var courses_table_data = course_table.bootstrapTable('getData');
             var pass = true;
 
             $('.not_null').remove();	 // 清除掉以前的错误信息
 
-            $.each(courses, function (index, value) {
+            $.each(courses_table_data, function (index, value) {
                 if(value['institute'] === empty_text || value['institute'] == ""){
                     pass = false;
                     add_tip('course_table', index, 2)
                 }
-
                 if(value['course_name'] === empty_text || value['course_name'] == ""){
                     pass = false;
                     add_tip('course_table', index, 3)
                 }
             });
             if(pass){
+                var put_data = [];
+                var post_data = [];
+                for(var i = 0; i < courses_table_data.length; i++){
+                    console.log('课程', '-通过数据行是否有数据库id来作为新旧数据的依据， 序号：', i, '行的数据库id：', courses_table_data[i]['id_in_database']);
+
+                    if(courses_table_data[i]['id_in_database']){
+                        // 数据有修改才需要提交
+                        var temp = {'id': courses_table_data[i]['id_in_database'],};
+                        var change = false;
+                        if(courses_table_data[i]['hide_institute_id'] !== courses_table_data[i]['institute']){
+                            temp['institute_id'] = courses_table_data[i]['institute'];
+                            change = true;
+                        }
+                        if(courses_table_data[i]['hide_course_name'] !== courses_table_data[i]['course_name']){
+                            temp['name'] = courses_table_data[i]['course_name'];
+                            change = true;
+                        }
+                        if(courses_table_data[i]['hide_attribute'] !== courses_table_data[i]['attribute']){
+                            temp['attribute'] = courses_table_data[i]['attribute'];
+                            change = true;
+                        }
+                        if(courses_table_data[i]['hide_classes'] !== courses_table_data[i]['classes']){
+                            temp['classes'] = courses_table_data[i]['classes'];
+                            change = true;
+                        }
+                        if(courses_table_data[i]['hide_teachers'] !== courses_table_data[i]['teachers']){
+                            temp['teachers'] = courses_table_data[i]['teachers'];
+                            change = true;
+                        }
+                        if(change) {
+                            put_data.push(temp)
+                        }
+                    }else{
+                        var temp = {};
+                        temp['institute_id'] = courses_table_data[i]['institute'];
+                        temp['name'] = courses_table_data[i]['course_name'];
+                        if(courses_table_data[i]['attribute']) {
+                            temp['attribute'] = courses_table_data[i]['attribute'];
+                        }
+                        if(courses_table_data[i]['classes']) {
+                            temp['classes'] = courses_table_data[i]['classes'];
+                        }
+                        if(courses_table_data[i]['teachers']) {
+                            temp['teachers'] = courses_table_data[i]['teachers'];
+                        }
+                        post_data.push(temp)
+                    }
+                }
+                if(put_data.length > 0){
+                    console.log('课程', '-存在修改数据：', put_data);
+                    common_ajax(course_url, 'PUT', put_data);
+                }
+                if(post_data.length > 0){
+                    console.log('课程', '-存在新增数据：', post_data);
+                    common_ajax(course_url, 'POST', post_data);
+                }
+                if(delete_ids_in_database.length > 0){
+                    console.log('课程', '-删除的ids：', delete_ids_in_database);
+                    common_ajax(course_url, 'DELETE', delete_ids_in_database);
+                }
             }
         })
     </script>

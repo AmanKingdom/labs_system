@@ -1,4 +1,4 @@
-<!--super_user/lab_manage.html-->
+<!--manage/lab_manage.html-->
 
 {% extends 'manage/base.html' %}
 
@@ -27,8 +27,8 @@
                         <table id="lab_table"
                                class="table-responsive"
                                data-id-field="id"
-                               data-response-handler="responseHandler"
-                               data-click-to-select="true">
+                               data-click-to-select="true"
+                               data-url="{% url 'manage:labs' request.session.school_id %}">
                         </table>
                     </div>
                 </div>
@@ -48,23 +48,19 @@
 
 {% block add_js_to_manage %}
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
-    <!--当前页面的全局设置-->
+    <!--全局的参数或函数-->
     <script>
-        var from_url = "{% url 'manage:lab_manage' %}";
+        var lab_url = "{% url 'manage:labs' request.session.school_id %}";
     </script>
-
 
 
     <!--实验室信息表设置相关  开始-->
     <script>
         var lab_table = $('#lab_table');
         var remove_lab_button = $('#remove_lab_button');
-        var selections = [];
 
         function init_lab_table() {
-            console.log('init_lab_table()执行');
             lab_table.bootstrapTable('destroy').bootstrapTable({
-                locale: $('#locale').val(),
                 columns: [
                     [{
                         field: 'state',
@@ -114,7 +110,7 @@
                         editable:{
                             type:'select',
                             source: [
-                                {% for attribute in labs_attributes %}
+                                {% for attribute in lab_attributes %}
                                     { value: {{ attribute.id }}, text: '{{ attribute.name }}'},
                                 {% empty %}
                                     { value:"", text: not_found_data},
@@ -127,7 +123,7 @@
                         editable:{
                             type:'select',
                             source: [
-                                {% for attribute in labs_attributes %}
+                                {% for attribute in lab_attributes %}
                                     { value: {{ attribute.id }}, text: '{{ attribute.name }}'},
                                 {% empty %}
                                     { value:"", text: not_found_data},
@@ -140,7 +136,7 @@
                         editable:{
                             type:'select',
                             source: [
-                                {% for attribute in labs_attributes %}
+                                {% for attribute in lab_attributes %}
                                     { value: {{ attribute.id }}, text: '{{ attribute.name }}'},
                                 {% empty %}
                                     { value:"", text: not_found_data},
@@ -156,44 +152,40 @@
                             mode:"popup",
                         },
                     },{
+                        field:'hide_institute_id',
+                    },{
+                        field:'hide_lab_name',
+                    },{
+                        field:'hide_number_of_people',
+                    },{
+                        field:'hide_dispark',
+                    },{
+                        field:'hide_attribute1_id',
+                    },{
+                        field:'hide_attribute2_id',
+                    },{
+                        field:'hide_attribute3_id',
+                    },{
+                        field:'hide_equipments',
+                    },{
                         field:'id_in_database',
                     }]
                 ]
             });
-
-            set_a_table(from_url, lab_table, remove_lab_button, 'labs');
-        }
-
-        function load_lab(){
-            console.log('load_labs()执行');
-            var index = 0;
-            {% for lab in labs %}
-                var new_row = {
-                    "id": index,
-                    'institute': '{{ lab.institute.id }}',
-                    'lab_name': '{{ lab.name }}',
-                    'number_of_people': '{{ lab.number_of_people }}',
-                    'dispark': {% if lab.dispark %}'1'{% else %}'0'{% endif %},
-                    'attribute1': '{{ lab.attribute1.id }}',
-                    'attribute2': '{{ lab.attribute2.id }}',
-                    'attribute3': '{{ lab.attribute3.id }}',
-                    'equipments': '{{ lab.equipments }}',
-                    "id_in_database": '{{ lab.id }}',
-                };
-                console.log('实验室开放：{{ lab.dispark }}');
-                // 插入该行
-                lab_table.bootstrapTable('insertRow', {
-                    index: index,
-                    row: new_row
-                });
-                index = index + 1;
-            {% empty %}
-            {% endfor %}
+            // 隐藏一些id和名称隐藏列
+            lab_table.bootstrapTable('hideColumn', 'hide_institute_id');
+            lab_table.bootstrapTable('hideColumn', 'hide_lab_name');
+            lab_table.bootstrapTable('hideColumn', 'hide_number_of_people');
+            lab_table.bootstrapTable('hideColumn', 'hide_dispark');
+            lab_table.bootstrapTable('hideColumn', 'hide_attribute1_id');
+            lab_table.bootstrapTable('hideColumn', 'hide_attribute2_id');
+            lab_table.bootstrapTable('hideColumn', 'hide_attribute3_id');
+            lab_table.bootstrapTable('hideColumn', 'hide_equipments');
+            set_a_table(lab_table, remove_lab_button, '实验室');
         }
 
         $(function() {
             init_lab_table();
-            load_lab();
             $('#locale').change(init_lab_table);
         })
     </script>
@@ -208,7 +200,7 @@
 
             var new_row = null;
 
-            if(index == 0){
+            if(index === 0){
                 new_row = {
                     "id": index,
                     "institute": {% if institutes %}{{ institutes.0.id }}{% else %}""{% endif %},
@@ -246,32 +238,106 @@
     <!--保存修改或增加实验室信息后的表格 事件 开始 -->
     <script>
         $('#save_lab_button').click(function () {
-            var labs = lab_table.bootstrapTable('getData');
-
+            var lab_table_data = lab_table.bootstrapTable('getData');
             var pass = true;
 
             $('.not_null').remove();	 // 清除掉以前的错误信息
 
-            $.each(labs, function (index, value) {
-                console.log(index, value);
-
+            $.each(lab_table_data, function (index, value) {
                 if(value['institute'] === empty_text || value['institute'] == "" || value['institute'] == null){
                     pass = false;
                     add_tip('lab_table', index, 2)
                 }
-
                 if(value['lab_name'] === empty_text || value['lab_name'] == ""){
                     pass = false;
                     add_tip('lab_table', index, 3)
                 }
-
                 if(value['dispark'] === empty_text || value['dispark'] == ""){
                     pass = false;
                     add_tip('lab_table', index, 5)
                 }
             });
             if(pass){
-                save_ajax(from_url, 'labs', labs, '{{ school.id }}')
+                var put_data = [];
+                var post_data = [];
+                for(var i = 0; i < lab_table_data.length; i++){
+                    console.log('课程', '-通过数据行是否有数据库id来作为新旧数据的依据， 序号：', i, '行的数据库id：', lab_table_data[i]['id_in_database']);
+
+                    if(lab_table_data[i]['id_in_database']){
+                        // 数据有修改才需要提交
+                        var temp = {'id': lab_table_data[i]['id_in_database'],};
+                        var change = false;
+                        if(lab_table_data[i]['hide_institute_id'] !== lab_table_data[i]['institute']){
+                            temp['institute_id'] = lab_table_data[i]['institute'];
+                            change = true;
+                        }
+                        if(lab_table_data[i]['hide_lab_name'] !== lab_table_data[i]['lab_name']){
+                            temp['name'] = lab_table_data[i]['lab_name'];
+                            change = true;
+                        }
+                        if(lab_table_data[i]['hide_number_of_people'] !== lab_table_data[i]['number_of_people']){
+                            temp['number_of_people'] = lab_table_data[i]['number_of_people'];
+                            change = true;
+                        }
+                        if(lab_table_data[i]['hide_dispark'] !== lab_table_data[i]['dispark']){
+                            temp['dispark'] = lab_table_data[i]['dispark'];
+                            change = true;
+                        }
+                        if(lab_table_data[i]['hide_attribute1_id'] !== lab_table_data[i]['attribute1']){
+                            temp['attribute1_id'] = lab_table_data[i]['attribute1'];
+                            change = true;
+                        }
+                        if(lab_table_data[i]['hide_attribute2_id'] !== lab_table_data[i]['attribute2']){
+                            temp['attribute2_id'] = lab_table_data[i]['attribute2'];
+                            change = true;
+                        }
+                        if(lab_table_data[i]['hide_attribute3_id'] !== lab_table_data[i]['attribute3']){
+                            temp['attribute3_id'] = lab_table_data[i]['attribute3'];
+                            change = true;
+                        }
+                        if(lab_table_data[i]['hide_equipments'] !== lab_table_data[i]['equipments']){
+                            temp['equipments'] = lab_table_data[i]['equipments'];
+                            change = true;
+                        }
+                        if(change) {
+                            put_data.push(temp)
+                        }
+                    }else{
+                        var temp = {};
+                        temp['institute_id'] = lab_table_data[i]['institute'];
+                        temp['name'] = lab_table_data[i]['lab_name'];
+                        temp['dispark'] = lab_table_data[i]['dispark'];
+
+                        if(lab_table_data[i]['number_of_people']) {
+                            temp['number_of_people'] = lab_table_data[i]['number_of_people'];
+                        }
+                        if(lab_table_data[i]['attribute1']) {
+                            temp['attribute1_id'] = lab_table_data[i]['attribute1'];
+                        }
+                        if(lab_table_data[i]['attribute2']) {
+                            temp['attribute2_id'] = lab_table_data[i]['attribute2'];
+                        }
+                        if(lab_table_data[i]['attribute3']) {
+                            temp['attribute3_id'] = lab_table_data[i]['attribute3'];
+                        }
+                        if(lab_table_data[i]['equipments']) {
+                            temp['equipments'] = lab_table_data[i]['equipments'];
+                        }
+                        post_data.push(temp)
+                    }
+                }
+                if(put_data.length > 0){
+                    console.log('实验室', '-存在修改数据：', put_data);
+                    common_ajax(lab_url, 'PUT', put_data);
+                }
+                if(post_data.length > 0){
+                    console.log('实验室', '-存在新增数据：', post_data);
+                    common_ajax(lab_url, 'POST', post_data);
+                }
+                if(delete_ids_in_database.length > 0){
+                    console.log('实验室', '-删除的ids：', delete_ids_in_database);
+                    common_ajax(lab_url, 'DELETE', delete_ids_in_database);
+                }
             }
         })
     </script>

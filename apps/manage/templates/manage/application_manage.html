@@ -21,37 +21,29 @@
                     <thead><tr>
                         <th data-field="no" data-sortable="true">序号</th>
                         <th data-field="teacher">授课教师</th>
-                        <th data-field="term" data-sortable="true">学年学期</th>
                         <th data-field="course" data-sortable="true">课程</th>
-                        <th data-field="teaching_materials">实验教材</th>
                         <th data-field="experiments_amount" data-sortable="true">实验项数</th>
                         <th data-field="classes" data-sortable="true">教学班级</th>
-                        <th data-field="create_time" data-sortable="true">创建时间</th>
+                        <th data-field="modify_time" data-sortable="true">修改时间</th>
                         <th data-field="status" data-sortable="true">状态</th>
                         <th>查看详情</th>
-                        {% if superuser %}
-                            <th>审核</th>
-                        {% endif %}
+                        <th>审核</th>
                     </tr></thead>
                     <tbody>
                     {% for x in courses %}
                         <tr>
                             <td>{{ x.no }}</td>
                             <td>{{ x.teachers }}</td>
-                            <td>{{ x.term }}</td>
                             <td id="{{ x.id }}">{{ x.course }}</td>
-                            <td>{{ x.teaching_materials }}</td>
                             <td>{{ x.experiments_amount }}</td>
                             <td>{{ x.classes | safe }}</td>
-                            <td>{{ x.create_time }}</td>
+                            <td>{{ x.modify_time }}</td>
                             <td>{{ x.status }}</td>
                             <td><button class="see_more_button btn btn-primary btn-xs">查看详情</button></td>
-                            {% if superuser %}
-                                <td>
-                                    <button class="pass_button btn btn-primary btn-xs">通过</button>
-                                    <button class="not_pass_button btn btn-primary btn-xs">不通过</button>
-                                </td>
-                            {% endif %}
+                            <td>
+                                <button class="pass_button btn btn-primary btn-xs">通过</button>
+                                <button class="not_pass_button btn btn-primary btn-xs">不通过</button>
+                            </td>
                         </tr>
                     {% endfor %}
                     </tbody>

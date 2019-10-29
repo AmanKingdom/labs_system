@@ -1,4 +1,4 @@
-<!--manage/labs_attribute_manage.html-->
+<!--manage/lab_attribute_manage.html-->
 
 {% extends 'manage/base.html' %}
 
@@ -13,14 +13,14 @@
                     <div class="ibox-title">
                         <h5>实验室属性信息表</h5>
                         <div class="ibox-tools">
-                            <button id="add_labs_attribute_button" class="btn btn-primary">添加实验室属性</button>
-                            <button id="remove_labs_attribute_button" class="btn btn-danger" disabled>删除实验室属性</button>
-                            <button id="save_labs_attribute_button" class="btn btn-primary">保存修改</button>
+                            <button id="add_lab_attribute_button" class="btn btn-primary">添加实验室属性</button>
+                            <button id="remove_lab_attribute_button" class="btn btn-danger" disabled>删除实验室属性</button>
+                            <button id="save_lab_attribute_button" class="btn btn-primary">保存修改</button>
                             <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                         </div>
                     </div>
                     <div class="ibox-content">
-                        <table id="labs_attribute_table"
+                        <table id="lab_attribute_table"
                                class="table-responsive"
                                data-id-field="id"
                                data-click-to-select="true"
@@ -49,13 +49,12 @@
     </script>
 
 
-
     <!--实验室属性信息表设置相关  开始-->
     <script>
-        var lab_attribute_table = $('#labs_attribute_table');
-        var remove_labs_attribute_button = $('#remove_labs_attribute_button');
+        var lab_attribute_table = $('#lab_attribute_table');
+        var remove_lab_attribute_button = $('#remove_lab_attribute_button');
 
-        function init_labs_attribute_table() {
+        function init_lab_attribute_table() {
             lab_attribute_table.bootstrapTable('destroy').bootstrapTable({
                 columns: [
                     [{
@@ -79,19 +78,19 @@
             });
             // 隐藏一些id和名称隐藏列
             lab_attribute_table.bootstrapTable('hideColumn', 'hide_lab_attribute_name');
-            set_a_table(lab_attribute_table, remove_labs_attribute_button, '实验室属性');
+            set_a_table(lab_attribute_table, remove_lab_attribute_button, '实验室属性');
         }
 
         $(function() {
-            init_labs_attribute_table();
-            $('#locale').change(init_labs_attribute_table);
+            init_lab_attribute_table();
+            $('#locale').change(init_lab_attribute_table);
         })
     </script>
     <!--实验室属性信息表设置相关  结束-->
 
     <!--动态添加实验室属性信息表格行 事件 开始-->
     <script>
-        $("#add_labs_attribute_button").click(function () {
+        $("#add_lab_attribute_button").click(function () {
             // 用index实现编号自增
             var data = lab_attribute_table.bootstrapTable('getData');
             var index = data.length;
@@ -112,7 +111,7 @@
 
     <!--保存修改或增加实验室属性信息后的表格 事件 开始 -->
     <script>
-        $('#save_labs_attribute_button').click(function () {
+        $('#save_lab_attribute_button').click(function () {
             var lab_attribute_table_data = lab_attribute_table.bootstrapTable('getData');
             var pass = true;
 

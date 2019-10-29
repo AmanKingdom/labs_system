@@ -186,7 +186,7 @@ class LittleSameModelBaseView(View):
         this_logger.debug(self.model_Chinese_name + '信息--接收到post数据：' + str(post_data))
 
         for data in post_data:
-            if self.model is SchoolArea or self.model is LabsAttribute:
+            if self.model is SchoolArea or self.model is LabsAttribute or self.model is ExperimentType:
                 self.model.objects.create(**data, school_id=school_id)
             else:
                 self.model.objects.create(**data)
@@ -408,7 +408,57 @@ class CoursesView(LittleSameModelBaseView):
         return JsonResponse({'status': True})
 
 
+class LabsView(LittleSameModelBaseView):
+    model_Chinese_name = '实验室'
+    model = Lab
+    get_all_what_func_name = 'get_all_labs'
 
+    def make_return_data(self, objects):
+        return_data = []
+        for obj, i in zip(objects, range(0, len(objects))):
+            new_dict = {
+                'id': i,
+                'institute': obj.institute_id,
+                'hide_institute_id': obj.institute_id,
+                'lab_name': obj.name,
+                'hide_lab_name': obj.name,
+                'number_of_people': obj.number_of_people,
+                'hide_number_of_people': obj.number_of_people,
+                'dispark': '1' if obj.dispark else '0',
+                'hide_dispark': '1' if obj.dispark else '0',
+                'attribute1': obj.attribute1.id if obj.attribute1 else '',
+                'hide_attribute1_id': obj.attribute1.id if obj.attribute1 else '',
+                'attribute2': obj.attribute2.id if obj.attribute2 else '',
+                'hide_attribute2_id': obj.attribute2.id if obj.attribute2 else '',
+                'attribute3': obj.attribute3.id if obj.attribute3 else '',
+                'hide_attribute3_id': obj.attribute3.id if obj.attribute3 else '',
+                'equipments': obj.equipments if obj.equipments else '',
+                'hide_equipments': obj.equipments if obj.equipments else '',
+                'id_in_database': obj.id
+            }
+            return_data.append(new_dict)
+        return return_data
+
+    def put(self, request, school_id):     # 修改信息
+        put_data = QueryDict(request.body)
+        put_data = json.loads(list(put_data.keys())[0])
+        this_logger.debug(self.model_Chinese_name + '信息--接收到put数据：' + str(put_data))
+
+        for data in put_data:
+            if 'dispark' in data.keys():
+                data['dispark'] = True if data['dispark']=='1' else False
+            self.model.objects.filter(id=data['id']).update(**data)
+        return JsonResponse({'status': True})
+
+    def post(self, request, school_id):       # 创建信息
+        post_data = json.loads(list(request.POST.keys())[0])
+        this_logger.debug(self.model_Chinese_name + '信息--接收到post数据：' + str(post_data))
+
+        for data in post_data:
+            if 'dispark' in data.keys():
+                data['dispark'] = True if data['dispark']=='1' else False
+            self.model.objects.create(**data)
+        return JsonResponse({'status': True})
 
 
 class LabAttributesView(LittleSameModelBaseView):
@@ -429,6 +479,27 @@ class LabAttributesView(LittleSameModelBaseView):
         return return_data
 
 
+class ExperimentTypesView(LittleSameModelBaseView):
+    model_Chinese_name = '实验类型'
+    model = ExperimentType
+    get_all_what_func_name = 'get_all_experiment_types'
+
+    def make_return_data(self, objects):
+        return_data = []
+        for obj, i in zip(objects, range(0, len(objects))):
+            new_dict = {
+                'id': i,
+                'experiment_type_name': obj.name,
+                'hide_experiment_type_name': obj.name,
+                'id_in_database': obj.id
+            }
+            return_data.append(new_dict)
+        return return_data
+
+
+
+
+
 # 个人主页
 def personal_info(request):
     context = {
@@ -446,6 +517,55 @@ def personal_info(request):
         context['departments'] = School.objects.get(id=request.session['school_id']).get_all_departments()
 
     return render(request, 'manage/personal_info.html', context)
+
+
+def become_a_teacher(request):
+    data = json.loads(list(request.POST.keys())[0])
+
+    context = {
+        'status': True,
+        'message': None,
+    }
+
+    if request.is_ajax():
+        try:
+            from_department_id = data['from_department_id']
+            superuser = SuperUser.objects.get(account=request.session['user_account'])
+            teacher = Teacher.objects.create(department_id=from_department_id,
+                                             name=superuser.name,
+                                             account=superuser.account,
+                                             password=superuser.password,
+                                             phone=superuser.account)
+            superuser.is_teacher = teacher
+            superuser.save()
+
+        except:
+            context['status'] = False
+            context['message'] = '修改失败，请重试'
+
+        return JsonResponse(context)
+
+
+def cancel_the_teacher(request):
+    data = json.loads(list(request.POST.keys())[0])
+
+    context = {
+        'status': True,
+        'message': None,
+    }
+
+    if request.is_ajax():
+        try:
+            SuperUser.objects.filter(id=data['superuser_id'])[0].is_teacher.delete()
+
+        except:
+            context['status'] = False
+            context['message'] = '修改失败，请重试'
+
+        return JsonResponse(context)
+
+
+
 
 
 @method_decorator(require_login, name='dispatch')
@@ -503,7 +623,7 @@ class ClassesManageView(View):
         if request.session.get('school_id', None):
             school = School.objects.get(id=request.session['school_id'])
             if school:
-                    self.context['grades'] = school.get_all_grades()
+                self.context['grades'] = school.get_all_grades()
         return render(request, 'manage/classes_manage.html', self.context)
 
 
@@ -546,7 +666,7 @@ class CourseManageView(View):
             self.context['institutes'] = school.get_all_institutes()
             self.context['classes'] = school.get_all_classes()
             self.context['teachers'] = school.get_all_teachers()
-            self.context['attributes'] = school.labs_attributes.all()
+            self.context['attributes'] = school.lab_attributes.all()
 
             return render(request, 'manage/course_manage.html', self.context)
 
@@ -556,426 +676,88 @@ class LabAttributeManageView(View):
     context = {
         'title': '实验室属性管理',
         'active_2': True,  # 激活导航
-        'labs_attribute_active': True,  # 激活导航
+        'lab_attribute_active': True,  # 激活导航
 
-        'labs_attributes': None,
+        'lab_attributes': None,
     }
 
     def get(self, request):
         school = School.objects.get(id=request.session['school_id'])
         if school:
-            self.context['labs_attributes'] = school.get_all_lab_attributes()
+            self.context['lab_attributes'] = school.get_all_lab_attributes()
 
-        return render(request, 'manage/labs_attribute_manage.html', self.context)
+        return render(request, 'manage/lab_attribute_manage.html', self.context)
 
 
-def experiment_type_manage(request):
+@method_decorator(require_login, name='dispatch')
+class ExperimentTypeManageView(View):
     context = {
         'title': '实验类型设置',
         'active_3': True,  # 激活导航
         'experiment_type_active': True,  # 激活导航
-        'superuser': None,
-        'teacher': None,
-
-        'experiment_types': None,
     }
 
-    if context['superuser'].school:
-        context['experiment_types'] = context['superuser'].school.experiment_types.all()
-
-    return render(request, 'manage/experiment_type_manage.html', context)
+    def get(self, request):
+        return render(request, 'manage/experiment_type_manage.html', self.context)
 
 
-def lab_manage(request):
+@method_decorator(require_login, name='dispatch')
+class LabManageView(View):
     context = {
         'title': '实验室管理',
         'active_2': True,  # 激活导航
         'lab_active': True,  # 激活导航
-        'superuser': None,
-        'teacher': None,
 
         'institutes': [],
         'labs': [],
-        'labs_attributes': [],
+        'lab_attributes': [],
     }
 
+    def get(self, request):
+        school = School.objects.get(id=request.session['school_id'])
+        if school:
+            self.context['institutes'] = school.get_all_institutes()
+            self.context['lab_attributes'] = school.get_all_lab_attributes()
 
-    school = context['superuser'].school
-    if school:
-        context['labs_attributes'] = school.labs_attributes.all()
-
-    return render(request, 'manage/lab_manage.html', context)
+        return render(request, 'manage/lab_manage.html', self.context)
 
 
-def application_manage(request):
+@method_decorator(require_login, name='dispatch')
+class ApplicationManageView(View):
     context = {
         'title': '实验申请表审批',
         'active_3': True,  # 激活导航
         'application_active': True,  # 激活导航
-        'superuser': None,
-        'teacher': None,
 
         'courses': [],
     }
 
-    # if all_courses:
-    #     i = 1
-    #     for course in all_courses:
-    #         experiments_of_the_course = Experiment.objects.filter(course=course)
-    #         if experiments_of_the_course:
-    #             experiments_amount = len(experiments_of_the_course)
-    #
-    #             classes_name = ""
-    #             for class_item in course.classes.all():
-    #                 classes_name = classes_name + '<br>' + class_item.grade.name + "级" + class_item.grade.department.name + str(
-    #                     class_item.name)
-    #
-    #             teaching_materials = ""
-    #             if course.total_requirements:
-    #                 teaching_materials = course.total_requirements.teaching_materials
-    #
-    #             # 或许不止一个老师上一门课
-    #             teachers = ""
-    #             for teacher in course.teachers.all():
-    #                 teachers = teachers + ',' + teacher.name
-    #
-    #             course_item = {
-    #                 "id": course.id,
-    #                 "no": i,
-    #                 "teachers": teachers[1:],
-    #                 "term": course.term if course.term else "",
-    #                 "course": course.name,
-    #                 "teaching_materials": teaching_materials,
-    #                 "experiments_amount": experiments_amount,
-    #                 "classes": classes_name[4:],
-    #                 "create_time": course.modify_time,
-    #                 "status": STATUS['%d' % experiments_of_the_course[0].status]
-    #             }
-    #             context['courses'].append(course_item)
-    #             i = i + 1
+    def get(self, request):
+        self.context['courses'] = []
+        school = School.objects.get(id=request.session['school_id'])
+        if school:
+            all_courses = school.get_all_courses()
+            if all_courses:
+                for course, i in zip(all_courses, range(0, len(all_courses))):
+                    experiments_of_the_course = Experiment.objects.filter(course=course)
+                    if experiments_of_the_course:
+                        experiments_amount = len(experiments_of_the_course)
 
-    return render(request, 'manage/application_manage.html', context)
+                        classes_name = get_classes_name_from_course(course.id)
+                        teachers = get_teachers_name_from_course(course.id)
 
-
-# 如果传入的旧名称和新名称一样就是要创建新学校
-def create_or_modify_school_ajax(request):
-    data = json.loads(list(request.POST.keys())[0])
-
-    context = {
-        'status': True,
-        'message': None,
-    }
-    if request.is_ajax():
-        old_school_name = data['old_school_name']
-        new_school_name = data['new_school_name']
-
-        if old_school_name and new_school_name:
-            this_logger.info('接收到old_school_name:' + old_school_name + ' new_school_name:' + new_school_name)
-            if old_school_name == new_school_name:
-                s = School.objects.create(name=new_school_name)
-                superuser = SuperUser.objects.filter(account=request.session['user_account'])
-                superuser.update(school=s)
-                # 创建一个学校的同时应该创建一个默认的学年学期给它
-                create_default_term_for_school(s)
-            else:
-                school = School.objects.filter(name=old_school_name)
-                school.update(name=new_school_name)
-        else:
-            context['status'] = False
-            context['message'] = '传入参数为空'
-        return JsonResponse(context)
-
-
-def remove_ajax(request):
-    data = json.loads(list(request.POST.keys())[0])
-
-    context = {
-        'status': True,
-        'message': None,
-    }
-    if request.is_ajax():
-        remove_ids = data['remove_ids']
-        this_logger.info('接收到remove_ids:' + str(remove_ids) + '类型为：' + str(type(remove_ids)) +
-                         ' 删除对象模型为：' + data['remove_objects_model'])
-
-        try:
-            for id in remove_ids:
-                if data['remove_objects_model'] == 'school_areas':
-                    SchoolArea.objects.get(id=id).delete()
-                elif data['remove_objects_model'] == 'institutes':
-                    Institute.objects.get(id=id).delete()
-                elif data['remove_objects_model'] == 'departments':
-                    Department.objects.get(id=id).delete()
-                elif data['remove_objects_model'] == 'grades':
-                    Grade.objects.get(id=id).delete()
-                elif data['remove_objects_model'] == 'classes':
-                    Classes.objects.get(id=id).delete()
-                elif data['remove_objects_model'] == 'teachers':
-                    Teacher.objects.get(id=id).delete()
-                elif data['remove_objects_model'] == 'courses':
-                    Course.objects.get(id=id).delete()
-                elif data['remove_objects_model'] == 'labs_attributes':
-                    LabsAttribute.objects.get(id=id).delete()
-                elif data['remove_objects_model'] == 'experiment_types':
-                    ExperimentType.objects.get(id=id).delete()
-                elif data['remove_objects_model'] == 'labs':
-                    Lab.objects.get(id=id).delete()
-
-        except:
-            context['status'] = False
-            context['message'] = '删除失败，请重试'
-
-        return JsonResponse(context)
-
-
-def save_ajax(request):
-    data = json.loads(list(request.POST.keys())[0])
-
-    context = {
-        'status': True,
-        'message': None,
-    }
-
-    if request.is_ajax():
-
-        save_objects_data = data['save_objects_data']
-        school_id = data['school_id']
-        print('save_objects_data：', save_objects_data, 'school_id：', school_id)
-
-        # 删除情况
-        if data['delete_ids_in_database']:
-            this_logger.info('将要删除：' + str(data['delete_ids_in_database']))
-
-            for id in data['delete_ids_in_database']:
-                if data['save_objects_model'] == 'school_areas':
-                    SchoolArea.objects.get(id=id).delete()
-                elif data['save_objects_model'] == 'institutes':
-                    Institute.objects.get(id=id).delete()
-                elif data['save_objects_model'] == 'departments':
-                    Department.objects.get(id=id).delete()
-                elif data['save_objects_model'] == 'grades':
-                    Grade.objects.get(id=id).delete()
-                elif data['save_objects_model'] == 'classes':
-                    Classes.objects.get(id=id).delete()
-                elif data['save_objects_model'] == 'teachers':
-                    Teacher.objects.get(id=id).delete()
-                elif data['save_objects_model'] == 'courses':
-                    Course.objects.get(id=id).delete()
-                elif data['save_objects_model'] == 'labs_attributes':
-                    LabsAttribute.objects.get(id=id).delete()
-                elif data['save_objects_model'] == 'experiment_types':
-                    ExperimentType.objects.get(id=id).delete()
-                elif data['save_objects_model'] == 'labs':
-                    Lab.objects.get(id=id).delete()
-
-        # try:
-        for save_object in save_objects_data:
-            if 'id_in_database' in save_object.keys():
-                # 修改情况
-                if data['save_objects_model'] == 'school_areas':
-                    s = SchoolArea.objects.filter(id=int(save_object['id_in_database']))
-                    s.update(name=save_object['school_area_name'])
-                elif data['save_objects_model'] == 'institutes':
-                    i = Institute.objects.filter(id=int(save_object['id_in_database']))
-                    i.update(name=save_object['institute_name'],
-                             school_area=SchoolArea.objects.get(id=save_object['school_area']))
-                elif data['save_objects_model'] == 'departments':
-                    d = Department.objects.filter(id=int(save_object['id_in_database']))
-                    d.update(name=save_object['department_name'],
-                             institute=Institute.objects.get(id=save_object['institute']))
-                elif data['save_objects_model'] == 'grades':
-                    g = Grade.objects.filter(id=int(save_object['id_in_database']))
-                    g.update(name=save_object['grade_name'],
-                             department=Department.objects.get(id=save_object['department']))
-                elif data['save_objects_model'] == 'classes':
-                    c = Classes.objects.filter(id=int(save_object['id_in_database']))
-                    c.update(name=save_object['classes_name'],
-                             grade=Grade.objects.get(id=save_object['grade']))
-                elif data['save_objects_model'] == 'teachers':
-                    t = Teacher.objects.filter(id=int(save_object['id_in_database']))
-                    t.update(name=save_object['teacher_name'],
-                             account=save_object['account'],
-                             password=save_object['password'],
-                             phone=save_object['phone'],
-                             department=Department.objects.get(id=save_object['department']))
-                elif data['save_objects_model'] == 'courses':
-                    term = Term.objects.filter(
-                        school=SuperUser.objects.get(account=request.session.get('user_account')).school)[0]
-                    c = Course.objects.filter(id=int(save_object['id_in_database']))
-                    c.update(name=save_object['course_name'],
-                             institute=Institute.objects.get(id=save_object['institute']),
-                             term=term)
-                    if save_object['attribute']:
-                        c.update(attribute=LabsAttribute.objects.get(id=save_object['attribute']))
-                    add_teachers_classes_to_course(c[0], save_object)
-                elif data['save_objects_model'] == 'labs_attributes':
-                    l = LabsAttribute.objects.filter(id=int(save_object['id_in_database']))
-                    l.update(name=save_object['labs_attribute_name'])
-                elif data['save_objects_model'] == 'experiment_types':
-                    et = ExperimentType.objects.filter(id=int(save_object['id_in_database']))
-                    et.update(name=save_object['experiment_type_name'])
-                elif data['save_objects_model'] == 'labs':
-                    lab = Lab.objects.filter(id=int(save_object['id_in_database']))
-                    if str(save_object['dispark']) == '1':
-                        dispark = True
-                    else:
-                        dispark = False
-                    lab.update(name=save_object['lab_name'],
-                               institute=Institute.objects.get(id=save_object['institute']),
-                               number_of_people=save_object['number_of_people'],
-                               dispark=dispark,
-                               equipments=save_object['equipments'])
-                    set_attribute_for_lab(lab[0], save_object)
-
-            else:
-                # 创建情况
-                if data['save_objects_model'] == 'school_areas':
-                    SchoolArea.objects.create(name=save_object['school_area_name'],
-                                              school=School.objects.get(id=school_id))
-                elif data['save_objects_model'] == 'institutes':
-                    Institute.objects.create(name=save_object['institute_name'],
-                                             school_area=SchoolArea.objects.get(id=save_object['school_area']))
-                elif data['save_objects_model'] == 'departments':
-                    Department.objects.create(name=save_object['department_name'],
-                                              institute=Institute.objects.get(id=save_object['institute']))
-                elif data['save_objects_model'] == 'grades':
-                    Grade.objects.create(name=save_object['grade_name'],
-                                         department=Department.objects.get(id=save_object['department']))
-                elif data['save_objects_model'] == 'classes':
-                    Classes.objects.create(name=save_object['classes_name'],
-                                           grade=Grade.objects.get(id=save_object['grade']))
-                elif data['save_objects_model'] == 'teachers':
-                    Teacher.objects.create(name=save_object['teacher_name'],
-                                           account=save_object['account'],
-                                           password=save_object['password'],
-                                           phone=save_object['phone'],
-                                           department=Department.objects.get(id=save_object['department']))
-                elif data['save_objects_model'] == 'courses':
-                    term = Term.objects.filter(
-                        school=SuperUser.objects.get(account=request.session.get('user_account')).school)[0]
-                    c = Course.objects.create(name=save_object['course_name'],
-                                              institute=Institute.objects.get(id=save_object['institute']),
-                                              term=term)
-                    if save_object['attribute']:
-                        c.attribute = LabsAttribute.objects.get(id=save_object['attribute'])
-                        c.save()
-                    add_teachers_classes_to_course(c, save_object)
-                elif data['save_objects_model'] == 'labs_attributes':
-                    LabsAttribute.objects.create(name=save_object['labs_attribute_name'],
-                                                 school=SuperUser.objects.get(
-                                                     account=request.session.get('user_account')).school)
-                elif data['save_objects_model'] == 'experiment_types':
-                    ExperimentType.objects.create(name=save_object['experiment_type_name'],
-                                                  school=SuperUser.objects.get(
-                                                      account=request.session.get('user_account')).school)
-                elif data['save_objects_model'] == 'labs':
-                    if str(save_object['dispark']) == '1':
-                        dispark = True
-                    else:
-                        dispark = False
-                    lab = Lab.objects.create(name=save_object['lab_name'],
-                                             institute=Institute.objects.get(id=save_object['institute']),
-                                             number_of_people=save_object['number_of_people'],
-                                             dispark=dispark,
-                                             equipments=save_object['equipments'])
-                    set_attribute_for_lab(lab, save_object)
-
-            # except:
-            #     context['status'] = False
-            #     context['message'] = '修改失败，请重试'
-
-        return JsonResponse(context)
-
-
-def set_attribute_for_lab(lab, save_object):
-    if save_object['attribute1'] != "":
-        lab.attribute1 = LabsAttribute.objects.get(id=save_object['attribute1'])
-    if save_object['attribute2'] != "":
-        lab.attribute2 = LabsAttribute.objects.get(id=save_object['attribute2'])
-    if save_object['attribute3'] != "":
-        lab.attribute3 = LabsAttribute.objects.get(id=save_object['attribute3'])
-    lab.save()
-
-
-def add_teachers_classes_to_course(course, save_object):
-    classes_ids = make_ids(str(save_object['classes']))
-
-    for classes_id in classes_ids:
-        if classes_id:
-            course.classes.add(Classes.objects.get(id=classes_id))
-
-    teachers_ids = make_ids(str(save_object['teachers']))
-
-    for teacher_id in teachers_ids:
-        if teacher_id:
-            course.teachers.add(Teacher.objects.get(id=teacher_id))
-
-
-# 整理ids
-def make_ids(ids):
-    if ids.startswith(','):
-        ids = ids[1:]
-    return ids.split(',')
-
-
-def become_a_teacher(request):
-    data = json.loads(list(request.POST.keys())[0])
-
-    context = {
-        'status': True,
-        'message': None,
-    }
-
-    if request.is_ajax():
-        try:
-            from_department_id = data['from_department_id']
-            superuser = SuperUser.objects.get(account=request.session['user_account'])
-            teacher = Teacher.objects.create(department_id=from_department_id,
-                                             name=superuser.name,
-                                             account=superuser.account,
-                                             password=superuser.password,
-                                             phone=superuser.account)
-            superuser.is_teacher = teacher
-            superuser.save()
-
-        except:
-            context['status'] = False
-            context['message'] = '修改失败，请重试'
-
-        return JsonResponse(context)
-
-
-def cancel_the_teacher(request):
-    data = json.loads(list(request.POST.keys())[0])
-
-    context = {
-        'status': True,
-        'message': None,
-    }
-
-    if request.is_ajax():
-        try:
-            SuperUser.objects.filter(id=data['superuser_id'])[0].is_teacher.delete()
-
-        except:
-            context['status'] = False
-            context['message'] = '修改失败，请重试'
-
-        return JsonResponse(context)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                        course_item = {
+                            "id": course.id,
+                            "no": i,
+                            "teachers": teachers,
+                            "course": course.name,
+                            "experiments_amount": experiments_amount,
+                            "classes": classes_name,
+                            "modify_time": course.modify_time,
+                            "status": STATUS['%d' % experiments_of_the_course[0].status]
+                        }
+                        self.context['courses'].append(course_item)
+        return render(request, 'manage/application_manage.html', self.context)
 
 
 def application_check(request, course_id=None, status=None):
@@ -1042,6 +824,7 @@ def set_course_block(course, experiments):
     course.save()
 
 
+@method_decorator(require_login, name='dispatch')
 class ScheduleView(View):
     data = {
         "total": 1,
@@ -1285,6 +1068,7 @@ def auto_arrange(institute_id, attribute1_id, attribute2_id):
             course_block_item.save()
 
 
+@method_decorator(require_login, name='dispatch')
 class ArrangeView(View):
     context = {
         'title': '智能排课',
@@ -1304,6 +1088,8 @@ class ArrangeView(View):
 
     def get(self, request):
         set_time_for_context(self.context)
+
+        self.context['school'] = School.objects.get(id=request.session['school_id'])
 
         self.context['institutes'] = self.context['school'].get_all_institutes()
         self.context['attributes'] = LabsAttribute.objects.filter(school=self.context['school'])
@@ -1410,6 +1196,7 @@ class ArrangeView(View):
         return render(request, 'manage/arrange.html', self.context)
 
 
+@method_decorator(require_login, name='dispatch')
 class CourseBlockView(View):
     context = {
         'status': True,

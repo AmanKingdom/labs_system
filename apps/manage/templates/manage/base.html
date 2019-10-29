@@ -119,7 +119,7 @@
                         <a href="#"><i class="fa fa-laptop"></i> <span class="nav-label">实验室信息管理</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
                             <li {% if lab_active %}class="active"{% endif %}><a href="{% url 'manage:lab_manage' %}">实验室管理</a></li>
-                            <li {% if labs_attribute_active %}class="active"{% endif %}><a href="{% url 'manage:labs_attribute_manage' %}">实验室属性设置</a></li>
+                            <li {% if lab_attribute_active %}class="active"{% endif %}><a href="{% url 'manage:lab_attribute_manage' %}">实验室属性设置</a></li>
                         </ul>
                     </li>
                     <li {% if active_3 %}class="active"{% endif %}>
@@ -322,26 +322,6 @@
     }
 </script>
 
-<!--通用的保存方法-->
-<script>
-    //  传入数据为：保存后返回的地址，保存对象的模型类型字符串，保存对象数据，保存对象所在学校的id
-    function save_ajax(from_url, save_objects_model, save_objects_data, school_id){
-        var to_url = "{% url 'manage:save_ajax' %}";
-        var data = {'save_objects_model': save_objects_model, 'save_objects_data':save_objects_data, 'school_id': school_id, 'delete_ids_in_database':delete_ids_in_database};
-        if(delete_ids_in_database){
-            console.log('将要删除的对象在数据库中的ids为：', delete_ids_in_database)
-        }
-        base_ajax(from_url, to_url, data);
-    }
-</script>
-
-<!--通用的删除方法-->
-<script>
-    function remove_ajax(from_url, remove_json){
-        var url = "{% url 'manage:remove_ajax' %}";
-        base_ajax(from_url, url, remove_json);
-    }
-</script>
 
 <!--通用的设置表信息和动态事件方法-->
 <script>

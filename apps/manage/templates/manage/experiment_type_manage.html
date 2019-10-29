@@ -1,11 +1,11 @@
-<!--super_user/experiment_type_manage.html-->
+<!--manage/experiment_type_manage.html-->
 
 {% extends 'manage/base.html' %}
 
 {% block add_css_to_manage %}{% endblock %}
 
 {% block manage_body %}
-    {% if superuser.school %}
+    {% if request.session.school_id %}
         <div class="row">
             <div class="col-md-12">
                 <br>
@@ -23,8 +23,8 @@
                         <table id="experiment_type_table"
                                class="table-responsive"
                                data-id-field="id"
-                               data-response-handler="responseHandler"
-                               data-click-to-select="true">
+                               data-click-to-select="true"
+                               data-url="{% url 'manage:experiment_types' request.session.school_id %}">
                         </table>
                     </div>
                 </div>
@@ -43,9 +43,9 @@
 {% endblock %}
 
 {% block add_js_to_manage %}
-    <!--当前页面的全局设置-->
+    <!--全局的参数或函数-->
     <script>
-        var from_url = "{% url 'manage:experiment_type_manage' %}";
+        var experiment_type_url = "{% url 'manage:experiment_types' request.session.school_id %}";
     </script>
 
 
@@ -54,12 +54,9 @@
     <script>
         var experiment_type_table = $('#experiment_type_table');
         var remove_experiment_type_button = $('#remove_experiment_type_button');
-        var selections = [];
 
         function init_experiment_type_table() {
-            console.log('init_experiment_type_table()执行');
             experiment_type_table.bootstrapTable('destroy').bootstrapTable({
-                locale: $('#locale').val(),
                 columns: [
                     [{
                         field: 'state',
@@ -74,36 +71,19 @@
                             type:'text',
                         },
                     },{
+                        field: 'hide_experiment_type_name',
+                    },{
                         field:'id_in_database',
                     }]
                 ]
             });
-
-            set_a_table(from_url, experiment_type_table, remove_experiment_type_button, 'experiment_types');
-        }
-
-        function load_experiment_type(){
-            console.log('load_experiment_type()执行');
-            var index = 0;
-            {% for experiment_type in experiment_types %}
-                var new_row = {
-                    "id": index,
-                    'experiment_type_name': '{{ experiment_type.name }}',
-                    "id_in_database": '{{ experiment_type.id }}',
-                };
-                // 插入该行
-                experiment_type_table.bootstrapTable('insertRow', {
-                    index: index,
-                    row: new_row
-                });
-                index = index + 1;
-            {% empty %}
-            {% endfor %}
+            // 隐藏一些id和名称隐藏列
+            experiment_type_table.bootstrapTable('hideColumn', 'hide_experiment_type_name');
+            set_a_table(experiment_type_table, remove_experiment_type_button, '实验类型');
         }
 
         $(function() {
             init_experiment_type_table();
-            load_experiment_type();
             $('#locale').change(init_experiment_type_table);
         })
     </script>
@@ -133,22 +113,19 @@
     <!--保存修改或增加实验类型信息后的表格 事件 开始 -->
     <script>
         $('#save_experiment_type_button').click(function () {
-            var experiment_types = experiment_type_table.bootstrapTable('getData');
-
+            var experiment_type_table_data = experiment_type_table.bootstrapTable('getData');
             var pass = true;
 
             $('.not_null').remove();	 // 清除掉以前的错误信息
 
-            $.each(experiment_types, function (index, value) {
-                console.log(index, value);
-
+            $.each(experiment_type_table_data, function (index, value) {
                 if(value['experiment_type_name'] === empty_text || value['experiment_type_name'] == ""){
                     pass = false;
                     add_tip('experiment_type_table', index, 2)
                 }
             });
             if(pass){
-                save_ajax(from_url, 'experiment_types', experiment_types, '{{ school.id }}')
+                common_create_put_post_data_simple(experiment_type_table_data, '实验类型', 'experiment_type_name', 'hide_experiment_type_name', experiment_type_url)
             }
         })
     </script>

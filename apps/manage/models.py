@@ -68,6 +68,9 @@ class School(models.Model):
         """
         return self.labs_attributes.all()
 
+    def get_all_experiment_types(self):
+        return self.experiment_types.all()
+
     def __str__(self):
         return self.name
 

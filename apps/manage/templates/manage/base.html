@@ -126,7 +126,6 @@
                         <a href="#"><i class="fa fa-tasks"></i> <span class="nav-label">实验课管理</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
                             <li {% if experiment_type_active %}class="active"{% endif %}><a href="{% url 'manage:experiment_type_manage' %}">实验类型设置</a></li>
-                            <li {% if application_active %}class="active"{% endif %}><a href="{% url 'manage:application_manage' %}">实验申请表审批</a></li>
                             <li {% if arrange_active %}class="active"{% endif %}><a href="{% url 'manage:arrange' %}">智能排课</a></li>
                         </ul>
                     </li>
@@ -135,15 +134,19 @@
                 <li {% if active_4 %}class="active"{% endif %}>
                     <a href="#"><i class="fa fa-edit"></i> <span class="nav-label">实验申请</span><span class="fa arrow"></span></a>
                     <ul class="nav nav-second-level collapse">
-                        <li {% if apply_experiments_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:apply' %}">填写申请表</a></li>
-                        <li {% if apply_info_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:manage_application' %}">申请信息管理</a></li>
+                        <li {% if apply_experiments_active %}class="active"{% endif %}><a href="{% url 'manage:apply' %}">填写申请表</a></li>
+                        <li {% if application_manage_active %}class="active"{% endif %}>
+                            <a href="{% url 'manage:application_manage' %}">
+                                实验申请表{% if request.session.user_type == 'superuser' %}审批{% else %}管理{% endif %}
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 <li {% if active_5 %}class="active"{% endif %}>
                     <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">统计分析</span><span class="fa arrow"></span></a>
                     <ul class="nav nav-second-level collapse">
-                        <li {% if weeks_analyze_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:weeks_analyze' %}">周次安排表</a></li>
-                        <li {% if rooms_analyze_active %}class="active"{% endif %}><a href="{% url 'apply_experiments:rooms_analyze' %}">实验室安排表</a></li>
+                        <li {% if weeks_timetable_active %}class="active"{% endif %}><a href="{% url 'manage:weeks_timetable' %}">周次安排表</a></li>
+                        <li {% if rooms_timetable_active %}class="active"{% endif %}><a href="{% url 'manage:rooms_timetable' %}">实验室安排表</a></li>
                     </ul>
                 </li>
             </ul>
@@ -279,14 +282,14 @@
 
 <!--通用的为表格添加提示信息的方法 开始-->
 <script>
-    function add_tip(table_str, index, cells) {
+    function add_tip(table_id_str, index, cells) {
         var tag = document.createElement('span');
         var br = document.createElement('br');
         tag.innerText = can_not_be_null;
         tag.className = 'not_null';
         br.className = 'not_null';
-        document.getElementById(table_str).rows[index+1].cells[cells].appendChild(br);
-        document.getElementById(table_str).rows[index+1].cells[cells].appendChild(tag);
+        document.getElementById(table_id_str).rows[index+1].cells[cells].appendChild(br);
+        document.getElementById(table_id_str).rows[index+1].cells[cells].appendChild(tag);
     }
 </script>
 <!--通用的为表格添加提示信息的方法 结束-->
@@ -367,8 +370,6 @@
                 });
                 delete_ids_in_database = ids_in_database;
                 remove_button.prop('disabled', true)
-            }else{
-                alert('我就知道你不想删除她的')
             }
         })
     }

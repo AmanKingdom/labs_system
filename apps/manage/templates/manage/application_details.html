@@ -10,7 +10,7 @@
 {% block manage_body %}
     <div class="ibox float-e-margins">
         <div class="ibox-title row">
-            <h5>实验申请表管理</h5>/ 课程《{{ course.course.name }}》 --实验申请表
+            <h5>实验申请表管理 </h5> / 课程《{{ course.course_name }}》-- 实验申请表
         </div>
         <div class="ibox-content">
             <table id="course_table"
@@ -21,26 +21,34 @@
                 <thead><tr>
                     <th data-field="term">学年学期</th>
                     <th data-field="course">课程</th>
-                    <th data-field="teacher">教师</th>
+                    <th data-field="teachers">教师</th>
                     <th data-field="classes">教学班级</th>
                     <th data-field="teaching_materials">实验教材</th>
+                    <th data-field="hide_teaching_materials"></th>
                     <th data-field="total_consume_requirements">总体耗材需求</th>
+                    <th data-field="hide_total_consume_requirements"></th>
                     <th data-field="total_system_requirements">总体系统需求</th>
+                    <th data-field="hide_total_system_requirements"></th>
                     <th data-field="total_soft_requirements">总体软件需求</th>
+                    <th data-field="hide_total_soft_requirements"></th>
                     <th data-field="modify_time">修改时间</th>
                     <th data-field="status">状态</th>
                 </tr></thead>
                 <tbody>
                 <tr>
-                    <td>{{ course.course.term }}</td>
-                    <td>{{ course.course.name }}</td>
-                    <td>{{ course.teachers }}</td>
+                    <td>{{ course.term }}</td>
+                    <td>{{ course.course_name }}</td>
+                    <td>{{ course.teachers| safe }}</td>
                     <td>{{ course.classes | safe}}</td>
                     <td><a id="teaching_materials" data-type="textarea"></a></td>
+                    <td id="{{ course.total_requirements.id }}">{{ course.total_requirements.teaching_materials }}</td>
                     <td><a id="total_consume_requirements" data-type="textarea"></a></td>
+                    <td>{{ course.total_requirements.total_consume_requirements }}</td>
                     <td><a id="total_system_requirements" data-type="textarea"></a></td>
+                    <td>{{ course.total_requirements.total_system_requirements }}</td>
                     <td><a id="total_soft_requirements" data-type="textarea"></a></td>
-                    <td>{{ course.course.modify_time }}</td>
+                    <td>{{ course.total_requirements.total_soft_requirements }}</td>
+                    <td>{{ course.modify_time }}</td>
                     <td>{{ course.status }}</td>
                 </tr>
                 </tbody>
@@ -59,12 +67,10 @@
             </div>
         </div>
         <div class="ibox-content">
-            <table
-                    id="experiments_table"
-                    data-id-field="id"
-                    data-side-pagination="server"
-                    data-response-handler="responseHandler"
-                    data-click-to-select="true">
+            <table id="experiments_table"
+                   data-id-field="id"
+                   data-side-pagination="server"
+                   data-click-to-select="true">
             </table>
             <div class="row">
                 <div class="col-md-6">
@@ -86,7 +92,7 @@
                                 <button id="not_pass_button" class="btn btn-primary">不通过</button>
                             </td>
                         {% endif %}
-                        <button id="remove_all_experiment" class="btn btn-primary" title="取消所有实验">取消所有实验</button>
+                        <button id="remove_all_experiments" class="btn btn-primary" title="取消所有实验">取消所有实验</button>
                         <button id="submit" class="btn btn-primary" title="申请修改">确认修改</button>
                     </div>
                 </div>
@@ -98,43 +104,52 @@
 <!--子html文件用这个填充块添加js样式-->
 {% block add_js_to_manage %}
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
+    <!--全局的参数或函数-->
+    <script>
+        var experiment_url = "{% url 'manage:experiments' course.course_id %}";
+    </script>
 
     <script>
-{#        {% if superuser %}#}
-{#            $.fn.editable.defaults.disabled = true;#}
-{#            $('#remove_experiment_button').prop('disabled', true);#}
-{#            $('#add_experiment_button').prop('disabled', true);#}
-{#            $('#remove_all_experiment').prop('disabled', true);#}
-{#            $('#submit').prop('disabled', true);#}
-{#        {% endif %}#}
+        {#        {% if superuser %}#}
+        {#            $.fn.editable.defaults.disabled = true;#}
+        {#            $('#remove_experiment_button').prop('disabled', true);#}
+        {#            $('#add_experiment_button').prop('disabled', true);#}
+        {#            $('#remove_all_experiments').prop('disabled', true);#}
+        {#            $('#submit').prop('disabled', true);#}
+        {#        {% endif %}#}
     </script>
 
 
     <!--实验对应课程可修改信息的配置 开始-->
     <script>
         $(document).ready(function() {
+            var course_table = $('#course_table');
+            course_table.bootstrapTable('hideColumn', 'hide_teaching_materials');
+            course_table.bootstrapTable('hideColumn', 'hide_total_consume_requirements');
+            course_table.bootstrapTable('hideColumn', 'hide_total_system_requirements');
+            course_table.bootstrapTable('hideColumn', 'hide_total_soft_requirements');
 
             $('#teaching_materials').editable({
                 placeholder: "一般为书籍或视频",
-                value: '{{ course.course.total_requirements.teaching_materials }}',
+                value: '{{ course.total_requirements.teaching_materials }}',
                 rows:5,
                 mode:"popup",
             });
             $('#total_consume_requirements').editable({
                 placeholder: '如：电子试验箱',
-                value: '{{ course.course.total_requirements.total_consume_requirements }}',
+                value: '{{ course.total_requirements.total_consume_requirements }}',
                 rows:5,
                 mode:"popup",
             });
             $('#total_system_requirements').editable({
                 placeholder: '如：windows10',
-                value: '{{ course.course.total_requirements.total_system_requirements }}',
+                value: '{{ course.total_requirements.total_system_requirements }}',
                 rows:5,
                 mode:"popup",
             });
             $('#total_soft_requirements').editable({
                 placeholder: '如：pycharm专业版',
-                value: '{{ course.course.total_requirements.total_soft_requirements }}',
+                value: '{{ course.total_requirements.total_soft_requirements }}',
                 rows:5,
                 mode:"popup",
             });
@@ -142,12 +157,12 @@
 
             $('#pass_button').click(function () {
                 var url = "{% url 'manage:application_check' 'course_id' '3' %}";
-                url = url.replace('course_id', {{ course.course.id }});
+                url = url.replace('course_id', '{{ course.course_id }}');
                 window.location.href=url;
             });
             $('#not_pass_button').click(function () {
                 var url = "{% url 'manage:application_check' 'course_id' '2' %}";
-                url = url.replace('course_id', {{ course.course.id }});
+                url = url.replace('course_id', '{{ course.course_id }}');
                 window.location.href=url;
             });
         })
@@ -156,27 +171,11 @@
 
     <!--实验项目表 配置开始-->
     <script>
-        var $experiments_table = $('#experiments_table');
-        var $remove = $('#remove_experiment_button');
-        var selections = [];
-
-        function getIdSelections() {
-            return $.map($experiments_table.bootstrapTable('getSelections'), function (row) {
-                return row.id
-            })
-        }
-
-        function responseHandler(res) {
-            $.each(res.rows, function (i, row) {
-                row.state = $.inArray(row.id, selections) !== -1
-            })
-            return res
-        }
+        var experiments_table = $('#experiments_table');
+        var remove_experiment_button = $('#remove_experiment_button');
 
         function initTable() {
-            console.log('initTable()执行');
-            $experiments_table.bootstrapTable('destroy').bootstrapTable({
-                locale: $('#locale').val(),
+            experiments_table.bootstrapTable('destroy').bootstrapTable({
                 columns: [
                     [{
                         field: 'state',
@@ -209,13 +208,11 @@
                         editable:{
                             type:'select',
                             source: [
-                                {% if lecture_time %}
-                                    {% for x in lecture_time %}
-                                        { value: {{ x }}, text: {{ x }}},
-                                    {% endfor %}
-                                {% else %}
+                                {% for x in lecture_time %}
+                                    { value: {{ x }}, text: {{ x }}},
+                                {% empty %}
                                     { value:"", text: not_found_data},
-                                {% endif %}
+                                {% endfor %}
                             ]
                         }
                     }, {
@@ -224,13 +221,11 @@
                         editable:{
                             type:'select',
                             source: [
-                                {% if which_week %}
-                                    {% for x in which_week %}
-                                        { value: {{ x }}, text: {{ x }}},
-                                    {% endfor %}
-                                {% else %}
+                                {% for x in which_week %}
+                                    { value: {{ x }}, text: {{ x }}},
+                                {% empty %}
                                     { value:"", text: not_found_data},
-                                {% endif %}
+                                {% endfor %}
                             ]
                         }
                     }, {
@@ -239,13 +234,11 @@
                         editable:{
                             type:'select',
                             source: [
-                                {% if days_of_the_week %}
-                                    {% for x in days_of_the_week %}
-                                        { value: {{ x }}, text: {{ x }}},
-                                    {% endfor %}
-                                {% else %}
+                                {% for x in days_of_the_week %}
+                                    { value: {{ x }}, text: {{ x }}},
+                                {% empty %}
                                     { value:"", text: not_found_data},
-                                {% endif %}
+                                {% endfor %}
                             ]
                         }
                     }, {
@@ -254,52 +247,14 @@
                         editable:{
                             type:'select2',
                             source: [
-                                {% if section %}
-                                    {% for x in section %}
-                                        { value: {{ x }}, text: {{ x }}},
-                                    {% endfor %}
-                                {% else %}
+                                {% for x in section %}
+                                    { value: {{ x }}, text: {{ x }}},
+                                {% empty %}
                                     { value:"", text: not_found_data},
-                                {% endif %}
+                                {% endfor %}
                             ],
                             select2 : {
                                 multiple : true,
-                                width : '100px'//设置宽，这个一定要，不然显示框很窄
-                            }
-                        }
-                    }, {
-                        field: 'labs_of_institute',
-                        title: '实验室所属学院',
-                        editable:{
-                            type:'select',
-                            source: [
-                                {% if labs_of_institute %}
-                                    {% for x in labs_of_institute %}
-                                        { value: {{ x.id }}, text: '{{ x.name }}'},
-                                    {% endfor %}
-                                {% else %}
-                                    { value:"", text: not_found_data},
-                                {% endif %}
-                            ]
-                        }
-                    }, {
-                        field: 'labs_attribute',
-                        title: '实验室属性',
-                        editable:{
-                            type:'select2',
-                            source: [
-                                {% if labs_attribute %}
-                                    {% for x in labs_attribute %}
-                                        {value: {{ x.id }}, text: '{{ x.name }}' },
-                                    {% endfor %}
-                                {% else %}
-                                    {value:"", text: not_found_data}
-                                {% endif %}
-                            ],
-                            select2 : {
-                                // allowClear : true,
-                                multiple : true,
-                                // tokenSeparators : [",", " "],
                                 width : '100px'//设置宽，这个一定要，不然显示框很窄
                             }
                         }
@@ -309,13 +264,11 @@
                         editable:{
                             type:'select2',
                             source: [
-                                {% if all_labs %}
-                                    {% for x in all_labs %}
-                                        {value: {{ x.id }}, text: '{{ x.name }}' },
-                                    {% endfor %}
-                                {% else %}
+                                {% for x in all_labs %}
+                                    {value: {{ x.id }}, text: '{{ x.name }}' },
+                                {% empty %}
                                     {value:"", text: not_found_data}
-                                {% endif %}
+                                {% endfor %}
                             ],
                             select2 : {
                                 // allowClear : true,
@@ -342,60 +295,77 @@
                         editable:{
                             type:'text',
                         }
-                    }]
+                    }, {
+                        field: 'hide_experiment_name',
+                    }, {
+                        field: 'hide_experiment_type',
+                    }, {
+                        field: 'hide_lecture_time',
+                    }, {
+                        field: 'hide_which_week',
+                    }, {
+                        field: 'hide_days_of_the_week',
+                    }, {
+                        field: 'hide_section',
+                    }, {
+                        field: 'hide_labs',
+                    }, {
+                        field: 'hide_special_consume_requirements',
+                    }, {
+                        field: 'hide_special_system_requirements',
+                    }, {
+                        field: 'hide_special_soft_requirements',
+                    }, {
+                        field: 'id_in_database',
+                    }, ]
                 ]
             });
-
-            $experiments_table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table',
-                function () {
-{#                    {% if superuser %}#}
-{#                    {% else %}#}
-                        $remove.prop('disabled', !$experiments_table.bootstrapTable('getSelections').length);
-{#                    {% endif %}#}
-
-                    // save your data, here just save the current page
-                    selections = getIdSelections()
-                    // push or splice the selections if you want to save all data selections
-                }
-            )
-            $experiments_table.on('all.bs.table', function (e, name, args) {
-                console.log(name, args)
-            })
-            $remove.click(function () {
-                var ids = getIdSelections();
-                $experiments_table.bootstrapTable('remove', {
-                    field: 'id',
-                    values: ids
-                })
-                $remove.prop('disabled', true)
-            })
+            // 隐藏一些id和名称隐藏列
+            experiments_table.bootstrapTable('hideColumn', 'hide_experiment_name');
+            experiments_table.bootstrapTable('hideColumn', 'hide_experiment_type');
+            experiments_table.bootstrapTable('hideColumn', 'hide_lecture_time');
+            experiments_table.bootstrapTable('hideColumn', 'hide_which_week');
+            experiments_table.bootstrapTable('hideColumn', 'hide_days_of_the_week');
+            experiments_table.bootstrapTable('hideColumn', 'hide_section');
+            experiments_table.bootstrapTable('hideColumn', 'hide_labs');
+            experiments_table.bootstrapTable('hideColumn', 'hide_special_consume_requirements');
+            experiments_table.bootstrapTable('hideColumn', 'hide_special_system_requirements');
+            experiments_table.bootstrapTable('hideColumn', 'hide_special_soft_requirements');
+            set_a_table(experiments_table, remove_experiment_button, '实验项目');
         }
 
         function loadExperiments(){
-            console.log('loadExperiment()执行');
             {% for e in experiments %}
                 var new_row = {
                     "id": {{ e.experiment.no }},
                     "experiment_name": '{{ e.experiment.name }}',
-                    "experiment_type": {% if e.experiment.experiment_type.id %}'{{ e.experiment.experiment_type.id }}'{% else %}""{% endif %},
-                    "lecture_time": {% if e.experiment.lecture_time %}'{{ e.experiment.lecture_time }}'{% else %}""{% endif %},
-                    "which_week": {% if e.experiment.which_week %}'{{ e.experiment.which_week }}'{% else %}""{% endif %},
-                    "days_of_the_week": {% if e.experiment.days_of_the_week %}'{{ e.experiment.days_of_the_week }}'{% else %}""{% endif %},
-                    "section": {% if e.experiment.section %}'{{ e.experiment.section }}'{% else %}""{% endif %},
-                    "labs_of_institute": {% if e.labs_of_institute.id %}'{{ e.labs_of_institute.id }}'{% else %}""{% endif %},
-                    "labs_attribute": {% if e.labs_attribute %}'{{ e.labs_attribute }}'{% else %}""{% endif %},
-                    "labs": {% if e.labs %}'{{ e.labs }}'{% else %}""{% endif %},
+                    "hide_experiment_name": '{{ e.experiment.name }}',
+                    "experiment_type": '{{ e.experiment.experiment_type.id }}',
+                    "hide_experiment_type": '{{ e.experiment.experiment_type.id }}',
+                    "lecture_time": '{{ e.experiment.lecture_time }}',
+                    "hide_lecture_time": '{{ e.experiment.lecture_time }}',
+                    "which_week": '{{ e.experiment.which_week }}',
+                    "hide_which_week": '{{ e.experiment.which_week }}',
+                    "days_of_the_week": '{{ e.experiment.days_of_the_week }}',
+                    "hide_days_of_the_week": '{{ e.experiment.days_of_the_week }}',
+                    "section": '{{ e.experiment.section }}',
+                    "hide_section": '{{ e.experiment.section }}',
+                    "labs": '{{ e.lab_ids }}',
+                    "hide_labs": '{{ e.lab_ids }}',
                     {#"labs": "1",    //要传id，字符串类型的id，而不要直接传下拉列表里的text值#}
-                    "special_consume_requirements": {% if e.experiment.special_requirements.special_consume_requirements %}'{{ e.experiment.special_requirements.special_consume_requirements }}'{% else %}""{% endif %},
-                    "special_system_requirements": {% if e.experiment.special_requirements.special_system_requirements %}'{{ e.experiment.special_requirements.special_system_requirements }}'{% else %}""{% endif %},
-                    "special_soft_requirements": {% if e.experiment.special_requirements.special_soft_requirements %}'{{ e.experiment.special_requirements.special_soft_requirements }}'{% else %}""{% endif %}
+                    "special_consume_requirements": {% if e.special_requirements %}'{{ e.special_requirements.special_consume_requirements }}'{% else %}""{% endif %},
+                    "hide_special_consume_requirements": {% if e.special_requirements %}'{{ e.special_requirements.special_consume_requirements }}'{% else %}""{% endif %},
+                    "special_system_requirements": {% if e.special_requirements %}'{{ e.special_requirements.special_system_requirements }}'{% else %}""{% endif %},
+                    "hide_special_system_requirements": {% if e.special_requirements %}'{{ e.special_requirements.special_system_requirements }}'{% else %}""{% endif %},
+                    "special_soft_requirements": {% if e.special_requirements %}'{{ e.special_requirements.special_soft_requirements }}'{% else %}""{% endif %},
+                    "hide_special_soft_requirements": {% if e.special_requirements %}'{{ e.special_requirements.special_soft_requirements }}'{% else %}""{% endif %},
+                    "id_in_database": '{{ e.experiment.id }}',
                 };
                 // 插入该行
-                $experiments_table.bootstrapTable('insertRow', {
-                    index: Number({{ e.no }}),
+                experiments_table.bootstrapTable('insertRow', {
+                    index: Number({{ e.experiment.no }}),
                     row: new_row
                 });
-            {% empty %}
             {% endfor %}
         }
 
@@ -411,44 +381,24 @@
     <script>
         $("#add_experiment_button").click(function () {
             // 用index实现编号自增
-            var data = $experiments_table.bootstrapTable('getData');
-            console.log('获取上一行实验项目数据：', data);
+            var data = experiments_table.bootstrapTable('getData');
+            console.log('获取当前实验项目数据：', data);
             var index = data.length;
-            var new_row = JSON.stringify(data[index-1]);
-            // 如果是第一次添加行，则为空
-            if(!new_row){
-                new_row = {
-                    "id":index,
-                    "experiment_name":"",
-                    "experiment_type":{% if experiments_type %}{{ experiments_type.0.id }}{% else %}""{% endif %},
-                    "lecture_time":{{ lecture_time.1 }},
-                    "which_week":{{ which_week.0 }},
-                    "days_of_the_week":{{ days_of_the_week.0 }},
-                    "section":"",
-                    "labs_of_institute":"",
-                    "labs_attribute":"",
-                    "labs":"",
-                    "special_consume_requirements":"",
-                    "special_system_requirements":"",
-                    "special_soft_requirements":""
-                }
-            }else{
-                new_row = JSON.parse(new_row);
-                // 清空上一行的所有特殊需求，因为多数情况下并不是每个实验都有这个特殊需求
-                new_row.special_consume_requirements = "";
-                new_row.special_system_requirements = "";
-                new_row.special_soft_requirements = "";
-                new_row.which_week = Number(new_row.which_week);
-                new_row.which_week += 1;
-
-                new_row = JSON.stringify(new_row);
-                new_row = eval('(' + new_row + ')');
-
-                console.log('动态添加实验项目--获取到上一行数据：'+JSON.stringify(new_row));
-                new_row["id"] = index;
-            }
+            var new_row = {
+                "id":index,
+                "experiment_name":"",
+                "experiment_type": data[index-1]['experiment_type'],
+                "lecture_time": data[index-1]['lecture_time'],
+                "which_week": Number(data[index-1]['which_week']) + 1,
+                "days_of_the_week": data[index-1]['days_of_the_week'],
+                "section": data[index-1]['section'],
+                "labs": data[index-1]['labs'],
+                "special_consume_requirements":"",
+                "special_system_requirements":"",
+                "special_soft_requirements":""
+            };
             // 最后插入该行
-            $experiments_table.bootstrapTable('insertRow', {
+            experiments_table.bootstrapTable('insertRow', {
                 index: index,
                 row: new_row
             });
@@ -458,116 +408,159 @@
 
     <!--整理所有信息提交 开始-->
     <script>
-        $('#remove_all_experiment').click(function () {
-
-            var remove_flag = confirm('删除后该课程的所有实验项目后可以在申请页面再次申请，确认删除吗？');
+        $('#remove_all_experiments').click(function () {
+            var remove_flag = confirm('删除该课程的所有实验项目后,可以在申请页面再次申请，确认删除吗？');
 
             if(remove_flag){
-                var remove_json = {
-                    "course_id": {{ course.course.id }},
-                };
                 $.ajax({
-                    type:"POST",
-                    url:"{% url 'apply_experiments:remove_all_experiments' %}",
-                    data:JSON.stringify(remove_json),
-                    dataType:'JSON',
-                    async:true,
+                    type:"DELETE",
+                    url:"{% url 'manage:experiments' course.course_id %}",
                     headers:{'X-CSRFToken':'{{ csrf_token }}'},
                     error:function(request){
                         console.log("无法提交", request);
                     },
                     success:function(data){
-                        console.log("已提交");
-                        console.log(data);
+                        console.log("已提交", data);
                         if(data.status){
                             console.log('删除成功！');
-                            window.location.href="{% url 'apply_experiments:manage_application' %}"
+                            window.location.href="{% url 'manage:application_manage' %}"
                         }else{
-                            alert('出了点小错误，请稍后再次尝试删除')
+                            alert('出了点小错误，请稍后再次尝试删除'+data.message);
                         }
                     }
                 });
-            }else{
-                alert('我就知道你不想删除她的')
             }
         });
 
         $('#submit').click(function () {
-            var experiments = $experiments_table.bootstrapTable('getData');
-            var total_consume_requirements = check_empty(document.getElementById("total_consume_requirements").innerText);
-            var total_system_requirements = check_empty(document.getElementById("total_system_requirements").innerText);
-            var total_soft_requirements = check_empty(document.getElementById("total_soft_requirements").innerText);
-            var teaching_materials = check_empty(document.getElementById("teaching_materials").innerText);
+            var course_table_data_0 = $('#course_table').bootstrapTable('getData')[0];
+            var course_id = '{{ course.course_id }}';
+            var t_r_name_list = ['teaching_materials', 'total_consume_requirements', 'total_system_requirements', 'total_soft_requirements'];
 
-            function check_empty(x) {
-                if(x == empty_text){
-                    return ""
-                }else{
-                    return x
+            console.log('课程id：', course_id, ' 第一行数据：', course_table_data_0);
+
+            var t_r_change = false;
+            for(var i=0; i<t_r_name_list.length; i++){
+                if(course_table_data_0[t_r_name_list[i]] !== course_table_data_0['hide_'+t_r_name_list[i]]){
+                    t_r_change = true;
+                    break;
                 }
             }
 
-            var data_json = {
-                "course_id": {{ course.course.id }},
+            // 处理总体需求信息
+            if(!t_r_change){
+                console.log('总体需求没有变化，不需变动');
+            }else {
+                var total_requirements_id = $('#course_table tr:eq(1)');
+                console.log('total_requirements_id：', total_requirements_id);
 
-                "teaching_materials":teaching_materials,
-                "consume_requirements":total_consume_requirements,
-                "system_requirements":total_system_requirements,
-                "soft_requirements":total_soft_requirements,
-
-                "experiments": experiments,
-            };
-
-            console.log('整理所有信息后：'+data_json.toString());
-            {#var course_and_its_experiments_json = JSON.stringify(data_json);#}
-            {#course_and_its_experiments_json = JSON.parse(course_and_its_experiments_json);#}
-
-            if(experiments.length !== 0){
-                var pass = true;
-                $.each(experiments, function (index, value) {
-                    console.log(index, value);
-                    if(value['id'] === ""){
-                        pass = false;
-                        window.alert('提交失败，实验'+index+'的编号不可以为空');
-                        return pass
+                function delete_total_requirements() {
+                    var t_r_need_delete = true;
+                    for(var i=0; i<t_r_name_list.length; i++){
+                        if(course_table_data_0[t_r_name_list[i]] !== ""){
+                            t_r_need_delete = false;
+                            return false;
+                        }
                     }
-                    if(value['experiment_name'] == ""){
-                        pass = false;
-                        window.alert('提交失败，实验'+index+'的项目名不可以为空');
-                        return pass
+                    if(t_r_need_delete){
+                        console.log('删除总体需求');
+                        {#common_ajax('{% url "manage:total_requirements" %}', 'DELETE', {'id': total_requirements_id});#}
+                        return true;
                     }
-                    if(value['section'] == ""){
-                        pass = false;
-                        window.alert('提交失败，实验'+index+'的节次不可以为空');
-                        return pass
-                    }
-                });
-                if(pass){
-                    $.ajax({
-                        cache:true,//保留缓存数据
-                        type:"POST",
-                        url:"{% url 'apply_experiments:submit_experiments' %}",
-                        data:JSON.stringify(data_json),
-                        dataType:'JSON',
-                        async:true,
-                        headers:{'X-CSRFToken':'{{ csrf_token }}'},
-                        error:function(request){
-                            console.log("无法提交", request);
-                        },
-                        success:function(data){
-                            console.log("已提交");
-                            console.log(data);
-                            if(data.status){
-                                console.log('提交成功！');
-                                window.location.href="{% url 'apply_experiments:manage_application' %}"
-                            }else{
-                                console.log('提交信息有问题：'+data.message)
+                }
+
+                if (total_requirements_id) {
+                    console.log('该课程原来就有总体需求，所以现在只需判断修改或删除即可');
+
+                    if(!delete_total_requirements()){
+                        console.log('修改总体需求');
+                        var total_requirements_put_data = {};
+
+                        for(var i=0; i<t_r_name_list.length; i++){
+                            if(course_table_data_0[t_r_name_list[i]] !== course_table_data_0['hide_'+t_r_name_list[i]]){
+                                total_requirements_put_data[t_r_name_list[i]] = course_table_data_0[t_r_name_list[i]];
                             }
                         }
-                    });
+                        total_requirements_put_data['course_id'] = course_id;
+                        console.log('修改总体需求数据：', total_requirements_put_data);
+                        {#common_ajax('{% url "manage:total_requirements" %}', 'PUT', total_requirements_put_data);#}
+                    }
+                } else {
+                    console.log('该课程原来就有总体需求，所以现在只需判断新增或不做操作即可');
+
+                    if(!delete_total_requirements()){
+                        var total_requirements_post_data = {};
+                        for(var i=0; i<t_r_name_list.length; i++){
+                            total_requirements_post_data[t_r_name_list[i]] = course_table_data_0[t_r_name_list[i]];
+                        }
+                        console.log('创建总体需求数据：', total_requirements_post_data);
+                        {#common_ajax('{% url "manage:total_requirements" %}', 'POST', total_requirements_post_data);#}
+                    }
                 }
-            }else{
-                window.alert('提交失败，实验项目不能为空！')
+            }
+
+            var experiments_table_data = experiments_table.bootstrapTable('getData');
+            var pass = true;
+
+            $('.not_null').remove();	 // 清除掉以前的错误信息
+
+            $.each(experiments_table_data, function (index, value) {
+                var need_name_list = ['experiment_name', 'experiment_type', 'lecture_time', 'which_week', 'days_of_the_week', 'section'];
+                for(var i=0; i<need_name_list.length; i++){
+                    if(value[need_name_list[i]] === empty_text || value[need_name_list[i]] == ""){
+                        pass = false;
+                        add_tip('experiments_table', index, i+2)
+                    }
+                }
+            });
+            if(pass){
+                var experiment_put_data = [];
+                var experiment_post_data = [];
+                var e_name_list = ['experiment_name', 'experiment_type', 'lecture_time', 'which_week',
+                    'days_of_the_week', 'section', 'labs', 'special_consume_requirements',
+                    'special_system_requirements', 'special_soft_requirements'];
+                var model_e_name_list = ['name', 'experiment_type_id', 'lecture_time', 'which_week',
+                    'days_of_the_week', 'section', 'labs', 'special_consume_requirements',
+                    'special_system_requirements', 'special_soft_requirements'];
+                for(var i = 0; i < experiments_table_data.length; i++){
+                    console.log('实验项目', '-通过数据行是否有数据库id来作为新旧数据的依据， 序号：', i, '行的数据库id：', experiments_table_data[i]['id_in_database']);
+
+                    if(experiments_table_data[i]['id_in_database']){
+                        // 数据有修改才需要put提交
+                        var temp = {'id': experiments_table_data[i]['id_in_database'],};
+                        var change = false;
+
+                        for(var j=0; j<e_name_list.length; j++){
+                            if(experiments_table_data[j]['hide_'+e_name_list[j]] !== experiments_table_data[j][e_name_list[j]]){
+                                temp[model_e_name_list[j]] = experiments_table_data[j][e_name_list[j]];
+                                change = true;
+                            }
+                        }
+                        if(change) {
+                            temp['no'] = experiments_table_data[i]['id'];
+                            experiment_put_data.push(temp);
+                        }
+                    }else{
+                        var temp = {};
+                        for(var j=0; j<e_name_list.length; j++){
+                            temp[model_e_name_list[j]] = experiments_table_data[j][e_name_list[j]];
+                        }
+                        temp['no'] = experiments_table_data[i]['id'];
+                        experiment_post_data.push(temp)
+                    }
+                }
+                if(experiment_put_data.length > 0){
+                    console.log('实验项目', '-存在修改数据：', experiment_put_data);
+                    common_ajax(course_url, 'PUT', experiment_put_data);
+                }
+                if(experiment_post_data.length > 0){
+                    console.log('实验项目', '-存在新增数据：', experiment_post_data);
+                    common_ajax(course_url, 'POST', experiment_post_data);
+                }
+                if(delete_ids_in_database.length > 0){
+                    console.log('实验项目', '-删除的ids：', delete_ids_in_database);
+                    common_ajax("{% url 'manage:experiments' '-1' %}", 'DELETE', delete_ids_in_database);
+                }
             }
         });
     </script>

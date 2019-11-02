@@ -8,7 +8,8 @@ from django.utils.decorators import method_decorator
 from django.views import View
 
 from apps.manage.models import School, SchoolArea, Institute, Department, Grade, SuperUser, Classes, Teacher, \
-    SchoolYear, Term, Course, LabsAttribute, Lab, Experiment, ExperimentType, CourseBlock, ArrangeSettings
+    SchoolYear, Term, Course, LabAttribute, Lab, Experiment, ExperimentType, CourseBlock, ArrangeSettings, \
+    TotalRequirements, SpecialRequirements
 
 from logging_setting import ThisLogger
 from manage.tools.list_tool import get_model_field_ids
@@ -27,6 +28,23 @@ STATUS = {
 # 设计13个可用的课程块背景颜色
 COLOR_DIVS = ['color1_div', 'color2_div', 'color3_div', 'color4_div', 'color5_div', 'color6_div',
               'color7_div', 'color8_div', 'color9_div', 'color10_div', 'color11_div', 'color12_div', 'color13_div']
+
+
+# 后期需根据实际情况调整下列静态数据：
+def set_choices_context(context):
+    """
+    为申请实验和修改实验页面提供的选项数据：实验类型、学时、（所有学院、所有实验室属性、所有实验室）括号内为暂时的
+    :param context:
+    :return:
+    """
+    # 实验类型
+    context['experiments_type'] = ExperimentType.objects.all() if ExperimentType.objects.all() else ""
+    # 学时
+    context['lecture_time'] = [x for x in range(1, 11)]
+    context['labs_of_institute'] = Institute.objects.all() if Institute.objects.all() else ""
+    context['lab_attributes'] = LabAttribute.objects.all() if LabAttribute.objects.all() else ""
+    # 因为找不到联动数据的解决方案，暂时用所有实验室来代替
+    context['all_labs'] = Lab.objects.filter(dispark=True)
 
 
 # 验证登录视图
@@ -187,7 +205,7 @@ class LittleSameModelBaseView(View):
         this_logger.debug(self.model_Chinese_name + '信息--接收到post数据：' + str(post_data))
 
         for data in post_data:
-            if self.model is SchoolArea or self.model is LabsAttribute or self.model is ExperimentType:
+            if self.model is SchoolArea or self.model is LabAttribute or self.model is ExperimentType:
                 self.model.objects.create(**data, school_id=school_id)
             else:
                 self.model.objects.create(**data)
@@ -369,7 +387,7 @@ class CoursesView(LittleSameModelBaseView):
             if 'name' in data.keys():
                 me.name = data['name']
             if 'attribute' in data.keys():
-                me.attribute = LabsAttribute.objects.get(id=data['attribute'])
+                me.attribute = LabAttribute.objects.get(id=data['attribute'])
             if 'classes' in data.keys():
                 if data['classes']:
                     this_logger.debug(self.model_Chinese_name + '--classes：' + str(data['classes']))
@@ -396,7 +414,7 @@ class CoursesView(LittleSameModelBaseView):
         for data in post_data:
             me = self.model.objects.create(institute_id=data['institute_id'], name=data['name'], term=term)
             if 'attribute' in data.keys():
-                me.attribute = LabsAttribute.objects.get(id=data['attribute'])
+                me.attribute = LabAttribute.objects.get(id=data['attribute'])
             if 'classes' in data.keys():
                 this_logger.debug(self.model_Chinese_name + '--classes：' + str(data['classes']))
                 classes_ids_list = str_to_non_repetitive_list(data['classes'], ',')
@@ -464,7 +482,7 @@ class LabsView(LittleSameModelBaseView):
 
 class LabAttributesView(LittleSameModelBaseView):
     model_Chinese_name = '实验室属性'
-    model = LabsAttribute
+    model = LabAttribute
     get_all_what_func_name = 'get_all_lab_attributes'
 
     def make_return_data(self, objects):
@@ -661,7 +679,7 @@ class CourseManageView(View):
             self.context['institutes'] = school.get_all_institutes()
             self.context['classes'] = school.get_all_classes()
             self.context['teachers'] = school.get_all_teachers()
-            self.context['attributes'] = school.lab_attributes.all()
+            self.context['attributes'] = school.get_all_lab_attributes()
 
             return render(request, 'manage/course_manage.html', self.context)
 
@@ -723,12 +741,172 @@ class ExperimentTypeManageView(View):
 
 
 
+
+
+
+
+
+
+
+
+# 数据联动，动态加载班级数据
+def load_classes_of_course(request):
+    classes = get_classes_name_from_course(request.GET.get('course_id'))
+    return JsonResponse({'classes': classes})
+
+
+def load_teachers_of_department(request):
+    department_id = request.GET.get('department_id')
+    this_logger.info('选择id为' + department_id + '的系别')
+    teachers = Teacher.objects.filter(department_id=department_id)
+    return render(request, 'manage/teachers_options.html', {'teachers': teachers})
+
+
+def load_courses_of_teacher(request):
+    teacher_account = request.GET.get('teacher_account')
+    this_logger.info('选择account为' + teacher_account + '的教师')
+    temp_courses = Course.objects.filter(teachers__account__contains=teacher_account)
+    courses = []
+    for course in temp_courses:
+        if len(Experiment.objects.filter(course=course)) <= 0:
+            courses.append(course)
+    return render(request, 'manage/courses_options.html', {'courses': courses})
+
+
+@method_decorator(require_login, name='dispatch')
+class ApplyView(View):
+    def get(self, request):
+        context = {
+            'title': '填写申请表',
+            'active_4': True,  # 激活导航
+            'apply_experiments_active': True,  # 激活导航
+
+            'departments': None,
+            'teachers': None,
+            'courses': [],
+            'classes': None,
+
+            'experiments_type': None,
+            'lecture_time': None,
+            'which_week': None,
+            'days_of_the_week': None,
+            'section': None,
+            'labs_of_institute': None,
+            'lab_attribute': None,
+            'all_labs': None,
+        }
+
+        temp_courses = None
+        if request.session['user_type'] == 'superuser':
+            superuser = SuperUser.objects.get(account=request.session['user_account'])
+            if superuser.school:
+                context['departments'] = superuser.school.get_all_departments()
+                if context['departments']:
+                    context['teachers'] = Teacher.objects.filter(department_id=context['departments'][0].id)
+                    if context['teachers']:
+                        temp_courses = Course.objects.filter(teachers__account__contains=context['teachers'][0].account)
+        elif request.session['user_type'] == 'teacher':
+            temp_courses = Course.objects.filter(teachers__account__contains=request.session['user_account'])
+
+        if temp_courses:
+            # 实验项目为空则证明该门课没有申请过，可以显示
+            for course in temp_courses:
+                if len(Experiment.objects.filter(course=course)) <= 0:
+                    context['courses'].append(course)
+
+            if context['courses']:
+                # 初次打开页面如果有对应课程，则根据第一门课程先提供班级数据
+                context['classes'] = get_classes_name_from_course(context['courses'][0].id)
+
+        set_choices_context(context)
+        set_time_for_context(context)
+
+        return render(request, 'manage/apply.html', context)
+
+    def post(self, request):
+        data = json.loads(list(request.POST.keys())[0])
+        this_logger.info('申请管理--接收到数据：' + str(data) + '类型为：' + str(type(data)))
+
+        context = {
+            'status': True,
+            'message': "",
+        }
+
+        if data['course_id'] is not '' and data['experiments']:
+            # --------------------------------------------------------------处理课程开始
+            this_logger.info('申请实验的课程为id:' + str(data['course_id']))
+
+            if data['teaching_materials'] is "" and data['consume_requirements'] is "" \
+                    and data['system_requirements'] is "" and data['soft_requirements'] is "":
+                this_logger.info('提交的信息中没有总体需求，将不会创建总体需求实例')
+            else:
+                TotalRequirements.objects.create(
+                    teaching_materials=data['teaching_materials'],
+                    total_consume_requirements=data['consume_requirements'],
+                    total_system_requirements=data['system_requirements'],
+                    total_soft_requirements=data['soft_requirements'],
+                    course_id=data['course_id']
+                )
+            # --------------------------------------------------------------处理课程结束
+
+            # 遍历所有的实验项目并创建、存储到数据库--------------------------------------------------处理实验项目开始
+            for experiment_item in data['experiments']:
+                if experiment_item['section'] != "":
+                    if experiment_item['section'].startswith(','):
+                        experiment_item['section'] = experiment_item['section'][1:]
+                        this_logger.debug("修正后的experiment_item['section']：" + experiment_item['section'])
+
+                new_experiment = Experiment.objects.create(
+                    no=experiment_item['id'],
+                    name=experiment_item['experiment_name'],
+                    lecture_time=experiment_item['lecture_time'],
+                    which_week=experiment_item['which_week'],
+                    days_of_the_week=experiment_item['days_of_the_week'],
+                    section=experiment_item['section'],
+                    status=1,
+                    course_id=data['course_id']
+                )
+
+                try:
+                    if experiment_item['experiment_type']:
+                        new_experiment.experiment_type = ExperimentType.objects.get(
+                            id=int(experiment_item['experiment_type']))
+                except (Exception) as e:
+                    context['status'] = False
+                    context['message'] = '获取id为' + experiment_item['experiment_type'] + '的实验类型失败:'
+                    this_logger.debug('获取id为' + experiment_item['experiment_type'] + '的实验类型失败:' + str(e))
+
+                # 判断该实验项目是否有特殊需求
+                if experiment_item['special_consume_requirements'] is "" and experiment_item[
+                    'special_system_requirements'] is "" \
+                        and experiment_item['special_soft_requirements'] is "":
+                    this_logger.info('该实验项目没有特殊实验需求')
+                else:
+                    SpecialRequirements.objects.create(
+                        experiment_id=new_experiment.id,
+                        special_consume_requirements=experiment_item['special_consume_requirements'],
+                        special_system_requirements=experiment_item['special_system_requirements'],
+                        special_soft_requirements=experiment_item['special_soft_requirements']
+                    )
+
+                if experiment_item['labs'] != "":
+                    lab_ids_list = str_to_non_repetitive_list(experiment_item['labs'], ',')
+                    new_experiment.labs.add(*lab_ids_list)
+
+                new_experiment.save()
+            # 遍历所有的实验项目并创建、存储到数据库--------------------------------------------------处理实验项目结束
+        else:
+            context['status'] = False
+            context['message'] = '实验项目不能为空'
+        return JsonResponse(context)
+
+
 @method_decorator(require_login, name='dispatch')
 class ApplicationManageView(View):
     context = {
         'title': '实验申请表审批',
-        'active_3': True,  # 激活导航
-        'application_active': True,  # 激活导航
+        'active_4': True,  # 激活导航
+        'application_manage_active': True,  # 激活导航
 
         'courses': [],
     }
@@ -762,8 +940,56 @@ class ApplicationManageView(View):
 
 
 class ApplicationDetailsView(View):
-    def get(self, request):
-        return render(request, 'manage/')
+    def get(self, request, course_id=None):
+        context = {
+            'title': '申请信息管理',
+            'active_3': True,  # 激活导航
+            'apply_info_active': True,  # 激活导航
+
+            'course': None,
+            'experiments': None,
+
+            'experiments_type': None,
+            'lecture_time': None,
+            'which_week': None,
+            'days_of_the_week': None,
+            'section': None,
+            'all_labs': None,   # 暂时用这个代替，因为前端还做不到下拉列表数据联动
+        }
+
+        # CourseBlock.objects.filter(course=course).delete()
+        # course.has_block = False
+        # course.save()
+
+        course = Course.objects.get(id=course_id)
+
+        experiments_origin = Experiment.objects.filter(course_id=course_id).order_by('no')
+        experiments = []
+        for experiment in experiments_origin:
+            temp_experiment = {
+                'experiment': experiment,
+                'lab_ids': get_labs_id_str(experiment.labs.all()),
+                'special_requirements': SpecialRequirements.objects.filter(experiment=experiment).first(),
+            }
+            experiments.append(temp_experiment)
+
+        context['experiments'] = experiments
+
+        context['course'] = {
+            'course_id': course.id,
+            'term': course.term,
+            'course_name': course.name,
+            'teachers': get_teachers_name_from_course(course_id),
+            'classes': get_classes_name_from_course(course_id),
+            'modify_time': course.modify_time,
+            'status': STATUS['%d' % experiments_origin[0].status],
+            'total_requirements': TotalRequirements.objects.filter(course_id=course_id).first()
+        }
+
+        set_choices_context(context)
+        set_time_for_context(context)
+
+        return render(request, 'manage/application_details.html', context)
 
 
 def application_check(request, course_id=None, status=None):
@@ -786,6 +1012,133 @@ def application_check(request, course_id=None, status=None):
             course.save()
 
     return HttpResponseRedirect('/manage/application_manage')
+
+
+class ExperimentsView(LittleSameModelBaseView):
+    # 以下是默认的参数
+    model_Chinese_name = '实验项目'
+    model = Experiment
+
+    def make_return_data(self, objects):
+        return_data = []
+        for obj in objects:
+            new_dict = {
+                'id': obj.no,
+                'experiment_name': obj.name,
+                'hide_experiment_name': obj.name,
+                'id_in_database': obj.id
+            }
+            return_data.append(new_dict)
+        return return_data
+
+    def get(self, request, course_id):
+        return_data = []
+        if course_id:
+            try:
+                objects = Experiment.objects.filter(course_id=course_id).order_by('no')
+                return_data = self.make_return_data(objects)
+            except Exception as e:
+                this_logger.debug(str(e))
+                raise Http404('找不到课程id为' + course_id + '的相关实验信息')
+        return HttpResponse(json.dumps(return_data), content_type="application/json")
+
+    def put(self, request, course_id):  # 修改信息
+        put_data = QueryDict(request.body)
+        put_data = json.loads(list(put_data.keys())[0])
+        this_logger.debug(self.model_Chinese_name + '信息--接收到put数据：' + str(put_data))
+
+        for data in put_data:
+            me = self.model.objects.get(id=data['id'])
+            if 'institute_id' in data.keys():
+                me.institute = Institute.objects.get(id=data['institute_id'])
+            if 'name' in data.keys():
+                me.name = data['name']
+            if 'attribute' in data.keys():
+                me.attribute = LabAttribute.objects.get(id=data['attribute'])
+            if 'classes' in data.keys():
+                if data['classes']:
+                    this_logger.debug(self.model_Chinese_name + '--classes：' + str(data['classes']))
+                    classes_ids_list = str_to_non_repetitive_list(data['classes'], ',')
+                    me.classes.set(classes_ids_list)
+                else:
+                    me.classes.clear()
+            if 'teachers' in data.keys():
+                if data['teachers']:
+                    this_logger.debug(self.model_Chinese_name + '--teachers：' + str(data['teachers']))
+                    teachers_ids_list = str_to_non_repetitive_list(data['teachers'], ',')
+                    me.teachers.set(teachers_ids_list)
+                else:
+                    me.teachers.clear()
+            me.save()
+        return JsonResponse({'status': True})
+
+    def post(self, request, school_id):  # 创建信息
+        post_data = json.loads(list(request.POST.keys())[0])
+        this_logger.debug(self.model_Chinese_name + '信息--接收到post数据：' + str(post_data))
+
+        for data in post_data:
+            if self.model is SchoolArea or self.model is LabAttribute or self.model is ExperimentType:
+                self.model.objects.create(**data, school_id=school_id)
+            else:
+                self.model.objects.create(**data)
+        return JsonResponse({'status': True})
+
+    def delete(self, request, course_id):
+        if course_id != '-1':
+            this_logger.debug('删除课程id为'+course_id+'的所有实验项目')
+            Experiment.objects.filter(course_id=course_id).delete()
+        else:
+            delete_data = QueryDict(request.body)
+            delete_data = json.loads(list(delete_data.keys())[0])
+            this_logger.debug(self.model_Chinese_name + '信息--接收到delete数据：' + str(delete_data))
+
+            for id in delete_data:
+                self.model.objects.filter(id=id).delete()
+        return JsonResponse({'status': True})
+
+
+
+
+
+
+
+
+
+
+
+
+
+class WeeksTimeTableView(View):
+    def get(self, request):
+        context = {
+            'title': '周次安排表',
+            'active_5': True,  # 激活导航
+            'weeks_timetable_active': True,  # 激活导航
+        }
+
+        return render(request, 'manage/weeks_timetable.html', context)
+
+
+class RoomsTimeTableView(View):
+    def get(self, request):
+        context = {
+            'title': '实验室安排表',
+            'active_5': True,  # 激活导航
+            'rooms_timetable_active': True,  # 激活导航
+        }
+
+        return render(request, 'manage/rooms_timetable.html', context)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1110,7 +1463,7 @@ class ArrangeView(View):
         self.context['school'] = School.objects.get(id=request.session['school_id'])
 
         self.context['institutes'] = self.context['school'].get_all_institutes()
-        self.context['attributes'] = LabsAttribute.objects.filter(school=self.context['school'])
+        self.context['attributes'] = LabAttribute.objects.filter(school=self.context['school'])
 
         # 为用户记住最近编辑的学院，要百分百确保session中包含当前学院id
         if request.GET.get('current_institute_id', None):

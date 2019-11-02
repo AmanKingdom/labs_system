@@ -118,7 +118,7 @@
             $('.not_null').remove();	 // 清除掉以前的错误信息
 
             $.each(lab_attribute_table_data, function (index, value) {
-                if(value['lab_attribute_name'] === empty_text || value['lab_attribute_name'] == ""){
+                if(value['lab_attribute_name'] === empty_text || value['lab_attribute_name'] === ""){
                     pass = false;
                     add_tip('lab_attribute_table', index, 2)
                 }

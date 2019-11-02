@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from apps.manage.models import School, Institute, SchoolArea, Lab, Department, Grade, Classes, Teacher, \
-    TotalRequirements, Course, LabsAttribute, SchoolYear, Term, SuperUser, CourseBlock, ArrangeSettings, ExperimentType, \
+    TotalRequirements, Course, LabAttribute, SchoolYear, Term, SuperUser, CourseBlock, ArrangeSettings, ExperimentType, \
     Experiment, SpecialRequirements
 
 admin.site.site_header = '实验室数据后台管理系统'
@@ -61,7 +61,7 @@ class LabsAttributeAdmin(admin.ModelAdmin):
     list_editable = ['name', 'school']  # 设置可行内编辑
 
 
-admin.site.register(LabsAttribute, LabsAttributeAdmin)
+admin.site.register(LabAttribute, LabsAttributeAdmin)
 
 
 class GradeAdmin(admin.ModelAdmin):

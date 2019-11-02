@@ -40,6 +40,7 @@
                                     {% else %}
                                         <option value={{ department.id }}>{{ department.name }}</option>
                                     {% endif %}
+                                {% empty %}
                                 {% endfor %}
                             </select>
                         {% elif request.session.user_type == 'teacher' %}
@@ -50,7 +51,13 @@
                     </td>
                     <td id="teacher">
                         {% if request.session.user_type == 'superuser' %}
-                            <select id="teachers_select" class="form-control"></select>
+                            <select id="teachers_select" class="form-control">
+                                <option>--------</option>
+                                {% for teacher in teachers %}
+                                    <option value='{{ teacher.account }}'>{{ teacher.name }}</option>
+                                {% empty %}
+                                {% endfor %}
+                            </select>
                         {% elif request.session.user_type == 'teacher' %}
                             {{ request.session.user_name }}
                         {% else %}
@@ -58,31 +65,17 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if request.session.user_type == 'superuser' %}
-                            <select id="courses_select" class="form-control"></select>
-                        {% elif request.session.user_type == 'teacher' %}
-                            <select id="course_select" class="form-control">
-                                {% for course in courses %}
-                                    {% if forloop.first %}
-                                        <option value={{ course.id }} selected>{{ course.name }}</option>
-                                    {% else %}
-                                        <option value={{ course.id }}>{{ course.name }}</option>
-                                    {% endif %}
-                                {% empty %}
-                                    <option>暂无课程数据</option>
-                                {% endfor %}
-                            </select>
-                        {% else %}
-                            无
-                        {% endif %}
+                        <select id="courses_select" class="form-control">
+                            <option>--------</option>
+                            {% for course in courses %}
+                                <option value={{ course.id }}>{{ course.name }}</option>
+                            {% empty %}
+                            {% endfor %}
+                        </select>
                     </td>
                     <td>
                         <div id="classes">
-                            {% for x in classes %}
-                                {{ x.grade__name }}级{{ x.grade__department__name }}{{ x.name }}班<br>
-                            {% empty %}
-                                暂无数据
-                            {% endfor %}
+                            {% if classes %}{{ classes|safe }}{% endif %}
                         </div>
                     </td>
                     <td><a id="teaching_materials" data-type="textarea"></a></td>
@@ -109,11 +102,11 @@
             <table
                     id="experiment_info_table"
                     class="table-responsive"
-{#                    data-detail-formatter="detailFormatter"#}
+                    {#                    data-detail-formatter="detailFormatter"#}
                     data-minimum-count-columns="2"
                     data-id-field="id"
-{#                    data-side-pagination="server"#}
-{#                    data-response-handler="responseHandler"#}
+                    {#                    data-side-pagination="server"#}
+                    {#                    data-response-handler="responseHandler"#}
                     data-click-to-select="true">
             </table>
             <div align="right">
@@ -193,7 +186,7 @@
                                     <th data-field="after_submit_days_of_the_week">星期</th>
                                     <th data-field="after_submit_section">节次</th>
                                     <th data-field="after_submit_labs_of_institute">实验室所属学院</th>
-                                    <th data-field="after_submit_labs_attribute">实验室属性</th>
+                                    <th data-field="after_submit_lab_attributes">实验室属性</th>
                                     <th data-field="after_submit_labs">实验室</th>
                                     <th data-field="after_submit_special_consume_requirements">特殊耗材需求</th>
                                     <th data-field="after_submit_special_system_requirements">特殊系统需求</th>
@@ -223,20 +216,59 @@
     <!--课程信息表配置 开始-->
     <script>
         $(document).ready(function() {
+            // 选择系别后的教师下拉列表联动数据刷新
+            $("#departments_select").change(function () {
+                var department_id = $(this).val();
+                console.log('选择的系别 ID 为：' + department_id);
+
+                $.ajax({
+                    url: '{% url 'manage:ajax_load_teachers_of_department' %}',
+                    data: {'department_id': department_id},
+                    success: function (data) {
+                        $("#courses_select").empty();
+                        $("#classes").empty();
+                        $("#teachers_select").html(data);
+                    }
+                });
+            });
+
+            // 选择教师后的课程下拉列表联动数据刷新
+            $("#teachers_select").change(function () {
+                var teacher_account = $(this).val();
+                if(teacher_account === '--------'){
+                    console.log('未选择');
+                    $("#courses_select").empty();
+                    $("#classes").empty();
+                }else{
+                    console.log('选择的教师 account 为：' + teacher_account);
+
+                    $.ajax({
+                        url: '{% url 'manage:ajax_load_courses_of_teacher' %}',
+                        data: {'teacher_account': teacher_account},
+                        success: function (data) {
+                            $("#classes").empty();  // 清空原来内容
+                            $("#courses_select").html(data);
+                        }
+                    });
+                }
+            });
 
             // 选择课程后的授课班级联动数据刷新
             $("#courses_select").change(function () {
                 var course_id = $(this).val();
-                console.log('选择的课程 ID 为：' + course_id);
+                if(course_id === '--------'){
+                    console.log('未选择')
+                }else{
+                    console.log('选择的课程 ID 为：' + course_id);
 
-                $.ajax({
-                    url: '{% url 'manage:ajax_load_classes_of_course' %}',
-                    data: {'course_id': course_id},
-                    success: function (data) {
-                        {#$("#classes").empty();  // 清空原来内容#}
-                        $("#classes").html(data);  // 用返回的数据替换班级的内容
-                    }
-                });
+                    $.ajax({
+                        url: '{% url 'manage:ajax_load_classes_of_course' %}',
+                        data: {'course_id': course_id},
+                        success: function (data) {
+                            $("#classes").html(data.classes);  // 用返回的数据替换班级的内容
+                        }
+                    });
+                }
             });
 
             // 实验教材
@@ -275,7 +307,6 @@
         // 初始化实验项目表
         function init_experiment_info_table() {
             experiment_info_table.bootstrapTable('destroy').bootstrapTable({
-                locale: $('#locale').val(),
                 columns: [
                     [{
                         field: 'state',
@@ -382,18 +413,16 @@
                             ]
                         }
                     }, {
-                        field: 'labs_attribute',
+                        field: 'lab_attributes',
                         title: '实验室属性',
                         editable:{
                             type:'select2',
                             source: [
-                                {% if labs_attribute %}
-                                    {% for x in labs_attribute %}
-                                        {value: {{ x.id }}, text: '{{ x.name }}' },
-                                    {% endfor %}
-                                {% else %}
+                                {% for x in lab_attributes %}
+                                    {value: {{ x.id }}, text: '{{ x.name }}' },
+                                {% empty %}
                                     {value:"", text: '暂无数据'}
-                                {% endif %}
+                                {% endfor %}
                             ],
                             select2 : {
                                 // allowClear : true,
@@ -408,13 +437,11 @@
                         editable:{
                             type:'select2',
                             source: [
-                                {% if all_labs %}
-                                    {% for x in all_labs %}
-                                        {value: {{ x.id }}, text: '{{ x.name }}' },
-                                    {% endfor %}
-                                {% else %}
-                                    {value:"", text: '暂无数据'}
-                                {% endif %}
+                                {% for x in all_labs %}
+                                    {value: {{ x.id }}, text: '{{ x.name }}' },
+                                {% empty %}
+                                    {value:"", text: '暂无数据'},
+                                {% endfor %}
                             ],
                             select2 : {
                                 // allowClear : true,
@@ -479,8 +506,8 @@
     <!--动态添加实验项目表格行 事件 开始-->
     <script>
         $("#add_experiment_button").click(function () {
-            if($('#course option:selected').text() == "暂无课程数据"){
-                alert('没有课程可以申请了哦，您可以到申请信息页面看看已经申请了的课程')
+            if($('#courses_select option:selected').text() === "--------"){
+                alert('请先选择课程');
             }else{
                 // 用index实现编号自增
                 var data = experiment_info_table.bootstrapTable('getData');
@@ -498,7 +525,7 @@
                         "days_of_the_week":{{ days_of_the_week.0 }},
                         "section":"",
                         "labs_of_institute":"",
-                        "labs_attribute":"",
+                        "lab_attributes":"",
                         "labs":"",
                         "special_consume_requirements":"",
                         "special_system_requirements":"",
@@ -604,7 +631,7 @@
     <!--整理所有信息并存储到session 开始-->
     <script>
         $('#submit').click(function () {
-            var experiments = experiment_info_table.bootstrapTable('getData');
+            var experiment_info_table_data = experiment_info_table.bootstrapTable('getData');
             var consume_requirements = check_empty(document.getElementById("consume_requirements").innerText);
             var system_requirements = check_empty(document.getElementById("system_requirements").innerText);
             var soft_requirements = check_empty(document.getElementById("soft_requirements").innerText);
@@ -618,47 +645,33 @@
                 }
             }
 
-            var selected_course = $('#course option:selected').text();
+            var selected_course = $('#courses_select option:selected').text();
             var selected_course_id = "";
 
-            if(selected_course == "请先选择课程"){
+            if(selected_course == "--------"){
                 selected_course = ""
             }else{
-                selected_course_id = $('#course option:selected').val()
+                selected_course_id = $('#courses_select option:selected').val()
             }
 
-            /*
-            // 可行的获取 select2 的 value 和 text 的方案
-            var selected_classes_name =  $("#classes option:checked").text();
-            var selected_classes_id = $('#classes').select2().val();
-            console.log('选中的班级：'+selected_classes_name+'。id分别为：'+selected_classes_id);
-            */
-
-            /*
-            var selected_classes_name=eval('([])');
-            var selected_classes_id = $('#classes').select2().val();
-            var selected_classes=document.getElementById('classes');
-
-            var options=selected_classes.options;
-            for(var i=0;i<options.length;i++){
-                if(options[i].selected){
-                    selected_classes_name.push(options[i].text);
-                    selected_classes_id.push(options[i].value);
-                }
-            }
-            console.log('选择的班级为：'+selected_classes_name+' id 为：'+selected_classes_id);*/
-            var selected_classes_name = document.getElementById("classes").innerText;
-            console.log('选择的班级为：'+selected_classes_name);
+            var classes = document.getElementById("classes").innerText;
 
             var data_json = {
-                "department":document.getElementById("department").innerText,
-                "teacher_name":document.getElementById("teacher_name").innerText,
+                {% if request.session.user_type == 'superuser' %}
+                    "department": $('#departments_select option:selected').text(),
+                {% else %}
+                    "department": document.getElementById("department").innerText,
+                {% endif %}
+                {% if request.session.user_type == 'superuser' %}
+                    "teacher_name": $('#teachers_select option:selected').text(),
+                {% else %}
+                    "teacher_name":document.getElementById("teacher_name").innerText,
+                {% endif %}
 
                 "course":selected_course,
                 "course_id": selected_course_id,
 
-                "classes":selected_classes_name,
-                //"classes_id":selected_classes_id,
+                "classes":classes,
 
                 "teaching_materials":teaching_materials,
 
@@ -666,12 +679,11 @@
                 "system_requirements":system_requirements,
                 "soft_requirements":soft_requirements,
 
-                "experiments": experiments,
+                "experiments": experiment_info_table_data,
             };
 
             console.log('整理所有信息后：'+data_json.toString());
             sessionStorage.setItem("course_and_its_experiments_json", JSON.stringify(data_json));
-            // window.location.href="manage_application.html";
         });
     </script>
     <!--整理所有信息并存储到session 结束-->
@@ -720,7 +732,7 @@
                         "after_submit_days_of_the_week":experiments[i].days_of_the_week,
                         "after_submit_section":experiments[i].section,
                         "after_submit_labs_of_institute":experiments[i].labs_of_institute,
-                        "after_submit_labs_attribute":experiments[i].labs_attribute,
+                        "after_submit_lab_attributes":experiments[i].lab_attributes,
                         "after_submit_labs":experiments[i].labs,
                         "after_submit_special_consume_requirements":experiments[i].special_consume_requirements,
                         "after_submit_special_system_requirements":experiments[i].special_system_requirements,
@@ -752,39 +764,34 @@
                     if(value['id'] === ""){
                         pass = false;
                         window.alert('提交失败，实验'+index+'的编号不可以为空');
-                        return pass
                     }
-                    if(value['experiment_name'] == ""){
+                    if(value['experiment_name'] === ""){
                         pass = false;
-                        window.alert('提交失败，实验'+index+'的项目名不可以为空');
-                        return pass
+                        add_tip('experiment_info_table', index, 2);
                     }
-                    if(value['section'] == ""){
+                    if(value['section'] === ""){
                         pass = false;
-                        window.alert('提交失败，实验'+index+'的节次不可以为空');
-                        return pass
+                        add_tip('experiment_info_table', index, 7);
                     }
                 });
                 if(pass){
                     $.ajax({
                         cache:true,//保留缓存数据
                         type:"POST",
-                        url:"{% url 'apply_experiments:submit_experiments' %}",
+                        url:"{% url 'manage:apply' %}",
                         data:JSON.stringify(course_and_its_experiments_json),
                         dataType:'JSON',
-                        async:true,
                         headers:{'X-CSRFToken':'{{ csrf_token }}'},
                         error:function(request){
-                            console.log("无法提交", request);
+                            console.log("无法提交?", request);
                         },
                         success:function(data){
-                            console.log("已提交");
-                            console.log(data);
+                            console.log("已提交", data);
                             if(data.status){
                                 console.log('提交成功！');
-                                window.location.href="{% url 'apply_experiments:manage_application' %}"
+                                window.location.href="{% url 'manage:application_manage' %}"
                             }else{
-                                console.log('提交信息有问题：'+data.message)
+                                console.log('处理失败：'+data.message)
                             }
                         }
                     });

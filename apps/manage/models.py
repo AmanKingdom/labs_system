@@ -66,7 +66,7 @@ class School(models.Model):
         这是为方便统一获取信息而设计的方法
         :return:
         """
-        return self.labs_attributes.all()
+        return self.lab_attributes.all()
 
     def get_all_experiment_types(self):
         return self.experiment_types.all()
@@ -127,13 +127,13 @@ class Department(models.Model):
 
 
 # 实验室属性
-class LabsAttribute(models.Model):
+class LabAttribute(models.Model):
     class Meta:
         # 该数据库表名自定义为如下：
         db_table = 'labs_attribute'
 
     name = models.CharField(max_length=50, verbose_name='属性名称')
-    school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='对应的学校', related_name='labs_attributes')
+    school = models.ForeignKey(School, on_delete=models.CASCADE, verbose_name='对应的学校', related_name='lab_attributes')
 
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
@@ -156,9 +156,9 @@ class Lab(models.Model):
     equipments = models.TextField(verbose_name='实验室设备信息', blank=True, null=True)
     equipments_amount = models.IntegerField(verbose_name='设备数量', default=40)
 
-    attribute1 = models.ForeignKey(LabsAttribute, verbose_name='1号属性', blank=True, null=True, on_delete=models.SET_NULL, related_name='lab_attr1')
-    attribute2 = models.ForeignKey(LabsAttribute, verbose_name='2号属性', blank=True, null=True, on_delete=models.SET_NULL, related_name='lab_attr2')
-    attribute3 = models.ForeignKey(LabsAttribute, verbose_name='3号属性', blank=True, null=True, on_delete=models.SET_NULL, related_name='lab_attr3')
+    attribute1 = models.ForeignKey(LabAttribute, verbose_name='1号属性', blank=True, null=True, on_delete=models.SET_NULL, related_name='lab_attr1')
+    attribute2 = models.ForeignKey(LabAttribute, verbose_name='2号属性', blank=True, null=True, on_delete=models.SET_NULL, related_name='lab_attr2')
+    attribute3 = models.ForeignKey(LabAttribute, verbose_name='3号属性', blank=True, null=True, on_delete=models.SET_NULL, related_name='lab_attr3')
 
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
@@ -284,7 +284,7 @@ class Course(models.Model):
     classes = models.ManyToManyField(Classes, verbose_name='授课班级')
     # 一个课程可以多个老师讲授，一个老师也可以讲授多个课程
     teachers = models.ManyToManyField(Teacher, verbose_name='授课教师')
-    attribute = models.ForeignKey(LabsAttribute, on_delete=models.SET_NULL, blank=True, null=True, verbose_name='课程属性')
+    attribute = models.ForeignKey(LabAttribute, on_delete=models.SET_NULL, blank=True, null=True, verbose_name='课程属性')
 
     has_block = models.BooleanField(verbose_name='是否有课程块', default=False)
 
@@ -304,7 +304,7 @@ class TotalRequirements(models.Model):
         # 该数据库表名自定义为如下：
         db_table = 'total_requirements'
 
-    course = models.ForeignKey(Course, verbose_name='从属课程', on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, verbose_name='从属课程', on_delete=models.CASCADE, related_name='total_requirements')
 
     teaching_materials = models.CharField(max_length=200, verbose_name='总体教材需求', null=True, blank=True)
     total_consume_requirements = models.CharField(max_length=100, verbose_name='总体耗材需求', null=True, blank=True)
@@ -391,7 +391,7 @@ class SpecialRequirements(models.Model):
         # 该数据库表名自定义为如下：
         db_table = 'special_requirements'
 
-    experiment = models.ForeignKey(Experiment, verbose_name='从属实验', on_delete=models.CASCADE)
+    experiment = models.ForeignKey(Experiment, verbose_name='从属实验', on_delete=models.CASCADE, related_name='special_requirements')
 
     special_consume_requirements = models.CharField(max_length=200, verbose_name='特殊耗材需求', null=True, blank=True)
     special_system_requirements = models.CharField(max_length=200, verbose_name='特殊系统需求', null=True, blank=True)
@@ -452,8 +452,8 @@ class ArrangeSettings(models.Model):
         unique_together = ('id', 'institute',)
 
     institute = models.ForeignKey(Institute, on_delete=models.CASCADE, verbose_name='设置所属学院')
-    attribute1 = models.ForeignKey(LabsAttribute, on_delete=models.CASCADE, verbose_name='最优先排课属性', related_name='a1_arrange_settings')
-    attribute2 = models.ForeignKey(LabsAttribute, on_delete=models.CASCADE, verbose_name='次优先排课属性', related_name='a2_arrange_settings')
+    attribute1 = models.ForeignKey(LabAttribute, on_delete=models.CASCADE, verbose_name='最优先排课属性', related_name='a1_arrange_settings')
+    attribute2 = models.ForeignKey(LabAttribute, on_delete=models.CASCADE, verbose_name='次优先排课属性', related_name='a2_arrange_settings')
 
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')

@@ -1,8 +1,12 @@
 from datetime import datetime
 
 
-
 def set_time_for_context(context):
+    """
+    为申请实验和修改实验页面提供的选项数据：周次、星期、节次
+    :param context:
+    :return:
+    """
     # 周次
     context['which_week'] = [x for x in range(1, 21)]
     # 星期

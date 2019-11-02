@@ -57,22 +57,22 @@
     <script>
         $(document).ready(function() {
             $('.see_more_button').click(function () {
-                var course_id = $(this).parents("tr").children("td:nth-child(4)").attr('id');
+                var course_id = $(this).parents("tr").children("td:nth-child(3)").attr('id');
                 console.log('点击查看详情的行：', course_id);
 
-                var url = "{% url 'apply_experiments:change_experiments' 'course_id' %}";
+                var url = "{% url 'manage:application_details' 'course_id' %}";
                 url = url.replace('course_id', course_id);
                 window.location.href=url;
             });
             $('.pass_button').click(function () {
-                var course_id = $(this).parents("tr").children("td:nth-child(4)").attr('id');
+                var course_id = $(this).parents("tr").children("td:nth-child(3)").attr('id');
                 console.log('点击审核通过的行：', course_id);
                 var url = "{% url 'manage:application_check' 'course_id' '3' %}";
                 url = url.replace('course_id', course_id);
                 window.location.href=url;
             });
             $('.not_pass_button').click(function () {
-                var course_id = $(this).parents("tr").children("td:nth-child(4)").attr('id');
+                var course_id = $(this).parents("tr").children("td:nth-child(3)").attr('id');
                 console.log('点击审核不通过的行：', course_id);
                 var url = "{% url 'manage:application_check' 'course_id' '2' %}";
                 url = url.replace('course_id', course_id);

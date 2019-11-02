@@ -89,7 +89,7 @@
                         },
                     },{
                         field:'attribute',
-                        title: '<a href="{% url 'manage:labs_attribute_manage' %}">课程属性</a>',
+                        title: '<a href="{% url 'manage:lab_attribute_manage' %}">课程属性</a>',
                         editable:{
                             type:'select',
                             source: [
@@ -107,7 +107,7 @@
                             type:'select2',
                             source: [
                                 {% for classes_item in classes %}
-                                    { value: {{ classes_item.id }}, text: '{{ classes_item.grade.institute.name }}{{ classes_item.grade.name }}级{{ classes_item.name }}班'},
+                                    { value: {{ classes_item.id }}, text: '{{ classes_item.grade.department.name }}{{ classes_item.grade.name }}级{{ classes_item.name }}班'},
                                 {% empty %}
                                     { value:"", text: not_found_data},
                                 {% endfor %}

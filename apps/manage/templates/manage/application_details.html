@@ -24,6 +24,7 @@
                     <th data-field="teachers">教师</th>
                     <th data-field="classes">教学班级</th>
                     <th data-field="teaching_materials">实验教材</th>
+                    <th data-field="hide_total_requirements_id"></th>
                     <th data-field="hide_teaching_materials"></th>
                     <th data-field="total_consume_requirements">总体耗材需求</th>
                     <th data-field="hide_total_consume_requirements"></th>
@@ -41,7 +42,8 @@
                     <td>{{ course.teachers| safe }}</td>
                     <td>{{ course.classes | safe}}</td>
                     <td><a id="teaching_materials" data-type="textarea"></a></td>
-                    <td id="{{ course.total_requirements.id }}">{{ course.total_requirements.teaching_materials }}</td>
+                    <td>{{ course.total_requirements.id }}</td>
+                    <td>{{ course.total_requirements.teaching_materials }}</td>
                     <td><a id="total_consume_requirements" data-type="textarea"></a></td>
                     <td>{{ course.total_requirements.total_consume_requirements }}</td>
                     <td><a id="total_system_requirements" data-type="textarea"></a></td>
@@ -124,6 +126,7 @@
     <script>
         $(document).ready(function() {
             var course_table = $('#course_table');
+            course_table.bootstrapTable('hideColumn', 'hide_total_requirements_id');
             course_table.bootstrapTable('hideColumn', 'hide_teaching_materials');
             course_table.bootstrapTable('hideColumn', 'hide_total_consume_requirements');
             course_table.bootstrapTable('hideColumn', 'hide_total_system_requirements');
@@ -131,25 +134,25 @@
 
             $('#teaching_materials').editable({
                 placeholder: "一般为书籍或视频",
-                value: '{{ course.total_requirements.teaching_materials }}',
+                value: {% if course.total_requirements.teaching_materials %}'{{ course.total_requirements.teaching_materials }}'{% else %}""{% endif %},
                 rows:5,
                 mode:"popup",
             });
             $('#total_consume_requirements').editable({
                 placeholder: '如：电子试验箱',
-                value: '{{ course.total_requirements.total_consume_requirements }}',
+                value: {% if course.total_requirements.total_consume_requirements %}'{{ course.total_requirements.total_consume_requirements }}'{% else %}""{% endif %},
                 rows:5,
                 mode:"popup",
             });
             $('#total_system_requirements').editable({
                 placeholder: '如：windows10',
-                value: '{{ course.total_requirements.total_system_requirements }}',
+                value: {% if course.total_requirements.total_system_requirements %}'{{ course.total_requirements.total_system_requirements }}'{% else %}""{% endif %},
                 rows:5,
                 mode:"popup",
             });
             $('#total_soft_requirements').editable({
                 placeholder: '如：pycharm专业版',
-                value: '{{ course.total_requirements.total_soft_requirements }}',
+                value: {% if course.total_requirements.total_soft_requirements %}'{{ course.total_requirements.total_soft_requirements }}'{% else %}""{% endif %},
                 rows:5,
                 mode:"popup",
             });
@@ -353,12 +356,12 @@
                     "labs": '{{ e.lab_ids }}',
                     "hide_labs": '{{ e.lab_ids }}',
                     {#"labs": "1",    //要传id，字符串类型的id，而不要直接传下拉列表里的text值#}
-                    "special_consume_requirements": {% if e.special_requirements %}'{{ e.special_requirements.special_consume_requirements }}'{% else %}""{% endif %},
-                    "hide_special_consume_requirements": {% if e.special_requirements %}'{{ e.special_requirements.special_consume_requirements }}'{% else %}""{% endif %},
-                    "special_system_requirements": {% if e.special_requirements %}'{{ e.special_requirements.special_system_requirements }}'{% else %}""{% endif %},
-                    "hide_special_system_requirements": {% if e.special_requirements %}'{{ e.special_requirements.special_system_requirements }}'{% else %}""{% endif %},
-                    "special_soft_requirements": {% if e.special_requirements %}'{{ e.special_requirements.special_soft_requirements }}'{% else %}""{% endif %},
-                    "hide_special_soft_requirements": {% if e.special_requirements %}'{{ e.special_requirements.special_soft_requirements }}'{% else %}""{% endif %},
+                    "special_consume_requirements": {% if e.special_requirements.special_consume_requirements %}'{{ e.special_requirements.special_consume_requirements }}'{% else %}""{% endif %},
+                    "hide_special_consume_requirements": {% if e.special_requirements.special_consume_requirements %}'{{ e.special_requirements.special_consume_requirements }}'{% else %}""{% endif %},
+                    "special_system_requirements": {% if e.special_requirements.special_system_requirements %}'{{ e.special_requirements.special_system_requirements }}'{% else %}""{% endif %},
+                    "hide_special_system_requirements": {% if e.special_requirements.special_system_requirements %}'{{ e.special_requirements.special_system_requirements }}'{% else %}""{% endif %},
+                    "special_soft_requirements": {% if e.special_requirements.special_soft_requirements %}'{{ e.special_requirements.special_soft_requirements }}'{% else %}""{% endif %},
+                    "hide_special_soft_requirements": {% if e.special_requirements.special_soft_requirements %}'{{ e.special_requirements.special_soft_requirements }}'{% else %}""{% endif %},
                     "id_in_database": '{{ e.experiment.id }}',
                 };
                 // 插入该行
@@ -451,21 +454,22 @@
             if(!t_r_change){
                 console.log('总体需求没有变化，不需变动');
             }else {
-                var total_requirements_id = $('#course_table tr:eq(1)');
+                var total_requirements_id = course_table_data_0['hide_total_requirements_id'];
                 console.log('total_requirements_id：', total_requirements_id);
 
                 function delete_total_requirements() {
                     var t_r_need_delete = true;
                     for(var i=0; i<t_r_name_list.length; i++){
-                        if(course_table_data_0[t_r_name_list[i]] !== ""){
+                        if($('#'+t_r_name_list[i]).text() !== "" && $('#'+t_r_name_list[i]).text() !== empty_text){
                             t_r_need_delete = false;
-                            return false;
                         }
                     }
                     if(t_r_need_delete){
                         console.log('删除总体需求');
-                        {#common_ajax('{% url "manage:total_requirements" %}', 'DELETE', {'id': total_requirements_id});#}
+                        common_ajax('{% url "manage:total_requirements" course.course_id %}', 'DELETE', [total_requirements_id,]);
                         return true;
+                    }else{
+                        return false;
                     }
                 }
 
@@ -473,32 +477,54 @@
                     console.log('该课程原来就有总体需求，所以现在只需判断修改或删除即可');
 
                     if(!delete_total_requirements()){
-                        console.log('修改总体需求');
                         var total_requirements_put_data = {};
-
+                        t_r_change = false;
                         for(var i=0; i<t_r_name_list.length; i++){
-                            if(course_table_data_0[t_r_name_list[i]] !== course_table_data_0['hide_'+t_r_name_list[i]]){
-                                total_requirements_put_data[t_r_name_list[i]] = course_table_data_0[t_r_name_list[i]];
+                            if($('#'+t_r_name_list[i]).text() !== course_table_data_0['hide_'+t_r_name_list[i]]){
+                                if($('#'+t_r_name_list[i]).text() === empty_text && course_table_data_0['hide_'+t_r_name_list[i]] === ''){
+                                    console.log('其实需求是空的，只是有个empty_text而已');
+                                }else {
+                                    if($('#'+t_r_name_list[i]).text() === empty_text){
+                                        total_requirements_put_data[t_r_name_list[i]] = '';
+                                    }else {
+                                        total_requirements_put_data[t_r_name_list[i]] = $('#' + t_r_name_list[i]).text();
+                                    }
+                                    t_r_change = true;
+                                }
                             }
                         }
-                        total_requirements_put_data['course_id'] = course_id;
-                        console.log('修改总体需求数据：', total_requirements_put_data);
-                        {#common_ajax('{% url "manage:total_requirements" %}', 'PUT', total_requirements_put_data);#}
+                        if(t_r_change){
+                            total_requirements_put_data['id'] = total_requirements_id;
+                            console.log('修改总体需求数据：', total_requirements_put_data);
+                            common_ajax('{% url "manage:total_requirements" course.course_id %}', 'PUT', [total_requirements_put_data,]);
+                        }else{
+                            console.log('不需修改总体需求')
+                        }
                     }
                 } else {
-                    console.log('该课程原来就有总体需求，所以现在只需判断新增或不做操作即可');
+                    console.log('该课程原来没有总体需求，所以现在只需判断新增或不做操作即可');
 
                     if(!delete_total_requirements()){
                         var total_requirements_post_data = {};
+                        t_r_change = false;
                         for(var i=0; i<t_r_name_list.length; i++){
-                            total_requirements_post_data[t_r_name_list[i]] = course_table_data_0[t_r_name_list[i]];
+                            if($('#'+t_r_name_list[i]).text() !== empty_text) {
+                                total_requirements_post_data[t_r_name_list[i]] = $('#'+t_r_name_list[i]).text();
+                                t_r_change = true;
+                            }
                         }
-                        console.log('创建总体需求数据：', total_requirements_post_data);
-                        {#common_ajax('{% url "manage:total_requirements" %}', 'POST', total_requirements_post_data);#}
+                        if(t_r_change){
+                            console.log('创建总体需求数据：', total_requirements_post_data);
+                            common_ajax('{% url "manage:total_requirements" course.course_id %}', 'POST', [total_requirements_post_data,]);
+                        }else{
+                            console.log('不需创建总体需求');
+                        }
                     }
                 }
             }
-
+            /*
+            * 上面那部分是处理总体需求的，下面是实验项目处理的开始
+            * */
             var experiments_table_data = experiments_table.bootstrapTable('getData');
             var pass = true;
 
@@ -522,28 +548,30 @@
                 var model_e_name_list = ['name', 'experiment_type_id', 'lecture_time', 'which_week',
                     'days_of_the_week', 'section', 'labs', 'special_consume_requirements',
                     'special_system_requirements', 'special_soft_requirements'];
+                // console.log('experiments_table_data有什么：', experiments_table_data);
                 for(var i = 0; i < experiments_table_data.length; i++){
                     console.log('实验项目', '-通过数据行是否有数据库id来作为新旧数据的依据， 序号：', i, '行的数据库id：', experiments_table_data[i]['id_in_database']);
 
                     if(experiments_table_data[i]['id_in_database']){
                         // 数据有修改才需要put提交
-                        var temp = {'id': experiments_table_data[i]['id_in_database'],};
+                        var temp = {};
                         var change = false;
 
                         for(var j=0; j<e_name_list.length; j++){
-                            if(experiments_table_data[j]['hide_'+e_name_list[j]] !== experiments_table_data[j][e_name_list[j]]){
-                                temp[model_e_name_list[j]] = experiments_table_data[j][e_name_list[j]];
+                            if(experiments_table_data[i]['hide_'+e_name_list[j]] !== experiments_table_data[i][e_name_list[j]]){
+                                temp[model_e_name_list[j]] = experiments_table_data[i][e_name_list[j]];
                                 change = true;
                             }
                         }
                         if(change) {
-                            temp['no'] = experiments_table_data[i]['id'];
+                            temp['id'] = experiments_table_data[i]['id_in_database'];
+                            // temp['no'] = experiments_table_data[i]['id'];
                             experiment_put_data.push(temp);
                         }
                     }else{
                         var temp = {};
                         for(var j=0; j<e_name_list.length; j++){
-                            temp[model_e_name_list[j]] = experiments_table_data[j][e_name_list[j]];
+                            temp[model_e_name_list[j]] = experiments_table_data[i][e_name_list[j]];
                         }
                         temp['no'] = experiments_table_data[i]['id'];
                         experiment_post_data.push(temp)
@@ -551,11 +579,11 @@
                 }
                 if(experiment_put_data.length > 0){
                     console.log('实验项目', '-存在修改数据：', experiment_put_data);
-                    common_ajax(course_url, 'PUT', experiment_put_data);
+                    common_ajax(experiment_url, 'PUT', experiment_put_data);
                 }
                 if(experiment_post_data.length > 0){
                     console.log('实验项目', '-存在新增数据：', experiment_post_data);
-                    common_ajax(course_url, 'POST', experiment_post_data);
+                    common_ajax(experiment_url, 'POST', experiment_post_data);
                 }
                 if(delete_ids_in_database.length > 0){
                     console.log('实验项目', '-删除的ids：', delete_ids_in_database);

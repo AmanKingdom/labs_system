@@ -8,38 +8,35 @@
 {% endblock %}
 
 {% block manage_body %}
-    <div id="toolbar">
-        <div class="row">
-            <div class="col-sm-4 m-b-xs">
-                <select class="form-control">
-                    <option class="selected">计算机科学与技术学院</option>
-                    <option>网络安全学院</option>
-                </select>
-            </div>
-            <div class="col-sm-4 m-b-xs">
-                <select class="form-control">
-                    <option>第14周</option>
-                    <option class="selected">第15周</option>
-                    <option>第16周</option>
-                </select>
-            </div>
-            <div class="col-sm-4 m-b-xs">
-                <select class="form-control">
-                    <option class="selected">--星期--</option>
-                    <option>星期一</option>
-                    <option>星期二</option>
-                    <option>星期三</option>
-                    <option>星期四</option>
-                    <option>星期五</option>
-                    <option>星期六</option>
-                    <option>星期七</option>
-                </select>
-            </div>
+    <div class="row">
+        <div class="col-sm-4 m-b-xs">
+            <select class="form-control" id="institutes_select">
+                <option class="selected">计算机科学与技术学院</option>
+                <option>网络安全学院</option>
+            </select>
+        </div>
+        <div class="col-sm-4 m-b-xs">
+            <select class="form-control" id="weeks_select">
+                <option>第14周</option>
+                <option class="selected">第15周</option>
+                <option>第16周</option>
+            </select>
+        </div>
+        <div class="col-sm-4 m-b-xs">
+            <select class="form-control" id="day_of_the_week_select">
+                <option class="selected">--星期--</option>
+                <option>星期一</option>
+                <option>星期二</option>
+                <option>星期三</option>
+                <option>星期四</option>
+                <option>星期五</option>
+                <option>星期六</option>
+                <option>星期七</option>
+            </select>
         </div>
     </div>
     <div class="table-responsive">
-        <h1 class="need">本页面暂时用于测试，未正式启用</h1>
-        <table class="table table-bordered table-hover" id="week_schedule_table"
+        <table class="table table-bordered table-hover" id="week_timetable_table"
                data-toggle="table"
                data-classes="table table-hover"
                data-show-columns="true"
@@ -61,7 +58,7 @@
     <!--固定列-->
     <script>
         $(function () {
-            $('#week_schedule_table').bootstrapTable('destroy').bootstrapTable({
+            $('#week_timetable_table').bootstrapTable('destroy').bootstrapTable({
                 minimumCountColumns:4,
                 fixedColumns:true,
                 fixedNumber:2,
@@ -71,13 +68,14 @@
 
     <script>
         function initTable() {
-            $('#week_schedule_table').bootstrapTable('destroy').bootstrapTable({
+            $('#week_timetable_table').bootstrapTable('destroy').bootstrapTable({
                 sidePagination: "server",
-                url: '{% url "manage:get_schedule" school.id %}',
-                height: 800,
+                type:'GET',
+                url: '{% url "manage:schedule" %}',
+                height: 600,
                 locale: $('#locale').val(),
                 onLoadSuccess: function (data) {
-                    uniteTable('week_schedule_table');
+                    uniteTable('week_timetable_table');
                 },
                 columns: [
                     {
@@ -97,15 +95,14 @@
             });
         }
 
-
-        //动态合并单元格
+       //动态合并单元格
         function uniteTable(tableId) {//表格ID，表格列数
             var tb=document.getElementById(tableId);
             tb.style.display='';
             var i = 0;
             var j = 0;
-            var rowCount = tb.rows.length; //   行数
-            var colCount = tb.rows[0].cells.length; //   列数
+            rowCount = tb.rows.length; //   行数
+            colCount = tb.rows[0].cells.length; //   列数
 
             console.log('行列数:', rowCount, colCount);
 
@@ -122,25 +119,25 @@
             //合并列，在本程序，应该先做行方向上的合并，因为课程往往是有多个实验室，而在一周的一串节次内，基本都是合并后的一整个大单元格
             for (i = 1; i < rowCount; i++) {    // i作为行标
                 // 不能这样用：obj1 = document.getElementById(tb.rows[i].cells[2].id);
-                obj1 = document.getElementById("tb__"+i.toString()+"_2");   // 从每一行的第三列开始取单元格对象元素，因为星期和节次不需要做列合并
-                console.log('合并列，目前行和obj1：', i, obj1);
+                obj1 = document.getElementById("tb__"+i.toString()+"_2");   // 从每一行的第3列开始取单元格对象元素，因为星期和节次不需要做列合并
+                {#console.log('合并列，目前行和obj1：', i, obj1);#}
 
-                for (j = 3; j < colCount; j++) {    // 从第四列开始取每一行的单元格作为下一个判断对象
+                for (j = 3; j < colCount; j++) {    // 从第4列开始取每一行的单元格作为下一个判断对象
                     if(document.getElementById("tb__"+i.toString()+"_"+j.toString())){
-                        console.log('存在obj2：',document.getElementById("tb__"+i.toString()+"_"+j.toString()));
+                        {#console.log('存在obj2：',document.getElementById("tb__"+i.toString()+"_"+j.toString()));#}
 
-                        console.log('现在的obj1和obj2分别为：', obj1, obj2, '处于第', i, '行，第', j, '列');
+                        {#console.log('现在的obj1和obj2分别为：', obj1, obj2, '处于第', i, '行，第', j, '列');#}
 
                         obj2 = document.getElementById("tb__"+i.toString()+"_"+j.toString());
                         if (obj1.innerText === obj2.innerText && (obj2.innerText !== "")) {
                             obj1.colSpan++;
-                            console.log('删除第', i, '行，第', j, '列的元素');
+                            {#console.log('删除第', i, '行，第', j, '列的元素');#}
                             obj2.parentNode.removeChild(obj2);
                         } else {
                             obj1 = obj2;
                         }
                     }else{
-                        console.log('不存在第', i, '行，第', j, '列的元素');
+                        {#console.log('不存在第', i, '行，第', j, '列的元素');#}
                     }
                 }
             }
@@ -162,17 +159,20 @@
                             if (document.getElementById("tb__" + j.toString() + "_" + i.toString())) {
                                 obj2 = document.getElementById("tb__" + j.toString() + "_" + i.toString());
 
-                                console.log('现在的obj1和obj2分别为：', obj1, obj2, '处于第', j, '行，第', i, '列');
+                                {#console.log('现在的obj1和obj2分别为：', obj1, obj2, '处于第', j, '行，第', i, '列');#}
 
                                 if (obj1.innerText === obj2.innerText && (obj2.innerText !== "")) {
-                                    obj1.rowSpan++;
-                                    console.log('删除第', j, '行，第', i, '列的元素');
-                                    obj2.parentNode.removeChild(obj2);
+                                    if(obj1.getAttribute("colspan") === obj2.getAttribute("colspan")) {
+                                        {#console.log('obj1和obj2的跨列数：', obj1.colspan,obj2.colspan);#}
+                                        obj1.rowSpan++;
+                                        {#console.log('删除第', j, '行，第', i, '列的元素');#}
+                                        obj2.parentNode.removeChild(obj2);
+                                    }
                                 } else {
                                     obj1 = document.getElementById("tb__" + j.toString() + "_" + i.toString());
                                 }
                             } else {
-                                console.log('不存在第', j, '行，第', i, '列的元素');
+                                {#console.log('不存在第', j, '行，第', i, '列的元素');#}
                             }
                         }
                     }

@@ -735,20 +735,6 @@ class ExperimentTypeManageView(View):
         return render(request, 'manage/experiment_type_manage.html', self.context)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # 数据联动，动态加载班级数据
 def load_classes_of_course(request):
     classes = get_classes_name_from_course(request.GET.get('course_id'))
@@ -939,6 +925,7 @@ class ApplicationManageView(View):
         return render(request, 'manage/application_manage.html', self.context)
 
 
+@method_decorator(require_login, name='dispatch')
 class ApplicationDetailsView(View):
     def get(self, request, course_id=None):
         context = {
@@ -965,31 +952,34 @@ class ApplicationDetailsView(View):
 
         experiments_origin = Experiment.objects.filter(course_id=course_id).order_by('no')
         experiments = []
-        for experiment in experiments_origin:
-            temp_experiment = {
-                'experiment': experiment,
-                'lab_ids': get_labs_id_str(experiment.labs.all()),
-                'special_requirements': SpecialRequirements.objects.filter(experiment=experiment).first(),
+        if experiments_origin:
+            for experiment in experiments_origin:
+                temp_experiment = {
+                    'experiment': experiment,
+                    'lab_ids': get_labs_id_str(experiment.labs.all()),
+                    'special_requirements': SpecialRequirements.objects.filter(experiment=experiment).first(),
+                }
+                experiments.append(temp_experiment)
+
+            context['experiments'] = experiments
+
+            context['course'] = {
+                'course_id': course.id,
+                'term': course.term,
+                'course_name': course.name,
+                'teachers': get_teachers_name_from_course(course_id),
+                'classes': get_classes_name_from_course(course_id),
+                'modify_time': course.modify_time,
+                'status': STATUS['%d' % experiments_origin[0].status],
+                'total_requirements': TotalRequirements.objects.filter(course_id=course_id).first()
             }
-            experiments.append(temp_experiment)
 
-        context['experiments'] = experiments
+            set_choices_context(context)
+            set_time_for_context(context)
 
-        context['course'] = {
-            'course_id': course.id,
-            'term': course.term,
-            'course_name': course.name,
-            'teachers': get_teachers_name_from_course(course_id),
-            'classes': get_classes_name_from_course(course_id),
-            'modify_time': course.modify_time,
-            'status': STATUS['%d' % experiments_origin[0].status],
-            'total_requirements': TotalRequirements.objects.filter(course_id=course_id).first()
-        }
-
-        set_choices_context(context)
-        set_time_for_context(context)
-
-        return render(request, 'manage/application_details.html', context)
+            return render(request, 'manage/application_details.html', context)
+        else:
+            return HttpResponseRedirect('/manage/application_manage')
 
 
 def application_check(request, course_id=None, status=None):
@@ -1012,6 +1002,20 @@ def application_check(request, course_id=None, status=None):
             course.save()
 
     return HttpResponseRedirect('/manage/application_manage')
+
+
+def make_special_requirements_for_experiment(experiment_id, data):
+    s_r_name_list = ['special_consume_requirements', 'special_system_requirements', 'special_soft_requirements']
+    special_requirements_dict = {}
+    for name in s_r_name_list:
+        if name in data.keys():
+            special_requirements_dict[name] = data[name]
+    if special_requirements_dict:
+        sr = SpecialRequirements.objects.filter(experiment_id=experiment_id)
+        if sr:
+            sr.update(**special_requirements_dict)
+        else:
+            SpecialRequirements.objects.create(**special_requirements_dict, experiment_id=experiment_id)
 
 
 class ExperimentsView(LittleSameModelBaseView):
@@ -1048,39 +1052,53 @@ class ExperimentsView(LittleSameModelBaseView):
         this_logger.debug(self.model_Chinese_name + '信息--接收到put数据：' + str(put_data))
 
         for data in put_data:
-            me = self.model.objects.get(id=data['id'])
-            if 'institute_id' in data.keys():
-                me.institute = Institute.objects.get(id=data['institute_id'])
-            if 'name' in data.keys():
-                me.name = data['name']
-            if 'attribute' in data.keys():
-                me.attribute = LabAttribute.objects.get(id=data['attribute'])
-            if 'classes' in data.keys():
-                if data['classes']:
-                    this_logger.debug(self.model_Chinese_name + '--classes：' + str(data['classes']))
-                    classes_ids_list = str_to_non_repetitive_list(data['classes'], ',')
-                    me.classes.set(classes_ids_list)
+            name_list = ['name', 'experiment_type_id', 'lecture_time', 'which_week', 'days_of_the_week', 'section']
+
+            temp_dict = {}
+            for name in name_list:
+                if name in data.keys():
+                    temp_dict[name] = data[name]
+            this_logger.debug('整理出可直接赋值的实验项目修改数据'+str(temp_dict))
+
+            me = self.model.objects.filter(id=data['id'])
+            me.update(**temp_dict)
+            me = me.first()
+
+            if 'labs' in data.keys():
+                if data['labs']:
+                    this_logger.debug(self.model_Chinese_name + '--labs：' + str(data['labs']))
+                    lab_ids_list = str_to_non_repetitive_list(data['labs'], ',')
+                    me.labs.set(lab_ids_list)
                 else:
-                    me.classes.clear()
-            if 'teachers' in data.keys():
-                if data['teachers']:
-                    this_logger.debug(self.model_Chinese_name + '--teachers：' + str(data['teachers']))
-                    teachers_ids_list = str_to_non_repetitive_list(data['teachers'], ',')
-                    me.teachers.set(teachers_ids_list)
-                else:
-                    me.teachers.clear()
+                    me.labs.clear()
             me.save()
+            make_special_requirements_for_experiment(me.id, data)
         return JsonResponse({'status': True})
 
-    def post(self, request, school_id):  # 创建信息
+    def post(self, request, course_id):  # 创建信息
         post_data = json.loads(list(request.POST.keys())[0])
         this_logger.debug(self.model_Chinese_name + '信息--接收到post数据：' + str(post_data))
 
         for data in post_data:
-            if self.model is SchoolArea or self.model is LabAttribute or self.model is ExperimentType:
-                self.model.objects.create(**data, school_id=school_id)
-            else:
-                self.model.objects.create(**data)
+            name_list = ['no', 'name', 'experiment_type_id', 'lecture_time', 'which_week', 'days_of_the_week', 'section']
+
+            temp_dict = {}
+            for name in name_list:
+                if name in data.keys():
+                    temp_dict[name] = data[name]
+            this_logger.debug('整理出可直接赋值的新增实验项目数据' + str(temp_dict))
+
+            me = self.model.objects.create(**temp_dict, course_id=course_id)
+
+            if 'labs' in data.keys():
+                if data['labs']:
+                    this_logger.debug(self.model_Chinese_name + '--labs：' + str(data['labs']))
+                    lab_ids_list = str_to_non_repetitive_list(data['labs'], ',')
+                    me.labs.set(lab_ids_list)
+                else:
+                    me.labs.clear()
+            me.save()
+            make_special_requirements_for_experiment(me.id, data)
         return JsonResponse({'status': True})
 
     def delete(self, request, course_id):
@@ -1097,6 +1115,63 @@ class ExperimentsView(LittleSameModelBaseView):
         return JsonResponse({'status': True})
 
 
+class TotalRequirementsView(LittleSameModelBaseView):
+    # 以下是默认的参数
+    model_Chinese_name = '总体需求'
+    model = TotalRequirements
+
+    def make_return_data(self, objects):
+        return_data = []
+        for obj in objects:
+            new_dict = {
+                'id': obj.id,
+                'course_id': obj.course.id,
+                'course_name': obj.course.name,
+                'teaching_materials': obj.teaching_materials,
+                'total_consume_requirements': obj.total_consume_requirements,
+                'total_system_requirements': obj.total_system_requirements,
+                'total_soft_requirements': obj.total_soft_requirements,
+                'id_in_database': obj.id
+            }
+            return_data.append(new_dict)
+        return return_data
+
+    def get(self, request, course_id):
+        return_data = []
+        if course_id:
+            try:
+                objects = TotalRequirements.objects.filter(course_id=course_id)
+                return_data = self.make_return_data(objects)
+            except Exception as e:
+                this_logger.debug(str(e))
+                raise Http404('找不到课程id为' + course_id + '的相关总体需求信息')
+        return HttpResponse(json.dumps(return_data), content_type="application/json")
+
+    def put(self, request, course_id):  # 修改信息
+        put_data = QueryDict(request.body)
+        put_data = json.loads(list(put_data.keys())[0])
+        this_logger.debug(self.model_Chinese_name + '信息--接收到put数据：' + str(put_data))
+
+        for data in put_data:
+            self.model.objects.filter(id=data['id']).update(**data)
+        return JsonResponse({'status': True})
+
+    def post(self, request, course_id):  # 创建信息
+        post_data = json.loads(list(request.POST.keys())[0])
+        this_logger.debug(self.model_Chinese_name + '信息--接收到post数据：' + str(post_data))
+
+        for data in post_data:
+            self.model.objects.create(**data, course_id=course_id)
+        return JsonResponse({'status': True})
+
+    def delete(self, request, course_id):
+        delete_data = QueryDict(request.body)
+        delete_data = json.loads(list(delete_data.keys())[0])
+        this_logger.debug(self.model_Chinese_name + '信息--接收到delete数据：' + str(delete_data))
+
+        for id in delete_data:
+            self.model.objects.filter(id=id).delete()
+        return JsonResponse({'status': True})
 
 
 
@@ -1107,18 +1182,20 @@ class ExperimentsView(LittleSameModelBaseView):
 
 
 
-
+@method_decorator(require_login, name='dispatch')
 class WeeksTimeTableView(View):
     def get(self, request):
         context = {
             'title': '周次安排表',
             'active_5': True,  # 激活导航
             'weeks_timetable_active': True,  # 激活导航
-        }
 
+            'labs': Lab.objects.filter(institute_id=request.session['current_institute_id'], dispark=True),
+        }
         return render(request, 'manage/weeks_timetable.html', context)
 
 
+@method_decorator(require_login, name='dispatch')
 class RoomsTimeTableView(View):
     def get(self, request):
         context = {
@@ -1128,23 +1205,6 @@ class RoomsTimeTableView(View):
         }
 
         return render(request, 'manage/rooms_timetable.html', context)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

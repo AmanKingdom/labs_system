@@ -1179,7 +1179,36 @@ class TotalRequirementsView(LittleSameModelBaseView):
 
 
 
+def today_in_which_week(school_id):
+    """
+    请传入学校id，将返回以星期1开始计算的周次
+    :param school_id:
+    :return:
+    """
+    term = Term.objects.get(school_id=school_id)
+    begin_date = term.begin_date
+    begin_date_days = int(begin_date.strftime('%j'))  # 起始日期在一年中的第几天
 
+    begin_date_is_which_day = begin_date.weekday() + 1  # 起始日期是处于星期几，1-星期一，7-星期日
+    days_in_first_week = 7 - begin_date_is_which_day  # 第一周有多少天
+
+    now_date = datetime.now().date()
+    now_date_days = int(now_date.strftime('%j'))    # 今天日期在一年中的第几天
+
+    interval_days = now_date_days - begin_date_days  # 起始日期到现在日期的间隔天数
+
+    this_logger.debug('今天：'+str(now_date)+' 起始日期：'+str(begin_date))
+    this_logger.debug('第一周天数：' + str(days_in_first_week)+' 间隔天数：'+str(interval_days)+' 起始日期的星期：'+str(begin_date_is_which_day))
+
+    if interval_days <= days_in_first_week - 1:     # 包含负数，即如果用户输入的起始日期比现在日期还要靠后，则默认为第一周
+        return 1
+    else:
+        temp = divmod((interval_days - days_in_first_week), 7)  # interval_days - days_in_first_week只会大于1
+        this_logger.debug('temp:'+str(temp))
+        which_week = temp[0] + 2
+        if which_week > 21:     # 把周次控制在 21 周内
+            which_week = 21
+        return which_week
 
 
 @method_decorator(require_login, name='dispatch')
@@ -1190,8 +1219,59 @@ class WeeksTimeTableView(View):
             'active_5': True,  # 激活导航
             'weeks_timetable_active': True,  # 激活导航
 
+            'institutes': None,
+            'which_week': None,
+            'days_of_the_week': None,
+
             'labs': Lab.objects.filter(institute_id=request.session['current_institute_id'], dispark=True),
         }
+
+        school = School.objects.get(id=request.session['school_id'])
+        context['institutes'] = school.get_all_institutes()
+
+        # 如果用户通过点击选择下拉框筛选展示条件，则通过get方式传过来
+        selected_data = request.GET.get('weeks_timetable_selected_data', None)
+
+        if not selected_data:   # 没有选择数据则说明用户是第一次请求得到页面，先看看session有没有记录
+            # session中如果有周次课程表的选择数据，则直接使用这些数据
+            selected_data = request.session.get('weeks_timetable_selected_data', None)
+
+            if not selected_data:   # session中没有周次课程表的选择数据，先创建一个空字典，再按用户信息生成默认选择数据
+                selected_data = {}
+
+        if 'selected_institute_id' not in selected_data:
+            if request.session['user_type'] == 'teacher':
+                teacher = Teacher.objects.get(account=request.session['user_account'])
+                selected_data['selected_institute_id'] = teacher.department.institute_id
+            elif request.session['user_type'] == 'assistant':
+                from apps.browse.models import Assistant
+                assistant = Assistant.objects.get(account=request.session['user_account'])
+                selected_data['selected_institute_id'] = assistant.teacher.department.institute_id
+            else:   # 不是教师不是助理，则是管理员了，默认第一个学院
+                selected_data['selected_institute_id'] = context['institutes'][0].id
+
+        # 如果没有选择周次，则通过周次计算算法得到当前周次
+        if 'selected_which_weeks' not in selected_data:
+            selected_data['selected_which_weeks'] = today_in_which_week(request.session['school_id'])
+            this_logger.debug('今周是这个学校的第' + str(selected_data['selected_which_weeks']) + '周')
+
+        # 如果没有选择星期，则设置为当前星期
+        if 'selected_days_of_the_week' not in selected_data:
+            d = datetime.now().weekday() + 1
+            this_logger.debug('今天是星期'+str(d))
+            selected_data['selected_days_of_the_week'] = d
+
+        # 最后将当前正在使用的选择数据存入session
+        if not request.session['weeks_timetable_selected_data']:
+            request.session['weeks_timetable_selected_data'] = {}
+        for name in ['selected_institute_id', 'selected_which_weeks', 'selected_days_of_the_week']:
+            if name in selected_data:
+                request.session['weeks_timetable_selected_data'][name] = selected_data[name]
+
+
+
+        set_time_for_context(context)
+
         return render(request, 'manage/weeks_timetable.html', context)
 
 

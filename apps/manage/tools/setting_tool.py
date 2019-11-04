@@ -8,7 +8,7 @@ def set_time_for_context(context):
     :return:
     """
     # 周次
-    context['which_week'] = [x for x in range(1, 21)]
+    context['which_week'] = [x for x in range(1, 22)]
     # 星期
     context['days_of_the_week'] = [x for x in range(1, 8)]
     # 节次

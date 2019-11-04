@@ -21,7 +21,6 @@ urlpatterns = [
     path('', homepage, name='homepage'),
 
     path('manage/', include('apps.manage.urls')),
-    path('apply_experiments/', include('apps.apply_experiments.urls')),
     path('browse/', include('apps.browse.urls')),
 
     path('admin/', admin.site.urls),

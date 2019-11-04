@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'apps.manage.apps.ManageConfig',
-    'apps.apply_experiments.apps.ApplyExperimentsConfig',
     'apps.browse.apps.BrowseConfig',
 ]
 

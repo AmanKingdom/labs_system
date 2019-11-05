@@ -5,33 +5,68 @@
 {% block add_css_to_manage %}
     <!--固定列表头所需的样式依赖-->
     <link rel="stylesheet" href="/static/css_js/css/fixed-columns/bootstrap-table-fixed-columns.css">
+    <style>
+        .course_div{
+            font-weight: bold;
+            color: rgb(57,50,44);
+            padding: 2%;
+            margin: 5px;
+        }
+        .color1_div{ background:rgb(235,175,121);}
+        .color2_div{ background:rgb(96,109,128);}
+        .color3_div{ background:rgb(155,168,183);}
+        .color4_div{ background:rgb(165,156,173);}
+        .color5_div{ background:rgb(208,197,184);}
+        .color6_div{ background:rgb(181,139,114);}
+        .color7_div{ background:rgb(224,208,175);}
+        .color8_div{ background:rgb(164,154,129);}
+        .color9_div{ background:rgb(183,157,155);}
+        .color10_div{ background:rgb(237,181,165);}
+        .color11_div{ background:rgb(222,234,234);}
+        .color12_div{ background:rgb(243,233,201);}
+        .color13_div{ background:rgb(208,208,226);}
+    </style>
 {% endblock %}
 
 {% block manage_body %}
     <div class="row">
         <div class="col-sm-4 m-b-xs">
             <select class="form-control" id="institutes_select">
-                <option class="selected">计算机科学与技术学院</option>
-                <option>网络安全学院</option>
+                {% for institute in institutes %}
+                    {% if request.session.weeks_timetable_selected_data.selected_institute_id|urlencode:"" == institute.id|urlencode:"" %}
+                        <option value="{{ institute.id }}" selected="selected">{{ institute.name }}</option>
+                    {% else %}
+                        <option value="{{ institute.id }}">{{ institute.name }}</option>
+                    {% endif %}
+                {% empty %}
+                    <option>暂无数据</option>
+                {% endfor %}
             </select>
         </div>
         <div class="col-sm-4 m-b-xs">
             <select class="form-control" id="weeks_select">
-                <option>第14周</option>
-                <option class="selected">第15周</option>
-                <option>第16周</option>
+                {% for week in which_week %}
+                    {% if request.session.weeks_timetable_selected_data.selected_which_weeks|urlencode:"" == week|urlencode:"" %}
+                        <option value="{{ week }}" selected="selected">第 {{ week }} 周</option>
+                    {% else %}
+                        <option value="{{ week }}">第 {{ week }} 周</option>
+                    {% endif %}
+                {% empty %}
+                    <option>暂无数据</option>
+                {% endfor %}
             </select>
         </div>
         <div class="col-sm-4 m-b-xs">
             <select class="form-control" id="day_of_the_week_select">
-                <option class="selected">--星期--</option>
-                <option>星期一</option>
-                <option>星期二</option>
-                <option>星期三</option>
-                <option>星期四</option>
-                <option>星期五</option>
-                <option>星期六</option>
-                <option>星期七</option>
+                {% for day in days_of_the_week %}
+                    {% if request.session.weeks_timetable_selected_data.selected_days_of_the_week|urlencode:"" == day|urlencode:"" %}
+                        <option value="{{ day }}" selected="selected">星期{{ day }}</option>
+                    {% else %}
+                        <option value="{{ day }}">星期{{ day }}</option>
+                    {% endif %}
+                {% empty %}
+                    <option>暂无数据</option>
+                {% endfor %}
             </select>
         </div>
     </div>
@@ -66,12 +101,69 @@
         })
     </script>
 
+    <!--选择学院后触发事件-->
+    <script>
+        function get_3_selected_data(){
+            var selected_institute_id = $('#institutes_select').val();
+            var selected_which_weeks = $('#weeks_select').val();
+            var selected_days_of_the_week = $('#day_of_the_week_select').val();
+            var data = {
+                'selected_institute_id': selected_institute_id,
+                'selected_which_weeks': selected_which_weeks,
+                'selected_days_of_the_week': selected_days_of_the_week,
+            };
+            return(data);
+        }
+
+        $("#institutes_select").change(function () {
+            var selected_institute_id = $(this).val();
+            console.log('选择的学院 ID 为：' + selected_institute_id);
+
+            $.ajax({
+                url: '{% url 'manage:weeks_timetable' %}',
+                type:'GET',
+                data: get_3_selected_data(),
+                success: function (data) {
+                    window.location.reload();
+                }
+            });
+        });
+
+        $("#weeks_select").change(function () {
+            var selected_institute_id = $(this).val();
+            console.log('选择的周次为：' + selected_institute_id);
+
+            $.ajax({
+                url: '{% url 'manage:weeks_timetable' %}',
+                type:'GET',
+                data: get_3_selected_data(),
+                success: function (data) {
+                    window.location.reload();
+                }
+            });
+        });
+
+        $("#day_of_the_week_select").change(function () {
+            var selected_institute_id = $(this).val();
+            console.log('选择的星期为：' + selected_institute_id);
+
+            $.ajax({
+                url: '{% url 'manage:weeks_timetable' %}',
+                type:'GET',
+                data: get_3_selected_data(),
+                success: function (data) {
+                    window.location.reload();
+                }
+            });
+        });
+    </script>
+
     <script>
         function initTable() {
             $('#week_timetable_table').bootstrapTable('destroy').bootstrapTable({
                 sidePagination: "server",
                 type:'GET',
-                url: '{% url "manage:schedule" %}',
+                url: '{% url "manage:weeks_timetable_schedule" %}',
                 height: 600,
                 locale: $('#locale').val(),
                 onLoadSuccess: function (data) {
@@ -95,7 +187,7 @@
             });
         }
 
-       //动态合并单元格
+        //动态合并单元格
         function uniteTable(tableId) {//表格ID，表格列数
             var tb=document.getElementById(tableId);
             tb.style.display='';

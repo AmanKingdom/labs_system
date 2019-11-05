@@ -7,7 +7,8 @@ from apps.manage.views import become_a_teacher, cancel_the_teacher, personal_inf
     LabAttributeManageView, LabManageView, LabsView, ExperimentTypesView, ExperimentTypeManageView, \
     ApplicationManageView, ApplicationDetailsView, ApplyView, load_classes_of_course, WeeksTimeTableView, \
     RoomsTimeTableView, \
-    load_teachers_of_department, load_courses_of_teacher, ExperimentsView, TotalRequirementsView
+    load_teachers_of_department, load_courses_of_teacher, ExperimentsView, TotalRequirementsView, \
+    WeeksTimeTableScheduleView
 from apps.browse.views import require_login
 
 app_name = 'manage'
@@ -59,5 +60,7 @@ urlpatterns = [
     path('need_adjust_course_block/<course_block_id>/', CourseBlockView.as_view(), name='need_adjust_course_block'),
 
     path('weeks_timetable', WeeksTimeTableView.as_view(), name='weeks_timetable'),
+    path('weeks_timetable_schedule', WeeksTimeTableScheduleView.as_view(), name='weeks_timetable_schedule'),
+
     path('rooms_timetable', RoomsTimeTableView.as_view(), name='rooms_timetable'),
 ]

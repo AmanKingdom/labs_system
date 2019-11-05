@@ -1179,6 +1179,33 @@ class TotalRequirementsView(LittleSameModelBaseView):
 
 
 
+def make_empty_dict(d, labs, days_of_the_week=None):
+    """
+    d为返回的基础空字典，星期可选，不选则显示一周
+    :param d:
+    :param labs:
+    :param days_of_the_week:
+    :return:
+    """
+    new_dict = {}
+    for lab in labs:
+        new_dict["%s" % lab.name] = ""
+
+    def temp(d, new_dict, days_of_the_week):
+        for section in range(1, 12):
+            temp_dict = new_dict.copy()
+            temp_dict["days_of_the_week"] = days_of_the_week
+            temp_dict["section"] = section
+
+            d["d%s_s%d" % (days_of_the_week, section)] = temp_dict
+
+    if days_of_the_week:
+        temp(d, new_dict, days_of_the_week=days_of_the_week)
+    else:
+        for days_of_the_week in range(1, 8):
+            temp(d, new_dict, days_of_the_week)
+
+
 def today_in_which_week(school_id):
     """
     请传入学校id，将返回以星期1开始计算的周次
@@ -1212,6 +1239,53 @@ def today_in_which_week(school_id):
 
 
 @method_decorator(require_login, name='dispatch')
+class WeeksTimeTableScheduleView(View):
+    def get(self, request):
+        data = {
+            "total": 1,
+            "rows": []
+        }
+
+        selected_data = request.session['weeks_timetable_selected_data']
+        labs = Lab.objects.filter(institute_id=selected_data['selected_institute_id'], dispark=True)
+
+        # 基础空数据
+        base_dict = {}
+        make_empty_dict(base_dict, labs, days_of_the_week=selected_data['selected_days_of_the_week'])
+        empty_row = base_dict['d%d_s1' % int(selected_data['selected_days_of_the_week'])].copy()
+        empty_row["days_of_the_week"] = empty_row["section"] = ""
+
+        div = '<div class="course_div %s">%s</div>'
+
+        courses = Course.objects.filter(institute_id=selected_data['selected_institute_id'], has_block=True)
+        temp = divmod(len(courses), len(COLOR_DIVS))
+        color_divs = COLOR_DIVS * temp[0] + COLOR_DIVS[:temp[1]]
+
+        for course, color_div in zip(courses, color_divs):
+            course_blocks = CourseBlock.objects.filter(course=course, need_adjust=False, aready_arrange=True)
+
+            for course_block in course_blocks:
+                if course_block.days_of_the_week == int(selected_data['selected_days_of_the_week']):
+                    if int(selected_data['selected_which_weeks']) in str_to_non_repetitive_list(course_block.weeks, '、'):
+                        content = '课程：' + course.name + \
+                                  '<br>老师：' + get_teachers_name_from_course(course.id) + \
+                                  '<br>周次：[ ' + course_block.weeks + \
+                                  ' ]<br>班级：' + get_classes_name_from_course(course.id)
+
+                        new_div = div % (color_div, content)
+
+                        for section in course_block.sections.split(','):
+                            for lab in course_block.new_labs.all():
+                                if new_div not in base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name]:
+                                    base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name] = \
+                                        base_dict['d%d_s%s' % (course_block.days_of_the_week, section)][
+                                            '%s' % lab.name] + new_div
+
+        data['rows'] = [empty_row] + list(base_dict.values())
+        return JsonResponse(data)
+
+
+@method_decorator(require_login, name='dispatch')
 class WeeksTimeTableView(View):
     def get(self, request):
         context = {
@@ -1223,52 +1297,65 @@ class WeeksTimeTableView(View):
             'which_week': None,
             'days_of_the_week': None,
 
-            'labs': Lab.objects.filter(institute_id=request.session['current_institute_id'], dispark=True),
+            'labs': None,
         }
 
         school = School.objects.get(id=request.session['school_id'])
         context['institutes'] = school.get_all_institutes()
 
-        # 如果用户通过点击选择下拉框筛选展示条件，则通过get方式传过来
-        selected_data = request.GET.get('weeks_timetable_selected_data', None)
+        if context['institutes']:
+            # 如果用户通过点击选择下拉框筛选展示条件，则通过get方式传过来
+            selected_data = {}
 
-        if not selected_data:   # 没有选择数据则说明用户是第一次请求得到页面，先看看session有没有记录
-            # session中如果有周次课程表的选择数据，则直接使用这些数据
-            selected_data = request.session.get('weeks_timetable_selected_data', None)
+            for name in ['selected_institute_id', 'selected_which_weeks', 'selected_days_of_the_week']:
+                temp = request.GET.get(name, None)
+                if temp:
+                    selected_data[name] = temp
+            this_logger.debug('周次课程表接收get数据：'+str(selected_data))
 
-            if not selected_data:   # session中没有周次课程表的选择数据，先创建一个空字典，再按用户信息生成默认选择数据
-                selected_data = {}
+            if not selected_data:  # 没有选择数据则说明用户是第一次请求得到页面，先看看session有没有记录
+                # session中如果有周次课程表的选择数据，则直接使用这些数据
+                selected_data = request.session.get('weeks_timetable_selected_data', None)
+                this_logger.debug('查看session记录:' + str(selected_data))
 
-        if 'selected_institute_id' not in selected_data:
-            if request.session['user_type'] == 'teacher':
-                teacher = Teacher.objects.get(account=request.session['user_account'])
-                selected_data['selected_institute_id'] = teacher.department.institute_id
-            elif request.session['user_type'] == 'assistant':
-                from apps.browse.models import Assistant
-                assistant = Assistant.objects.get(account=request.session['user_account'])
-                selected_data['selected_institute_id'] = assistant.teacher.department.institute_id
-            else:   # 不是教师不是助理，则是管理员了，默认第一个学院
-                selected_data['selected_institute_id'] = context['institutes'][0].id
+                if not selected_data:  # session中没有周次课程表的选择数据，先创建一个空字典，再按用户信息生成默认选择数据
+                    this_logger.debug('session中无相应数据')
+                    selected_data = {}
 
-        # 如果没有选择周次，则通过周次计算算法得到当前周次
-        if 'selected_which_weeks' not in selected_data:
-            selected_data['selected_which_weeks'] = today_in_which_week(request.session['school_id'])
-            this_logger.debug('今周是这个学校的第' + str(selected_data['selected_which_weeks']) + '周')
+            if 'selected_institute_id' not in selected_data:
+                this_logger.debug('没有学院id，创建一个')
+                if request.session['user_type'] == 'teacher':
+                    teacher = Teacher.objects.get(account=request.session['user_account'])
+                    selected_data['selected_institute_id'] = teacher.department.institute_id
+                elif request.session['user_type'] == 'assistant':
+                    from apps.browse.models import Assistant
+                    assistant = Assistant.objects.get(account=request.session['user_account'])
+                    selected_data['selected_institute_id'] = assistant.teacher.department.institute_id
+                else:  # 不是教师不是助理，则是管理员了，默认第一个学院
+                    selected_data['selected_institute_id'] = context['institutes'][0].id
 
-        # 如果没有选择星期，则设置为当前星期
-        if 'selected_days_of_the_week' not in selected_data:
-            d = datetime.now().weekday() + 1
-            this_logger.debug('今天是星期'+str(d))
-            selected_data['selected_days_of_the_week'] = d
+            # 如果没有选择周次，则通过周次计算算法得到当前周次
+            if 'selected_which_weeks' not in selected_data:
+                selected_data['selected_which_weeks'] = today_in_which_week(request.session['school_id'])
+                this_logger.debug('今周是这个学校的第' + str(selected_data['selected_which_weeks']) + '周')
 
-        # 最后将当前正在使用的选择数据存入session
-        if not request.session['weeks_timetable_selected_data']:
-            request.session['weeks_timetable_selected_data'] = {}
-        for name in ['selected_institute_id', 'selected_which_weeks', 'selected_days_of_the_week']:
-            if name in selected_data:
-                request.session['weeks_timetable_selected_data'][name] = selected_data[name]
+            # 如果没有选择星期，则设置为当前星期
+            if 'selected_days_of_the_week' not in selected_data:
+                d = datetime.now().weekday() + 1
+                this_logger.debug('今天是星期' + str(d))
+                selected_data['selected_days_of_the_week'] = d
 
+            # 最后将当前正在使用的选择数据存入session
+            if not request.session.get('weeks_timetable_selected_data', None):
+                request.session['weeks_timetable_selected_data'] = {}
+            for name in ['selected_institute_id', 'selected_which_weeks', 'selected_days_of_the_week']:
+                if name in selected_data:
+                    this_logger.debug('存储session:'+name+'---'+str(selected_data[name]))
+                    request.session['weeks_timetable_selected_data'][name] = selected_data[name]
+            this_logger.debug('最终session:'+str(request.session['weeks_timetable_selected_data']))
+            request.session.modified = True
 
+            context['labs'] = Lab.objects.filter(institute_id=selected_data['selected_institute_id'], dispark=True)
 
         set_time_for_context(context)
 
@@ -1288,6 +1375,41 @@ class RoomsTimeTableView(View):
 
 
 
+
+
+def make_course_block_dict(base_dict, courses, show_need_adjust=False):
+    empty_row = base_dict['d1_s1'].copy()
+    empty_row["days_of_the_week"] = empty_row["section"] = ""
+
+    div = '<div class="course_div %s">%s</div>'
+    need_adjust_div = '<div class="need_adjust_div %s">%s</div>'
+
+    temp = divmod(len(courses), len(COLOR_DIVS))
+    color_divs = COLOR_DIVS * temp[0] + COLOR_DIVS[:temp[1]]
+
+    for course, color_div in zip(courses, color_divs):
+        course_blocks = CourseBlock.objects.filter(course=course)
+        for course_block in course_blocks:
+            content = '课程：' + course.name + \
+                      '<br>老师：' + get_teachers_name_from_course(course.id) + \
+                      '<br>周次：[ ' + course_block.weeks + \
+                      ' ]<br>班级：' + get_classes_name_from_course(course.id)
+            if show_need_adjust:
+                if course_block.need_adjust:
+                    new_div = need_adjust_div % (color_div, content)
+                else:
+                    new_div = div % (color_div, content)
+            else:
+                new_div = div % (color_div, content)
+
+            for section in course_block.sections.split(','):
+                for lab in course_block.new_labs.all():
+                    if new_div not in base_dict['d%d_s%s' % (course_block.days_of_the_week, section)][
+                        '%s' % lab.name]:
+                        base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name] = \
+                            base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name] + new_div
+
+    return [empty_row] + list(base_dict.values())
 
 
 # 根据实验项目的扎堆情况设置课程块，课程块根据 星期、节次和实验室 区分
@@ -1348,49 +1470,11 @@ class ScheduleView(View):
 
         # 基础空数据
         base_dict = {}
-
-        new_dict = {}
-        for lab in labs:
-            new_dict["%s" % lab.name] = ""
-
-        for days_of_the_week in range(1, 8):
-            for section in range(1, 12):
-                temp_dict = new_dict.copy()
-                temp_dict["days_of_the_week"] = days_of_the_week
-                temp_dict["section"] = section
-
-                base_dict["d%s_s%d" % (days_of_the_week, section)] = temp_dict
-        empty_row = base_dict['d1_s1'].copy()
-        empty_row["days_of_the_week"] = empty_row["section"] = ""
-
-        div = '<div class="course_div %s">%s</div>'
-        need_adjust_div = '<div class="need_adjust_div %s">%s</div>'
+        make_empty_dict(base_dict, labs)
 
         courses = Course.objects.filter(institute_id=request.session.get('current_institute_id'), has_block=True)
 
-        temp = divmod(len(courses), len(COLOR_DIVS))
-        color_divs = COLOR_DIVS * temp[0] + COLOR_DIVS[:temp[1]]
-
-        for course, color_div in zip(courses, color_divs):
-            course_blocks = CourseBlock.objects.filter(course=course)
-            for course_block in course_blocks:
-                content = '课程：' + course.name + \
-                          '<br>老师：' + get_teachers_name_from_course(course.id) + \
-                          '<br>周次：[ ' + course_block.weeks + \
-                          ' ]<br>班级：' + get_classes_name_from_course(course.id)
-                if course_block.need_adjust:
-                    new_div = need_adjust_div % (color_div, content)
-                else:
-                    new_div = div % (color_div, content)
-
-                for section in course_block.sections.split(','):
-                    for lab in course_block.new_labs.all():
-                        if new_div not in base_dict['d%d_s%s' % (course_block.days_of_the_week, section)][
-                            '%s' % lab.name]:
-                            base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name] = \
-                            base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name] + new_div
-
-        self.data['rows'] = [empty_row] + list(base_dict.values())
+        self.data['rows'] = make_course_block_dict(base_dict, courses, show_need_adjust=True)
         # print('整理后，前端所需要的json数据：\n', self.data['rows'])
         return JsonResponse(self.data)
 

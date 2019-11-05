@@ -5,176 +5,84 @@
 {% block add_css_to_manage %}
     <!--固定列表头所需的样式依赖-->
     <link rel="stylesheet" href="/static/css_js/css/fixed-columns/bootstrap-table-fixed-columns.css">
+    <style>
+        .course_div{
+            font-weight: bold;
+            color: rgb(57,50,44);
+            padding: 2%;
+            margin: 5px;
+        }
+        .color1_div{ background:rgb(235,175,121);}
+        .color2_div{ background:rgb(96,109,128);}
+        .color3_div{ background:rgb(155,168,183);}
+        .color4_div{ background:rgb(165,156,173);}
+        .color5_div{ background:rgb(208,197,184);}
+        .color6_div{ background:rgb(181,139,114);}
+        .color7_div{ background:rgb(224,208,175);}
+        .color8_div{ background:rgb(164,154,129);}
+        .color9_div{ background:rgb(183,157,155);}
+        .color10_div{ background:rgb(237,181,165);}
+        .color11_div{ background:rgb(222,234,234);}
+        .color12_div{ background:rgb(243,233,201);}
+        .color13_div{ background:rgb(208,208,226);}
+    </style>
 {% endblock %}
 
 {% block manage_body %}
-    <h1 class="need">本页面未正式启用</h1>
     <div class="row">
-        <div class="row">
-            <div class="col-sm-offset-1 col-sm-3 m-b-xs">
-                <select class="input-sm form-control input-s-sm inline">
-                    <option class="selected">计算机科学与技术学院</option>
-                    <option>网络安全学院</option>
-                </select>
-            </div>
-            <div class="col-sm-4 m-b-xs inline">
-                <label for="selected_room" class="col-sm-3 control-label text-center">选择实验室：</label>
-                <div class="col-sm-9">
-                    <select class="input-sm form-control input-s-sm" id="selected_room">
-                        <option class="selected">7A201</option>
-                        <option>7A202</option>
-                        <option>7A203</option>
-                        <option>7A204</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col-sm-3 m-b-xs">
-                <select class="input-sm form-control input-s-sm inline">
-                    <option>第14周</option>
-                    <option class="selected">第15周</option>
-                    <option>第16周</option>
-                </select>
-            </div>
+        <div class="col-sm-4 m-b-xs">
+            <select class="form-control inline" id="institutes_select">
+                {% for institute in institutes %}
+                    {% if request.session.rooms_timetable_selected_data.selected_institute_id|urlencode:"" == institute.id|urlencode:"" %}
+                        <option value="{{ institute.id }}" selected="selected">{{ institute.name }}</option>
+                    {% else %}
+                        <option value="{{ institute.id }}">{{ institute.name }}</option>
+                    {% endif %}
+                {% empty %}
+                    <option>暂无数据</option>
+                {% endfor %}
+            </select>
         </div>
-    </div>
+        <div class="col-sm-4 m-b-xs">
+            <select class="form-control" id="room_select">
+                <option>-------</option>
+                {% for lab in labs %}
+                    {% if request.session.rooms_timetable_selected_data.selected_room|urlencode:"" == lab.id|urlencode:"" %}
+                        <option value="{{ lab.id }}" selected="selected">{{ lab.name }}</option>
+                    {% else %}
+                        <option value="{{ lab.id }}">{{ lab.name }}</option>
+                    {% endif %}
+                {% empty %}
+                    <option>暂无数据</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-sm-4 m-b-xs">
+            <select class="form-control inline" id="week_select">
+                {% for week in which_week %}
+                    {% if request.session.rooms_timetable_selected_data.selected_which_week|urlencode:"" == week|urlencode:"" %}
+                        <option value="{{ week }}" selected="selected">第 {{ week }} 周</option>
+                    {% else %}
+                        <option value="{{ week }}">第 {{ week }} 周</option>
+                    {% endif %}
+                {% empty %}
+                    <option>暂无数据</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div><br>
     <div class="table-responsive">
-        <table class="table table-bordered table-hover" id="room_schedule_table"
+        <table class="table table-bordered table-hover" id="rooms_timetable_table"
                data-toggle="table"
                data-classes="table table-hover"
-               data-show-columns="true"
-               data-striped="true"
-               data-show-toggle="true"
-               data-search="true"
-               data-show-refresh="true"
-               data-toolbar="#toolbar"
-               data-height="600"
+                {#               data-show-columns="true"#}
+                {#               data-striped="true"#}
+                {#               data-show-toggle="true"#}
+                {#               data-search="true"#}
+                {#               data-show-refresh="true"#}
+                {#               data-toolbar="#toolbar"#}
+                {#               data-height="600"#}
                align="center">
-            <thead>
-            <tr>
-                <th>节次</th>
-                <th>星期一</th>
-                <th>星期二</th>
-                <th>星期三</th>
-                <th>星期四</th>
-                <th>星期五</th>
-                <th>星期六</th>
-                <th>星期七</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-                <td>1</td>
-                <td>
-                    <a href="#">什么课 什么班级</a>
-                </td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>2</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>3</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>4</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>5</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>6</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>7</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>8</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>9</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>10</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>11</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            </tbody>
         </table>
     </div>
 {% endblock %}
@@ -185,11 +93,178 @@
 
     <script>
         $(function () {
-            $('#room_schedule_table').bootstrapTable('destroy').bootstrapTable({
+            $('#room_timetable_table').bootstrapTable('destroy').bootstrapTable({
                 minimumCountColumns:4,
                 fixedColumns:true,
                 fixedNumber:1,
             });
+        })
+    </script>
+
+    <!--下拉框选择新选项后触发事件-->
+    <script>
+        function get_3_selected_data(){
+            var selected_institute_id = $('#institutes_select').val();
+            var selected_which_week = $('#week_select').val();
+            var selected_room = $('#room_select').val();
+            var data = {
+                'selected_institute_id': selected_institute_id,
+                'selected_which_week': selected_which_week,
+                'selected_room': selected_room,
+            };
+            return(data);
+        }
+
+        $("#institutes_select").change(function () {
+            $.ajax({
+                url: '{% url 'manage:rooms_timetable' %}',
+                type:'GET',
+                data: get_3_selected_data(),
+                success: function (data) {
+                    window.location.reload();
+                }
+            });
+        });
+
+        $("#week_select").change(function () {
+            $.ajax({
+                url: '{% url 'manage:rooms_timetable' %}',
+                type:'GET',
+                data: get_3_selected_data(),
+                success: function (data) {
+                    window.location.reload();
+                }
+            });
+        });
+
+        $("#room_select").change(function () {
+            $.ajax({
+                url: '{% url 'manage:rooms_timetable' %}',
+                type:'GET',
+                data: get_3_selected_data(),
+                success: function (data) {
+                    window.location.reload();
+                }
+            });
+        });
+    </script>
+
+    <script>
+        function initTable() {
+            $('#rooms_timetable_table').bootstrapTable('destroy').bootstrapTable({
+                sidePagination: "server",
+                type:'GET',
+                url: '{% url "manage:rooms_timetable_schedule" %}',
+                locale: $('#locale').val(),
+                onLoadSuccess: function (data) {
+                    uniteTable('rooms_timetable_table');
+                },
+                columns: [
+                    {
+                        field: 'section',
+                        title: '节次',
+                    },
+                    {% for day in day_of_the_week %}
+                        {% for key, value in day.items %}
+                            {
+                                field: '{{ key }}',
+                                title: '{{ value }}',
+                            },
+                        {% endfor %}
+                    {% endfor %}
+                ],
+            });
+        }
+
+        //动态合并单元格
+        function uniteTable(tableId) {//表格ID，表格列数
+            var tb=document.getElementById(tableId);
+            tb.style.display='';
+            var i = 0;
+            var j = 0;
+            rowCount = tb.rows.length; //   行数
+            colCount = tb.rows[0].cells.length; //   列数
+
+            console.log('行列数:', rowCount, colCount);
+
+            var obj1 = null;
+            var obj2 = null;
+            //为每个单元格命名，包括表头
+            for (i = 0; i < rowCount; i++) {
+                for (j = 0; j < colCount; j++) {
+                    tb.rows[i].cells[j].id = "tb__" + i.toString() + "_" + j.toString();
+                    // console.log(tb.rows[i].cells[j], tb.rows[i].cells[j].id);
+                }
+            }
+
+            //合并列，在本程序，应该先做行方向上的合并，因为课程往往是有多个实验室，而在一周的一串节次内，基本都是合并后的一整个大单元格
+            for (i = 1; i < rowCount; i++) {    // i作为行标
+                // 不能这样用：obj1 = document.getElementById(tb.rows[i].cells[2].id);
+                obj1 = document.getElementById("tb__"+i.toString()+"_1");   // 从每一行的第2列开始取单元格对象元素，因为节次不需要做列合并
+                // console.log('合并列，目前行和obj1：', i, obj1);
+
+                for (j = 2; j < colCount; j++) {    // 从第3列开始取每一行的单元格作为下一个判断对象
+                    if(document.getElementById("tb__"+i.toString()+"_"+j.toString())){
+                        // console.log('存在obj2：',document.getElementById("tb__"+i.toString()+"_"+j.toString()));
+
+                        // console.log('现在的obj1和obj2分别为：', obj1, obj2, '处于第', i, '行，第', j, '列');
+
+                        obj2 = document.getElementById("tb__"+i.toString()+"_"+j.toString());
+                        if (obj1.innerText === obj2.innerText && (obj2.innerText !== "")) {
+                            obj1.colSpan++;
+                            // console.log('删除第', i, '行，第', j, '列的元素');
+                            obj2.parentNode.removeChild(obj2);
+                        } else {
+                            obj1 = obj2;
+                        }
+                    }else{
+                        // console.log('不存在第', i, '行，第', j, '列的元素');
+                    }
+                }
+            }
+
+            //合并行
+            for (i = 0; i < colCount; i++) {    // i作为列标
+                //if(i !== 1) {   // i==1时，是节次那一列，这列不用合并
+
+                // 由于前面已经处理了列的合并，有一些列的开头是没有单元格了的，所以要经过一轮当前列的循环找到第一个非空的单元格
+                var k = 1;  // 从第二行开始，也就是表体开始，因为第一行是表头
+                for(k; k < rowCount; k++){
+                    if(document.getElementById("tb__"+ k.toString()+ "_" + i.toString())) {
+                        obj1 = document.getElementById("tb__"+ k.toString()+ "_" + i.toString());
+                        break;
+                    }
+                }
+                if(obj1){
+                    for (j=k+1; j < rowCount; j++) {    // 这里的j是用来取obj2的，所以要+1
+                        if (document.getElementById("tb__" + j.toString() + "_" + i.toString())) {
+                            obj2 = document.getElementById("tb__" + j.toString() + "_" + i.toString());
+
+                            // console.log('现在的obj1和obj2分别为：', obj1, obj2, '处于第', j, '行，第', i, '列');
+
+                            if (obj1.innerText === obj2.innerText && (obj2.innerText !== "")) {
+                                if(obj1.getAttribute("colspan") === obj2.getAttribute("colspan")) {
+                                    // console.log('obj1和obj2的跨列数：', obj1.colspan,obj2.colspan);
+                                    obj1.rowSpan++;
+                                    // console.log('删除第', j, '行，第', i, '列的元素');
+                                    obj2.parentNode.removeChild(obj2);
+                                }
+                            } else {
+                                obj1 = document.getElementById("tb__" + j.toString() + "_" + i.toString());
+                            }
+                        } else {
+                            // console.log('不存在第', j, '行，第', i, '列的元素');
+                        }
+                    }
+                }
+                //}
+            }
+        }
+
+
+        $(function() {
+            initTable();
+            $('#locale').change(initTable);
         })
     </script>
 {% endblock %}

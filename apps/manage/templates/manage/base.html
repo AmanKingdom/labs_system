@@ -143,10 +143,10 @@
                     </ul>
                 </li>
                 <li {% if active_5 %}class="active"{% endif %}>
-                    <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">统计分析</span><span class="fa arrow"></span></a>
+                    <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">课程表</span><span class="fa arrow"></span></a>
                     <ul class="nav nav-second-level collapse">
-                        <li {% if weeks_timetable_active %}class="active"{% endif %}><a href="{% url 'manage:weeks_timetable' %}">周次安排表</a></li>
-                        <li {% if rooms_timetable_active %}class="active"{% endif %}><a href="{% url 'manage:rooms_timetable' %}">实验室安排表</a></li>
+                        <li {% if weeks_timetable_active %}class="active"{% endif %}><a href="{% url 'manage:weeks_timetable' %}">周次课程表</a></li>
+                        <li {% if rooms_timetable_active %}class="active"{% endif %}><a href="{% url 'manage:rooms_timetable' %}">实验室课程表</a></li>
                     </ul>
                 </li>
             </ul>

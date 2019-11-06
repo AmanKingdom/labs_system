@@ -22,6 +22,7 @@ urlpatterns = [
 
     path('manage/', include('apps.manage.urls')),
     path('browse/', include('apps.browse.urls')),
+    path('news/', include('apps.news.urls')),
 
     path('admin/', admin.site.urls),
 ]

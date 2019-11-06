@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>使用说明</title>
+</head>
+<body>
+<h3>http://bee123.xyz{% url 'news:news' %} 返回的内容格式为：</h3>
+<pre>
+    {
+        'id': '新闻id',
+        'title': '新闻标题',
+        'content': '新闻内容',
+        'cover_img': '封面图url',
+        'category': '新闻类别',
+        'original_url': '新闻来源url',
+    }
+</pre>
+<br><hr>
+{% if category %}
+    <h3>http://bee123.xyz{% url 'news:news' %} 后可选的新闻分类(category)参数信息有：</h3>
+    {% for c in category %}
+        <a href="{% url 'news:news' %}?category={{ c.name }}">{{ c.name }}</a>、
+    {% endfor %}
+    <h4>使用示例：</h4>
+    <a href="{% url 'news:news' %}?category={{ category.0.name }}">http://bee123.xyz{% url 'news:news' %}?category={{ category.0.name }}</a>
+{% endif %}
+<br><hr>
+{% if ids %}
+    <h3>http://bee123.xyz{% url 'news:news' %} 后可选的新闻id参数信息有：</h3>
+    {% for id in ids %}
+        <a href="{% url 'news:news' %}?id={{ id }}">{{ id }}</a>、
+    {% endfor %}
+    <h4>使用示例：</h4>
+    <a href="{% url 'news:news' %}?id={{ ids.0 }}">http://bee123.xyz{% url 'news:news' %}?id={{ ids.0 }}</a>
+{% endif %}
+<br><br><br><br><br><hr>
+友情链接：<a href="https://aman.bee123.xyz/" target="_blank">米锅笔记本</a> | <a href="http://bee123.xyz/" target="_blank">实验室排课系统</a>
+</body>
+</html>

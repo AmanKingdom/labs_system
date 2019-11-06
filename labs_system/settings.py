@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'apps.manage.apps.ManageConfig',
     'apps.browse.apps.BrowseConfig',
+    'apps.news.apps.NewsConfig',
 ]
 
 MIDDLEWARE = [

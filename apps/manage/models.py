@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 
+
 # 学校
 class School(models.Model):
     class Meta:
@@ -156,9 +157,12 @@ class Lab(models.Model):
     equipments = models.TextField(verbose_name='实验室设备信息', blank=True, null=True)
     equipments_amount = models.IntegerField(verbose_name='设备数量', default=40)
 
-    attribute1 = models.ForeignKey(LabAttribute, verbose_name='1号属性', blank=True, null=True, on_delete=models.SET_NULL, related_name='lab_attr1')
-    attribute2 = models.ForeignKey(LabAttribute, verbose_name='2号属性', blank=True, null=True, on_delete=models.SET_NULL, related_name='lab_attr2')
-    attribute3 = models.ForeignKey(LabAttribute, verbose_name='3号属性', blank=True, null=True, on_delete=models.SET_NULL, related_name='lab_attr3')
+    attribute1 = models.ForeignKey(LabAttribute, verbose_name='1号属性', blank=True, null=True, on_delete=models.SET_NULL,
+                                   related_name='lab_attr1')
+    attribute2 = models.ForeignKey(LabAttribute, verbose_name='2号属性', blank=True, null=True, on_delete=models.SET_NULL,
+                                   related_name='lab_attr2')
+    attribute3 = models.ForeignKey(LabAttribute, verbose_name='3号属性', blank=True, null=True, on_delete=models.SET_NULL,
+                                   related_name='lab_attr3')
 
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
@@ -211,26 +215,6 @@ class Classes(models.Model):
         return '%s %s班' % (self.grade, self.name)
 
 
-# 教师
-class Teacher(models.Model):
-    class Meta:
-        # 该数据库表名自定义为如下：
-        db_table = 'teacher'
-
-    name = models.CharField(max_length=20, verbose_name='教师姓名')
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, verbose_name='所属系', related_name='teachers')
-    account = models.CharField(max_length=100, verbose_name='登录账号，通常为教师工号')
-    password = models.CharField(max_length=18, verbose_name='登录密码', default='123456')
-    phone = models.CharField(max_length=11, verbose_name='手机号码（用于找回密码，非必填）', null=True, blank=True)
-
-    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
-    visible = models.BooleanField(verbose_name='是否可见', default=True)
-
-    def __str__(self):
-        return self.name
-
-
 # 学年
 class SchoolYear(models.Model):
     class Meta:
@@ -272,6 +256,19 @@ class Term(models.Model):
         return '%s%s' % (self.school_year, self.name)
 
 
+class User(AbstractUser):
+    class Meta:
+        db_table = 'user'
+
+    name = models.CharField(max_length=20, verbose_name='姓名')
+    school = models.ForeignKey(School, on_delete=models.SET_NULL, verbose_name='所管理的学校', blank=True, null=True)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, verbose_name='所属系', related_name='teachers', blank=True, null=True)
+    classes = models.ForeignKey(Classes, on_delete=models.SET_NULL, verbose_name='所属班级', related_name='students', blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+
 # 课程
 class Course(models.Model):
     class Meta:
@@ -283,7 +280,7 @@ class Course(models.Model):
     # 一个班级选择多个课程，一个课程可以被多个班级选择
     classes = models.ManyToManyField(Classes, verbose_name='授课班级')
     # 一个课程可以多个老师讲授，一个老师也可以讲授多个课程
-    teachers = models.ManyToManyField(Teacher, verbose_name='授课教师')
+    teachers = models.ManyToManyField(User, verbose_name='授课教师')
     attribute = models.ForeignKey(LabAttribute, on_delete=models.SET_NULL, blank=True, null=True, verbose_name='课程属性')
 
     has_block = models.BooleanField(verbose_name='是否有课程块', default=False)
@@ -314,26 +311,6 @@ class TotalRequirements(models.Model):
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
     visible = models.BooleanField(verbose_name='是否可见', default=True)
-
-
-# 超级管理员
-class SuperUser(models.Model):
-    class Meta:
-        # 该数据库表名自定义为如下：
-        db_table = 'super_user'
-
-    name = models.CharField(max_length=20, verbose_name='超级管理员昵称')
-    account = models.CharField(max_length=100, verbose_name='登录账号，用手机号码')
-    password = models.CharField(max_length=18, verbose_name='登录密码', default='123456')
-    school = models.ForeignKey(School, on_delete=models.SET_NULL, verbose_name='所管理的学校', blank=True, null=True)
-    is_teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, verbose_name='是否是教师，是则外键到对应教师', blank=True,
-                                   null=True)
-    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-    modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
-    visible = models.BooleanField(verbose_name='是否可见', default=True)
-
-    def __str__(self):
-        return self.name
 
 
 # 实验类型
@@ -391,7 +368,8 @@ class SpecialRequirements(models.Model):
         # 该数据库表名自定义为如下：
         db_table = 'special_requirements'
 
-    experiment = models.ForeignKey(Experiment, verbose_name='从属实验', on_delete=models.CASCADE, related_name='special_requirements')
+    experiment = models.ForeignKey(Experiment, verbose_name='从属实验', on_delete=models.CASCADE,
+                                   related_name='special_requirements')
 
     special_consume_requirements = models.CharField(max_length=200, verbose_name='特殊耗材需求', null=True, blank=True)
     special_system_requirements = models.CharField(max_length=200, verbose_name='特殊系统需求', null=True, blank=True)
@@ -452,8 +430,10 @@ class ArrangeSettings(models.Model):
         unique_together = ('id', 'institute',)
 
     institute = models.ForeignKey(Institute, on_delete=models.CASCADE, verbose_name='设置所属学院')
-    attribute1 = models.ForeignKey(LabAttribute, on_delete=models.CASCADE, verbose_name='最优先排课属性', related_name='a1_arrange_settings')
-    attribute2 = models.ForeignKey(LabAttribute, on_delete=models.CASCADE, verbose_name='次优先排课属性', related_name='a2_arrange_settings')
+    attribute1 = models.ForeignKey(LabAttribute, on_delete=models.CASCADE, verbose_name='最优先排课属性',
+                                   related_name='a1_arrange_settings')
+    attribute2 = models.ForeignKey(LabAttribute, on_delete=models.CASCADE, verbose_name='次优先排课属性',
+                                   related_name='a2_arrange_settings')
 
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='最后修改时间')
@@ -461,3 +441,5 @@ class ArrangeSettings(models.Model):
 
     def __str__(self):
         return '%s：最优先排课属性：%s，次优先排课属性：%s' % (self.institute.name, self.attribute1.name, self.attribute2.name)
+
+

@@ -1,27 +1,34 @@
+from django.contrib.auth.models import Group
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.views import View
 
-from apps.browse.models import Assistant
-from apps.manage.models import Teacher, SuperUser
 from browse.forms import LoginForm
 
-from manage.views import require_login
+from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.decorators import login_required, permission_required
 
 from apps.manage.views import this_logger
+from manage.models import User
+
+MANAGER = 'managers'
+TEACHER = 'teachers'
+STUDENT = 'students'
 
 
-@require_login
+@login_required(login_url='/browse/login')
 def homepage(request):
     this_logger.debug('主页获取用户类型：' + request.session['user_type'])
     if request.session.get('user_type', None):
-        if request.session['user_type'] == 'assistant':
-            return HttpResponseRedirect('/browse/assistant_view')
-        elif request.session['user_type'] == 'teacher':
-            return HttpResponseRedirect('/apply_experiments/apply')
-        elif request.session['user_type'] == 'superuser':
-            return HttpResponseRedirect('/manage/school_manage')
+        return HttpResponseRedirect('/manage/weeks_timetable')
     return HttpResponseRedirect('/browse/login')
+
+
+def set_user_info_to_session(request, username, user_type, user_name, user_id):
+    request.session['user_account'] = username  # user_account是账号username，不是姓名，user_name才是姓名
+    request.session['user_type'] = user_type
+    request.session['user_name'] = user_name
+    request.session['user_id'] = user_id
 
 
 # 只能是管理员注册，教师和学生不需要注册
@@ -38,29 +45,25 @@ class RegisterView(View):
     def post(self, request):
         name = request.POST.get('name', None)
         if name:
-            account = request.POST.get('account', None)
-            if account.startswith('1') and len(account) == 11:
-                if SuperUser.objects.filter(account=account):
-                    self.context['status'] = False
-                    self.context['message'] = '该手机账号已被人注册'
+            username = request.POST.get('username', None)
+            if User.objects.filter(username=username):
+                password = request.POST.get('password', None)
+                if len(password) >= 6:
+                    user = User.objects.create_user(name=name, username=username, password=password)
+                    set_user_info_to_session(request, username, MANAGER, user.name, user.id)
+
+                    user.groups.add(Group.objects.get(name=MANAGER))
+                    user.save()
+                    this_logger.info(user.name + '管理员注册成功')
                 else:
-                    password = request.POST.get('password', None)
-                    if len(password) >= 6:
-                        superuser = SuperUser.objects.create(name=name, account=account, password=password)
-                        request.session['user_account'] = superuser.account
-                        request.session['user_type'] = 'superuser'
-                        request.session['user_id'] = superuser.id
-                        request.session['user_name'] = superuser.name
-                        this_logger.info(superuser.name + '超级管理员注册成功')
-                    else:
-                        self.context['status'] = False
-                        self.context['message'] = '密码太短了'
+                    self.context['status'] = False
+                    self.context['message'] = '这密码也太短了8'
             else:
                 self.context['status'] = False
-                self.context['message'] = '请输入正确的手机号码'
+                self.context['message'] = '该账号已被注册'
         else:
             self.context['status'] = False
-            self.context['message'] = '请输入昵称'
+            self.context['message'] = '请输入姓名'
         return JsonResponse(self.context)
 
 
@@ -73,69 +76,42 @@ class LoginView(View):
     def post(self, request):
         login_form = LoginForm(request.POST)
         if login_form.is_valid():
-            def set_user_info_to_session(request, user_account, user_type, user_name, user_id):
-                request.session['user_account'] = user_account
-                request.session['user_type'] = user_type
-                request.session['user_name'] = user_name
-                request.session['user_id'] = user_id
-                if user_type == 'teacher':
-                    request.session['department_name'] = Teacher.objects.get(id=user_id).department.name
-            try:
-                superuser = SuperUser.objects.get(**login_form.cleaned_data)
-                this_logger.info(superuser.name + '超级管理员登录成功')
-                set_user_info_to_session(request, superuser.account, 'superuser', superuser.name, superuser.id)
-                # request.session['user_account'] = superuser.account
-                # request.session['user_type'] = 'superuser'
-                # request.session['user_name'] = superuser.name
-                # request.session['user_id'] = superuser.id
-                if superuser.school:
-                    request.session['school_id'] = superuser.school_id
+            if User.objects.filter(username=login_form.cleaned_data['username']):
+                user = authenticate(**login_form.cleaned_data)
+                if user:
+                    if user.is_active:
+                        login(request, user)
+                        this_logger.info(user.name + '登录成功')
 
-                return HttpResponseRedirect('/manage/school_manage')
-            except SuperUser.DoesNotExist:
-                try:
-                    teacher = Teacher.objects.get(**login_form.cleaned_data)
-                    this_logger.info(teacher.name + '教师登录成功')
-                    set_user_info_to_session(request, teacher.account, 'teacher', teacher.name, teacher.id)
+                        if user.groups.all()[0].name == MANAGER:
+                            set_user_info_to_session(request, user.username, MANAGER, user.name, user.id)
+                            if user.school:
+                                request.session['school_id'] = user.school_id
+                        elif user.groups.all()[0].name == TEACHER:
+                            set_user_info_to_session(request, user.username, TEACHER, user.name, user.id)
+                            request.session['department_name'] = user.department.name
+                        else:
+                            set_user_info_to_session(request, user.username, STUDENT, user.name, user.id)
 
-                    # request.session['user_account'] = teacher.account
-                    # request.session['user_type'] = 'teacher'
-                    # request.session['user_name'] = teacher.name
-                    # request.session['user_id'] = teacher.id
+                        return HttpResponseRedirect('/')
+                    else:
+                        self.context['message'] = '该用户已被注销'
+                else:
+                    self.context['message'] = '密码错误'
+            else:
+                self.context['message'] = '此账号不存在'
 
-                    # 教师所属的学校id由将来在前端登录时选择学校后传入
-
-                    return HttpResponseRedirect('/apply_experiments/apply')
-                except Teacher.DoesNotExist:
-                    try:
-                        assistant = Assistant.objects.get(**login_form.cleaned_data)
-                        this_logger.info(assistant.name + '助理登录成功')
-                        set_user_info_to_session(request, assistant.account, 'assistant', assistant.name, assistant.id)
-
-                        # request.session['user_account'] = assistant.account
-                        # request.session['user_type'] = 'assistant'
-                        # request.session['user_name'] = assistant.name
-                        # request.session['user_id'] = assistant.id
-
-                        # 助理所属的学校id由将来在前端登录时选择学校后传入
-
-                        return HttpResponseRedirect('/browse/assistant_view')
-                    except Assistant.DoesNotExist:
-                        this_logger.info('登录失败')
-
-            self.context['message'] = '登录失败，请检查账号或重新输入密码'
         return render(request, 'browse/login.html', self.context)
 
 
-@require_login
+@login_required
 def assistant_view(request):
     return render(request, 'browse/assistant_view.html')
 
 
-def logout(request):
-    del request.session['user_account']
-    del request.session['user_type']
-    del request.session['user_name']
-    del request.session['user_id']
-    del request.session['school_id']
+def logout_view(request):
+    logout(request)
+    for temp in ['user_account', 'user_type', 'user_name', 'user_id', 'school_id']:
+        del request.session[temp]
+
     return HttpResponseRedirect('/browse/login')

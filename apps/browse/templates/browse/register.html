@@ -12,10 +12,10 @@
     <form class="m-t" role="form" id="register_form">
         {% csrf_token %}
         <div class="form-group">
-            <input type="text" class="form-control" placeholder="昵称" required name="name">
+            <input type="text" class="form-control" placeholder="姓名" required name="name">
         </div>
         <div class="form-group">
-            <input type="text" class="form-control" placeholder="账号，请用手机号码注册" required name="account">
+            <input type="text" class="form-control" placeholder="账号" required name="username">
         </div>
         <div class="form-group">
             <input type="password" class="form-control" placeholder="密码" required name="password">

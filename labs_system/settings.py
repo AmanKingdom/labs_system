@@ -36,8 +36,8 @@ sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
 INSTALLED_APPS = [
     'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
+    'django.contrib.auth',  # 包含身份认证 ( authentication ) 框架的核心，以及它的默认模型。
+    'django.contrib.contenttypes',  # 是 Django 内容类型系统，它允许权限与您创建的模型相关联。
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
@@ -141,3 +141,6 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 # STATIC_ROOT = '/home/projects/labs_system/static'
+
+
+AUTH_USER_MODEL = 'manage.User'

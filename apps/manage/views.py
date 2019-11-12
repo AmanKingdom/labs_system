@@ -7,9 +7,7 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views import View
 
-from apps.manage.models import School, SchoolArea, Institute, Department, Grade, SuperUser, Classes, Teacher, \
-    SchoolYear, Term, Course, LabAttribute, Lab, Experiment, ExperimentType, CourseBlock, ArrangeSettings, \
-    TotalRequirements, SpecialRequirements
+from apps.manage.models import *
 
 from logging_setting import ThisLogger
 from manage.tools.list_tool import get_model_field_ids
@@ -18,6 +16,10 @@ from manage.tools.string_tool import list_to_str, str_to_set, get_labs_id_str, n
     str_to_non_repetitive_list
 
 this_logger = ThisLogger().logger
+
+MANAGER = 'managers'
+TEACHER = 'teachers'
+STUDENT = 'students'
 
 STATUS = {
     '1': '已提交待审核',
@@ -92,14 +94,14 @@ class SetSchoolView(View):
             else:
                 school = School.objects.create(name=school_name)
                 try:
-                    superuser = SuperUser.objects.get(account=request.session.get('user_account', None))
-                    superuser.school = school
-                    superuser.save()
-                    request.session['school_id'] = superuser.school_id
+                    manager = User.objects.get(username=request.session.get('user_account', None))
+                    manager.school = school
+                    manager.save()
+                    request.session['school_id'] = manager.school_id
                     # 创建一个学校的同时应该创建一个默认的学期给它
                     create_default_term_for_school(school)
                     return JsonResponse({'status': True})
-                except SuperUser.DoesNotExist:
+                except User.DoesNotExist:
                     # 如果是用户恶意设置信息使得找不到管理员信息，那么刚注册的学校也应该删掉
                     school.delete()
                     raise Http404('管理员信息找不到，请重试')
@@ -321,7 +323,7 @@ class ClassesView(LittleSameModelBaseView):
 
 class TeachersView(LittleSameModelBaseView):
     model_Chinese_name = '教师'
-    model = Teacher
+    model = User
     get_all_what_func_name = 'get_all_teachers'
 
     def make_return_data(self, objects):
@@ -333,8 +335,8 @@ class TeachersView(LittleSameModelBaseView):
                 'hide_department_id': obj.department_id,
                 'teacher_name': obj.name,
                 'hide_teacher_name': obj.name,
-                'account': obj.account,
-                'hide_account': obj.account,
+                'account': obj.username,
+                'hide_account': obj.username,
                 'password': obj.password,
                 'hide_password': obj.password,
                 'phone': obj.phone,
@@ -516,6 +518,10 @@ class ExperimentTypesView(LittleSameModelBaseView):
         return return_data
 
 
+
+
+
+
 # 个人主页
 def personal_info(request):
     context = {
@@ -546,14 +552,14 @@ def become_a_teacher(request):
     if request.is_ajax():
         try:
             from_department_id = data['from_department_id']
-            superuser = SuperUser.objects.get(account=request.session['user_account'])
-            teacher = Teacher.objects.create(department_id=from_department_id,
-                                             name=superuser.name,
-                                             account=superuser.account,
-                                             password=superuser.password,
-                                             phone=superuser.account)
-            superuser.is_teacher = teacher
-            superuser.save()
+            # superuser = User.objects.get(username=request.session['user_account'])
+            # teacher = User.objects.create_user(department_id=from_department_id,
+            #                                  name=superuser.name,
+            #                                  account=superuser.account,
+            #                                  password=superuser.password,
+            #                                  phone=superuser.account)
+            # superuser.is_teacher = teacher
+            # superuser.save()
 
         except:
             context['status'] = False
@@ -572,13 +578,22 @@ def cancel_the_teacher(request):
 
     if request.is_ajax():
         try:
-            SuperUser.objects.filter(id=data['superuser_id'])[0].is_teacher.delete()
+            User.objects.filter(id=data['superuser_id'])[0].is_teacher.delete()
 
         except:
             context['status'] = False
             context['message'] = '修改失败，请重试'
 
         return JsonResponse(context)
+
+
+
+
+
+
+
+
+
 
 
 @method_decorator(require_login, name='dispatch')
@@ -744,14 +759,14 @@ def load_classes_of_course(request):
 def load_teachers_of_department(request):
     department_id = request.GET.get('department_id')
     this_logger.info('选择id为' + department_id + '的系别')
-    teachers = Teacher.objects.filter(department_id=department_id)
+    teachers = User.objects.filter(department_id=department_id)
     return render(request, 'manage/teachers_options.html', {'teachers': teachers})
 
 
 def load_courses_of_teacher(request):
     teacher_account = request.GET.get('teacher_account')
-    this_logger.info('选择account为' + teacher_account + '的教师')
-    temp_courses = Course.objects.filter(teachers__account__contains=teacher_account)
+    this_logger.info('选择username为' + teacher_account + '的教师')
+    temp_courses = Course.objects.filter(teachers__username__contains=teacher_account)
     courses = []
     for course in temp_courses:
         if len(Experiment.objects.filter(course=course)) <= 0:
@@ -783,16 +798,16 @@ class ApplyView(View):
         }
 
         temp_courses = None
-        if request.session['user_type'] == 'superuser':
-            superuser = SuperUser.objects.get(account=request.session['user_account'])
-            if superuser.school:
-                context['departments'] = superuser.school.get_all_departments()
+        if request.session['user_type'] == MANAGER:
+            manager = User.objects.get(username=request.session['user_account'])
+            if manager.school:
+                context['departments'] = manager.school.get_all_departments()
                 if context['departments']:
-                    context['teachers'] = Teacher.objects.filter(department_id=context['departments'][0].id)
+                    context['teachers'] = User.objects.filter(department_id=context['departments'][0].id)
                     if context['teachers']:
-                        temp_courses = Course.objects.filter(teachers__account__contains=context['teachers'][0].account)
-        elif request.session['user_type'] == 'teacher':
-            temp_courses = Course.objects.filter(teachers__account__contains=request.session['user_account'])
+                        temp_courses = Course.objects.filter(teachers__username__contains=context['teachers'][0].username)
+        elif request.session['user_type'] == TEACHER:
+            temp_courses = Course.objects.filter(teachers__username__contains=request.session['user_account'])
 
         if temp_courses:
             # 实验项目为空则证明该门课没有申请过，可以显示
@@ -1242,41 +1257,42 @@ class WeeksTimeTableScheduleView(View):
         }
 
         selected_data = request.session['weeks_timetable_selected_data']
-        labs = Lab.objects.filter(institute_id=selected_data['selected_institute_id'], dispark=True)
+        if selected_data:
+            labs = Lab.objects.filter(institute_id=selected_data['selected_institute_id'], dispark=True)
 
-        # 基础空数据
-        base_dict = {}
-        make_empty_dict(base_dict, labs, days_of_the_week=selected_data['selected_days_of_the_week'])
-        empty_row = base_dict['d%d_s1' % int(selected_data['selected_days_of_the_week'])].copy()
-        empty_row["days_of_the_week"] = empty_row["section"] = ""
+            # 基础空数据
+            base_dict = {}
+            make_empty_dict(base_dict, labs, days_of_the_week=selected_data['selected_days_of_the_week'])
+            empty_row = base_dict['d%d_s1' % int(selected_data['selected_days_of_the_week'])].copy()
+            empty_row["days_of_the_week"] = empty_row["section"] = ""
 
-        div = '<div class="course_div %s">%s</div>'
+            div = '<div class="course_div %s">%s</div>'
 
-        courses = Course.objects.filter(institute_id=selected_data['selected_institute_id'], has_block=True)
-        temp = divmod(len(courses), len(COLOR_DIVS))
-        color_divs = COLOR_DIVS * temp[0] + COLOR_DIVS[:temp[1]]
+            courses = Course.objects.filter(institute_id=selected_data['selected_institute_id'], has_block=True)
+            temp = divmod(len(courses), len(COLOR_DIVS))
+            color_divs = COLOR_DIVS * temp[0] + COLOR_DIVS[:temp[1]]
 
-        for course, color_div in zip(courses, color_divs):
-            course_blocks = CourseBlock.objects.filter(course=course, need_adjust=False, aready_arrange=True)
+            for course, color_div in zip(courses, color_divs):
+                course_blocks = CourseBlock.objects.filter(course=course, need_adjust=False, aready_arrange=True)
 
-            for course_block in course_blocks:
-                if course_block.days_of_the_week == int(selected_data['selected_days_of_the_week']):
-                    if str(selected_data['selected_which_week']) in str_to_non_repetitive_list(course_block.weeks, '、'):
-                        content = '课程：' + course.name + \
-                                  '<br>老师：' + get_teachers_name_from_course(course.id) + \
-                                  '<br>周次：[ ' + course_block.weeks + \
-                                  ' ]<br>班级：' + get_classes_name_from_course(course.id)
+                for course_block in course_blocks:
+                    if course_block.days_of_the_week == int(selected_data['selected_days_of_the_week']):
+                        if str(selected_data['selected_which_week']) in str_to_non_repetitive_list(course_block.weeks, '、'):
+                            content = '课程：' + course.name + \
+                                      '<br>老师：' + get_teachers_name_from_course(course.id) + \
+                                      '<br>周次：[ ' + course_block.weeks + \
+                                      ' ]<br>班级：' + get_classes_name_from_course(course.id)
 
-                        new_div = div % (color_div, content)
+                            new_div = div % (color_div, content)
 
-                        for section in course_block.sections.split(','):
-                            for lab in course_block.new_labs.all():
-                                if new_div not in base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name]:
-                                    base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name] = \
-                                        base_dict['d%d_s%s' % (course_block.days_of_the_week, section)][
-                                            '%s' % lab.name] + new_div
+                            for section in course_block.sections.split(','):
+                                for lab in course_block.new_labs.all():
+                                    if new_div not in base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name]:
+                                        base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name] = \
+                                            base_dict['d%d_s%s' % (course_block.days_of_the_week, section)][
+                                                '%s' % lab.name] + new_div
 
-        data['rows'] = [empty_row] + list(base_dict.values())
+            data['rows'] = [empty_row] + list(base_dict.values())
         return JsonResponse(data)
 
 
@@ -1316,13 +1332,12 @@ class WeeksTimeTableView(View):
                     selected_data = {}
 
             if 'selected_institute_id' not in selected_data:
-                if request.session['user_type'] == 'teacher':
-                    teacher = Teacher.objects.get(account=request.session['user_account'])
+                if request.session['user_type'] == TEACHER:
+                    teacher = User.objects.get(username=request.session['user_account'])
                     selected_data['selected_institute_id'] = teacher.department.institute_id
-                elif request.session['user_type'] == 'assistant':
-                    from apps.browse.models import Assistant
-                    assistant = Assistant.objects.get(account=request.session['user_account'])
-                    selected_data['selected_institute_id'] = assistant.teacher.department.institute_id
+                elif request.session['user_type'] == STUDENT:
+                    student = User.objects.get(username=request.session['user_account'])
+                    selected_data['selected_institute_id'] = student.classes.grade.department.institute_id
                 else:  # 不是教师不是助理，则是管理员了，默认第一个学院
                     selected_data['selected_institute_id'] = context['institutes'][0].id
 
@@ -1347,6 +1362,8 @@ class WeeksTimeTableView(View):
             request.session.modified = True
 
             context['labs'] = Lab.objects.filter(institute_id=selected_data['selected_institute_id'], dispark=True)
+        else:
+            request.session['weeks_timetable_selected_data'] = None
 
         set_time_for_context(context)
 
@@ -1445,13 +1462,12 @@ class RoomsTimeTableView(View):
                     selected_data = {}
 
             if 'selected_institute_id' not in selected_data:
-                if request.session['user_type'] == 'teacher':
-                    teacher = Teacher.objects.get(account=request.session['user_account'])
+                if request.session['user_type'] == TEACHER:
+                    teacher = User.objects.get(username=request.session['user_account'])
                     selected_data['selected_institute_id'] = teacher.department.institute_id
-                elif request.session['user_type'] == 'assistant':
-                    from apps.browse.models import Assistant
-                    assistant = Assistant.objects.get(account=request.session['user_account'])
-                    selected_data['selected_institute_id'] = assistant.teacher.department.institute_id
+                elif request.session['user_type'] == STUDENT:
+                    student = User.objects.get(username=request.session['user_account'])
+                    selected_data['selected_institute_id'] = student.classes.grade.department.institute_id
                 else:  # 不是教师不是助理，则是管理员了，默认第一个学院
                     selected_data['selected_institute_id'] = context['institutes'][0].id
 
@@ -1792,34 +1808,35 @@ class ArrangeView(View):
         self.context['institutes'] = self.context['school'].get_all_institutes()
         self.context['attributes'] = LabAttribute.objects.filter(school=self.context['school'])
 
-        # 为用户记住最近编辑的学院，要百分百确保session中包含当前学院id
-        if request.GET.get('current_institute_id', None):
-            request.session['current_institute_id'] = request.GET.get('current_institute_id')
-        elif not request.GET.get('current_institute_id', None) and not request.session.get('current_institute_id',
-                                                                                           None):
-            request.session['current_institute_id'] = self.context['institutes'][0].id
+        if self.context['institutes']:
+            # 为用户记住最近编辑的学院，要百分百确保session中包含当前学院id
+            if request.GET.get('current_institute_id', None):
+                request.session['current_institute_id'] = request.GET.get('current_institute_id')
+            elif not request.GET.get('current_institute_id', None) and not request.session.get('current_institute_id',
+                                                                                               None):
+                request.session['current_institute_id'] = self.context['institutes'][0].id
 
-        # 为用户记住当前编辑学院排课设置的属性，如果数据库中没有该学院的排课设置数据，则说明该学院没排过课
-        arrange_settings = ArrangeSettings.objects.filter(institute_id=request.session['current_institute_id'])
-        if arrange_settings:
-            request.session['current_attribute1_id'] = arrange_settings[0].attribute1_id
-            request.session['current_attribute2_id'] = arrange_settings[0].attribute2_id
-        else:
-            request.session['current_attribute1_id'] = self.context['attributes'][0].id
-            request.session['current_attribute2_id'] = self.context['attributes'][0].id
+            # 为用户记住当前编辑学院排课设置的属性，如果数据库中没有该学院的排课设置数据，则说明该学院没排过课
+            arrange_settings = ArrangeSettings.objects.filter(institute_id=request.session['current_institute_id'])
+            if arrange_settings:
+                request.session['current_attribute1_id'] = arrange_settings[0].attribute1_id
+                request.session['current_attribute2_id'] = arrange_settings[0].attribute2_id
+            else:
+                request.session['current_attribute1_id'] = self.context['attributes'][0].id
+                request.session['current_attribute2_id'] = self.context['attributes'][0].id
 
-        request.session['arrange_settings'] = {
-            'institute_%s' % request.session['current_institute_id']: {
-                'attribute1_id': request.session['current_attribute1_id'],
-                'attribute2_id': request.session['current_attribute2_id']
+            request.session['arrange_settings'] = {
+                'institute_%s' % request.session['current_institute_id']: {
+                    'attribute1_id': request.session['current_attribute1_id'],
+                    'attribute2_id': request.session['current_attribute2_id']
+                }
             }
-        }
 
-        self.context['labs'] = Lab.objects.filter(institute_id=request.session['current_institute_id'], dispark=True)
-        # 获取有课程块的课程，有课程块说明已经通过了审核
-        courses = Course.objects.filter(institute_id=request.session['current_institute_id'], has_block=True)
-        self.context['need_adjust_course_blocks'] = self.get_course_blocks(courses, True)
-        self.context['no_need_adjust_course_blocks'] = self.get_course_blocks(courses, False)
+            self.context['labs'] = Lab.objects.filter(institute_id=request.session['current_institute_id'], dispark=True)
+            # 获取有课程块的课程，有课程块说明已经通过了审核
+            courses = Course.objects.filter(institute_id=request.session['current_institute_id'], has_block=True)
+            self.context['need_adjust_course_blocks'] = self.get_course_blocks(courses, True)
+            self.context['no_need_adjust_course_blocks'] = self.get_course_blocks(courses, False)
 
         return render(request, 'manage/arrange.html', self.context)
 

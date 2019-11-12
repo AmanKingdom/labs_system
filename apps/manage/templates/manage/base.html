@@ -100,7 +100,7 @@
                 </li>
 
                 <!--管理员所使用的导航块-->
-                {% if request.session.user_type == 'superuser' %}
+                {% if request.session.user_type == 'managers' %}
                     <li {% if system_settings_active %}class="active"{% endif %}>
                         <a href="{% url 'manage:system_settings' %}">
                             <i class="fa fa-cog"></i><span class="nav-label">系统设置</span>

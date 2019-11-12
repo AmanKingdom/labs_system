@@ -43,7 +43,7 @@
                     console.log("已提交");
                     if(data.status){
                         console.log('创建学校成功！');
-                        window.location.href="{% url 'manage:school_manage' %}"
+                        window.location.href="{% url 'manage:weeks_timetable' %}"
                     }
                     else{
                         console.log('注册信息有问题：'+data.message);

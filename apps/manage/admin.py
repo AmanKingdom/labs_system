@@ -1,16 +1,22 @@
 from django.contrib import admin
 from django.contrib.admin import ModelAdmin
 from django.contrib.auth.models import Permission
+from django.contrib.auth.admin import UserAdmin
 
 from apps.manage.models import School, Institute, SchoolArea, Lab, Department, Grade, Classes, \
     TotalRequirements, Course, LabAttribute, SchoolYear, Term, CourseBlock, ArrangeSettings, ExperimentType, \
-    Experiment, SpecialRequirements
+    Experiment, SpecialRequirements, User
 
 admin.site.site_header = '实验室排课系统数据管理后台'
 admin.site.site_title = '数据管理'
 
 
 admin.site.register(Permission)
+
+
+@admin.register(User)
+class UserAdmin(UserAdmin):
+    list_display = ['id', 'username', 'is_superuser', 'is_staff', 'school', 'department', 'classes', 'email', 'is_active', 'last_login']
 
 
 @admin.register(School)

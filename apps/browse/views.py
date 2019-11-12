@@ -9,11 +9,8 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required, permission_required
 
 from apps.manage.views import this_logger
-from manage.models import User
-
-MANAGER = 'managers'
-TEACHER = 'teachers'
-STUDENT = 'students'
+from apps.manage.models import User
+from apps.manage.views import MANAGER, TEACHER, STUDENT
 
 
 @login_required(login_url='/browse/login')
@@ -46,14 +43,14 @@ class RegisterView(View):
         name = request.POST.get('name', None)
         if name:
             username = request.POST.get('username', None)
-            if User.objects.filter(username=username):
+            if not User.objects.filter(username=username):
                 password = request.POST.get('password', None)
                 if len(password) >= 6:
                     user = User.objects.create_user(name=name, username=username, password=password)
-                    set_user_info_to_session(request, username, MANAGER, user.name, user.id)
-
                     user.groups.add(Group.objects.get(name=MANAGER))
                     user.save()
+
+                    set_user_info_to_session(request, username, MANAGER, user.name, user.id)
                     this_logger.info(user.name + '管理员注册成功')
                 else:
                     self.context['status'] = False
@@ -111,7 +108,5 @@ def assistant_view(request):
 
 def logout_view(request):
     logout(request)
-    for temp in ['user_account', 'user_type', 'user_name', 'user_id', 'school_id']:
-        del request.session[temp]
 
     return HttpResponseRedirect('/browse/login')

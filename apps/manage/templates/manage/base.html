@@ -149,6 +149,23 @@
                         <li {% if rooms_timetable_active %}class="active"{% endif %}><a href="{% url 'manage:rooms_timetable' %}">实验室课程表</a></li>
                     </ul>
                 </li>
+
+
+
+                {% for key, menu in request.session.user_menus.items %}
+                    <li>
+                        {% if menu.children %}
+                            <a href="#">{{ menu.icon|safe }}<span class="nav-label">{{ menu.name|safe}}</span></a>
+                            <ul class="nav nav-second-level collapse">
+                                {% for m in menu.children %}
+                                    <li><a href="{{ m.url|safe }}">{{ m.name|safe }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <a href="{{ menu.url|safe }}">{{ menu.icon|safe }}{{ menu.name|safe}}</a>
+                        {% endif %}
+                    </li>
+                {% endfor %}
             </ul>
         </div>
     </nav>

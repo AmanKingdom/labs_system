@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group
 
 
 # 学校
@@ -267,6 +267,45 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.name
+
+    def has_menu(self, url):
+        if isinstance(url, str):
+            for role in self.groups.all():
+                for menu in role.menus.all():
+                    if url == menu.url:
+                        return True
+        else:
+            print('please enter a URL type string.')
+        return False
+
+
+class Menu(models.Model):
+    class Meta:
+        db_table = 'menu'
+        verbose_name = '菜单'
+
+    name = models.CharField(max_length=30, unique=True, verbose_name='菜单名称')
+    url_name = models.CharField(max_length=200, unique=True, null=True, blank=True, verbose_name='URL在urls中的name')
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, verbose_name='父菜单')
+    # code = models.CharField(max_length=50, null=True, blank=True, verbose_name='编码')
+    icon = models.CharField(max_length=100, null=True, blank=True, verbose_name='图标')
+    app_name = models.CharField(max_length=20, null=True, blank=True, verbose_name='app的名字')
+
+    roles = models.ManyToManyField(Group, verbose_name='用户组', related_name='menus')
+
+    def __str__(self):
+        return '%s:%s' % (self.name, self.url_name)
+
+    def get_URL(self):
+        from django.urls import reverse
+        if self.url_name:
+            if self.app_name:
+                url = str(self.app_name) + ':' + str(self.url_name)
+            else:
+                url = self.url_name
+            return reverse(url)
+        else:
+            return None
 
 
 # 课程

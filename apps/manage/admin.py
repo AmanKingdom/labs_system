@@ -5,13 +5,19 @@ from django.contrib.auth.admin import UserAdmin
 
 from apps.manage.models import School, Institute, SchoolArea, Lab, Department, Grade, Classes, \
     TotalRequirements, Course, LabAttribute, SchoolYear, Term, CourseBlock, ArrangeSettings, ExperimentType, \
-    Experiment, SpecialRequirements, User
+    Experiment, SpecialRequirements, User, Menu
 
 admin.site.site_header = '实验室排课系统数据管理后台'
 admin.site.site_title = '数据管理'
 
 
 admin.site.register(Permission)
+
+
+@admin.register(Menu)
+class MenuAdmin(ModelAdmin):
+    list_display = ['id', 'name', 'url_name', 'parent', 'app_name', 'icon']
+    list_editable = ['app_name']
 
 
 @admin.register(User)

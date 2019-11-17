@@ -27,6 +27,50 @@ def set_user_info_to_session(request, username, user_type, user_name, user_id):
     request.session['user_name'] = user_name
     request.session['user_id'] = user_id
 
+    role = User.objects.get(id=user_id).groups.all().first()
+    """
+    由于本系统的菜单只有二级，故菜单字典格式应该为：
+    {'菜单id': {
+        'name':'xxx', 
+        'icon':'xxx', 
+        'url':'xxx', 
+        'children':[
+            {
+                'name':'xxx', 
+                'icon':'xxx', 
+                'url':'xxx',
+            }
+        ],
+    ...}
+    """
+    menus = role.menus.all()
+    menus_dict = {}
+
+    def get_new_menu_dict(menu):
+        return {
+                    'name': menu.name,
+                    'icon': menu.icon,
+                    'url': menu.get_URL(),
+                    'children': [],
+                }
+    this_logger.debug('用户'+username+'拥有的菜单有：'+str(menus))
+    for menu in menus:
+        if menu.parent:
+            if str(menu.parent.id) not in menus_dict.keys():
+                menus_dict['%d' % menu.parent.id] = get_new_menu_dict(menu.parent)
+            menus_dict['%d' % menu.parent.id]['children'].append(get_new_menu_dict(menu))
+        else:
+            if str(menu.id) not in menus_dict.keys():
+                menus_dict['%d' % menu.id] = get_new_menu_dict(menu)
+    print('整理数据提供到前端：')
+    for key, menu in menus_dict.items():
+        print(menu['name'])
+        if menu['children']:
+            for m in menu['children']:
+                print('----', m['name'])
+
+    request.session['user_menus'] = menus_dict
+
 
 # 只能是管理员注册，教师和学生不需要注册
 class RegisterView(View):

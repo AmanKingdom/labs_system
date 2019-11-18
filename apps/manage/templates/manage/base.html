@@ -73,12 +73,12 @@
                                     </strong>
                                 </span>
                                 <span class="text-muted text-xs block">
-                                    {% if request.session.user_type == 'superuser' %}
+                                    {% if request.session.user_type == 'managers' %}
                                         超级管理员
-                                    {% elif request.session.user_type == 'teacher' %}
+                                    {% elif request.session.user_type == 'teachers' %}
                                         教师
-                                    {% elif request.session.user_type == 'assistant' %}
-                                        助理
+                                    {% elif request.session.user_type == 'students' %}
+                                        学生
                                     {% endif %}
                                     <b class="caret"></b>
                                 </span>
@@ -93,78 +93,23 @@
                     </div>
                 </li>
 
-                <li {% if personal_info_active %}class="active"{% endif %}>
-                    <a href="{% url 'manage:personal_info' %}">
-                        <i class="fa fa-user-circle-o"></i><span class="nav-label">个人信息</span>
-                    </a>
-                </li>
-
-                <!--管理员所使用的导航块-->
-                {% if request.session.user_type == 'managers' %}
-                    <li {% if system_settings_active %}class="active"{% endif %}>
-                        <a href="{% url 'manage:system_settings' %}">
-                            <i class="fa fa-cog"></i><span class="nav-label">系统设置</span>
-                        </a>
-                    </li>
-                    <li {% if active_1 %}class="active"{% endif %}>
-                        <a href="#"><i class="fa fa-bank"></i> <span class="nav-label">教学信息管理</span><span class="fa arrow"></span></a>
-                        <ul class="nav nav-second-level collapse">
-                            <li {% if school_active %}class="active"{% endif %}><a href="{% url 'manage:school_manage' %}">校内机构管理</a></li>
-                            <li {% if classes_active %}class="active"{% endif %}><a href="{% url 'manage:classes_manage' %}">班级管理</a></li>
-                            <li {% if teacher_active %}class="active"{% endif %}><a href="{% url 'manage:teacher_manage' %}">教师管理</a></li>
-                            <li {% if course_active %}class="active"{% endif %}><a href="{% url 'manage:course_manage' %}">课程管理</a></li>
-                        </ul>
-                    </li>
-                    <li {% if active_2 %}class="active"{% endif %}>
-                        <a href="#"><i class="fa fa-laptop"></i> <span class="nav-label">实验室信息管理</span><span class="fa arrow"></span></a>
-                        <ul class="nav nav-second-level collapse">
-                            <li {% if lab_active %}class="active"{% endif %}><a href="{% url 'manage:lab_manage' %}">实验室管理</a></li>
-                            <li {% if lab_attribute_active %}class="active"{% endif %}><a href="{% url 'manage:lab_attribute_manage' %}">实验室属性设置</a></li>
-                        </ul>
-                    </li>
-                    <li {% if active_3 %}class="active"{% endif %}>
-                        <a href="#"><i class="fa fa-tasks"></i> <span class="nav-label">实验课管理</span><span class="fa arrow"></span></a>
-                        <ul class="nav nav-second-level collapse">
-                            <li {% if experiment_type_active %}class="active"{% endif %}><a href="{% url 'manage:experiment_type_manage' %}">实验类型设置</a></li>
-                            <li {% if arrange_active %}class="active"{% endif %}><a href="{% url 'manage:arrange' %}">智能排课</a></li>
-                        </ul>
-                    </li>
-                {% endif %}
-
-                <li {% if active_4 %}class="active"{% endif %}>
-                    <a href="#"><i class="fa fa-edit"></i> <span class="nav-label">实验申请</span><span class="fa arrow"></span></a>
-                    <ul class="nav nav-second-level collapse">
-                        <li {% if apply_experiments_active %}class="active"{% endif %}><a href="{% url 'manage:apply' %}">填写申请表</a></li>
-                        <li {% if application_manage_active %}class="active"{% endif %}>
-                            <a href="{% url 'manage:application_manage' %}">
-                                实验申请表{% if request.session.user_type == 'superuser' %}审批{% else %}管理{% endif %}
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-                <li {% if active_5 %}class="active"{% endif %}>
-                    <a href="#"><i class="fa fa-pie-chart"></i> <span class="nav-label">课程表</span><span class="fa arrow"></span></a>
-                    <ul class="nav nav-second-level collapse">
-                        <li {% if weeks_timetable_active %}class="active"{% endif %}><a href="{% url 'manage:weeks_timetable' %}">周次课程表</a></li>
-                        <li {% if rooms_timetable_active %}class="active"{% endif %}><a href="{% url 'manage:rooms_timetable' %}">实验室课程表</a></li>
-                    </ul>
-                </li>
-
-
-
                 {% for key, menu in request.session.user_menus.items %}
-                    <li>
-                        {% if menu.children %}
-                            <a href="#">{{ menu.icon|safe }}<span class="nav-label">{{ menu.name|safe}}</span></a>
+                    {% if menu.children %}
+                        <li {% if menu_parent_name %}{% if menu_parent_name|urlencode:'' == menu.name|urlencode:'' %}class="active"{% endif %}{% endif %}>
+                            <a href="#">{{ menu.icon|safe }}<span class="nav-label">{{ menu.name|safe}}</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
                                 {% for m in menu.children %}
-                                    <li><a href="{{ m.url|safe }}">{{ m.name|safe }}</a></li>
+                                    <li {% if menu_url_name|urlencode:'' == m.url_name|urlencode:'' %}class="active"{% endif %}>
+                                        <a href="{{ m.url|safe }}">{{ m.name|safe }}</a>
+                                    </li>
                                 {% endfor %}
                             </ul>
-                        {% else %}
+                        </li>
+                    {% else %}
+                        <li {% if menu_url_name|urlencode:'' == menu.url_name|urlencode:'' %}class="active"{% endif %}>
                             <a href="{{ menu.url|safe }}">{{ menu.icon|safe }}{{ menu.name|safe}}</a>
-                        {% endif %}
-                    </li>
+                        </li>
+                    {% endif %}
                 {% endfor %}
             </ul>
         </div>
@@ -177,56 +122,56 @@
                     <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i> </a>
                 </div>
                 <ul class="nav navbar-top-links navbar-right">
-                    <li class="dropdown">
-                        <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
-                            <i class="fa fa-envelope"></i>  <span class="label label-warning">16</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-messages">
-                            <li>
-                                <div class="dropdown-messages-box">
-                                    <div class="media-body">
-                                        <a href="#">
-                                            <small class="pull-right text-navy">1小时前</small>
-                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>
-                                            <small class="text-muted">2019.05.21 16:58</small>
-                                        </a>
-                                    </div>
-                                </div>
-                            </li>
-                            <li class="divider"></li>
-                            <li>
-                                <div class="dropdown-messages-box">
-                                    <div class="media-body">
-                                        <a href="#">
-                                            <small class="pull-right">6小时前</small>
-                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>
-                                            <small class="text-muted">2019.05.21 16:58</small>
-                                        </a>
-                                    </div>
-                                </div>
-                            </li>
-                            <li class="divider"></li>
-                            <li>
-                                <div class="dropdown-messages-box">
-                                    <div class="media-body">
-                                        <a href="#">
-                                            <small class="pull-right">8小时前</small>
-                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>
-                                            <small class="text-muted">2019.05.21 16:58</small>
-                                        </a>
-                                    </div>
-                                </div>
-                            </li>
-                            <li class="divider"></li>
-                            <li>
-                                <div class="text-center link-block">
-                                    <a href="#">
-                                        <i class="fa fa-envelope"></i> <strong>阅读所有消息</strong>
-                                    </a>
-                                </div>
-                            </li>
-                        </ul>
-                    </li>
+{#                    <li class="dropdown">#}
+{#                        <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">#}
+{#                            <i class="fa fa-envelope"></i>  <span class="label label-warning">16</span>#}
+{#                        </a>#}
+{#                        <ul class="dropdown-menu dropdown-messages">#}
+{#                            <li>#}
+{#                                <div class="dropdown-messages-box">#}
+{#                                    <div class="media-body">#}
+{#                                        <a href="#">#}
+{#                                            <small class="pull-right text-navy">1小时前</small>#}
+{#                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>#}
+{#                                            <small class="text-muted">2019.05.21 16:58</small>#}
+{#                                        </a>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </li>#}
+{#                            <li class="divider"></li>#}
+{#                            <li>#}
+{#                                <div class="dropdown-messages-box">#}
+{#                                    <div class="media-body">#}
+{#                                        <a href="#">#}
+{#                                            <small class="pull-right">6小时前</small>#}
+{#                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>#}
+{#                                            <small class="text-muted">2019.05.21 16:58</small>#}
+{#                                        </a>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </li>#}
+{#                            <li class="divider"></li>#}
+{#                            <li>#}
+{#                                <div class="dropdown-messages-box">#}
+{#                                    <div class="media-body">#}
+{#                                        <a href="#">#}
+{#                                            <small class="pull-right">8小时前</small>#}
+{#                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>#}
+{#                                            <small class="text-muted">2019.05.21 16:58</small>#}
+{#                                        </a>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </li>#}
+{#                            <li class="divider"></li>#}
+{#                            <li>#}
+{#                                <div class="text-center link-block">#}
+{#                                    <a href="#">#}
+{#                                        <i class="fa fa-envelope"></i> <strong>阅读所有消息</strong>#}
+{#                                    </a>#}
+{#                                </div>#}
+{#                            </li>#}
+{#                        </ul>#}
+{#                    </li>#}
                     <li>
                         <a href="{% url 'browse:logout' %}">
                             <i class="fa fa-sign-out"></i> 退出账户

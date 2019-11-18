@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.manage.views import become_a_teacher, cancel_the_teacher, personal_info, \
+from apps.manage.views import PersonalInfo,\
     application_check, ScheduleView, ArrangeView, CourseBlockView, SetSchoolView, SystemSettingsView, SchoolAreasView, \
     InstitutesView, DepartmentsView, GradesView, SchoolManageView, ClassesView, \
     ClassesManageView, TeachersView, TeacherManageView, CoursesView, CourseManageView, LabAttributesView, \
@@ -26,9 +26,7 @@ urlpatterns = [
 
     path('set_school', SetSchoolView.as_view(), name='set_school'),
 
-    path('personal_info', personal_info, name='personal_info'),
-    path('become_a_teacher', become_a_teacher, name='become_a_teacher'),
-    path('cancel_the_teacher', cancel_the_teacher, name='cancel_the_teacher'),
+    path('personal_info', PersonalInfo.as_view(), name='personal_info'),
 
     path('system_settings', SystemSettingsView.as_view(), name='system_settings'),
 

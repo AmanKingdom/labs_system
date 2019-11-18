@@ -78,13 +78,13 @@
                             ]
                         },
                     },{
-                        field: 'teacher_name',
+                        field: 'name',
                         title: '教师姓名<span class="need">*</span>',
                         editable:{
                             type:'text',
                         },
                     },{
-                        field: 'account',
+                        field: 'username',
                         title: '账号（工号）<span class="need">*</span>',
                         editable:{
                             type:'text',
@@ -96,21 +96,13 @@
                             type:'text',
                         },
                     },{
-                        field: 'phone',
-                        title: '预留手机号码',
-                        editable:{
-                            type:'text',
-                        },
-                    },{
                         field:'hide_department_id',
                     },{
-                        field:'hide_teacher_name',
+                        field:'hide_name',
                     },{
-                        field:'hide_account',
+                        field:'hide_username',
                     },{
                         field:'hide_password',
-                    },{
-                        field:'hide_phone',
                     },{
                         field:'id_in_database',
                     }]
@@ -118,10 +110,9 @@
             });
             // 隐藏一些id和名称隐藏列
             teacher_table.bootstrapTable('hideColumn', 'hide_department_id');
-            teacher_table.bootstrapTable('hideColumn', 'hide_teacher_name');
-            teacher_table.bootstrapTable('hideColumn', 'hide_account');
+            teacher_table.bootstrapTable('hideColumn', 'hide_name');
+            teacher_table.bootstrapTable('hideColumn', 'hide_username');
             teacher_table.bootstrapTable('hideColumn', 'hide_password');
-            teacher_table.bootstrapTable('hideColumn', 'hide_phone');
             set_a_table(teacher_table, remove_teacher_button, '教师');
         }
 
@@ -145,19 +136,17 @@
                 new_row = {
                     "id": index,
                     "department": {% if departments %}{{ departments.0.id }}{% else %}""{% endif %},
-                    "teacher_name": "",
-                    "account": "",
+                    "name": "",
+                    "username": "",
                     "password": "123456",
-                    "phone": "",
                 };
             }else{
                 new_row = {
                     "id": index,
                     "department": data[index-1].department,
-                    "teacher_name": "",
-                    "account": "",
+                    "name": "",
+                    "username": "",
                     "password": "123456",
-                    "phone": "",
                 };
             }
 
@@ -184,12 +173,12 @@
                     add_tip('teacher_table', index, 2)
                 }
 
-                if(value['teacher_name'] === empty_text || value['teacher_name'] == ""){
+                if(value['name'] === empty_text || value['name'] == ""){
                     pass = false;
                     add_tip('teacher_table', index, 3)
                 }
 
-                if(value['account'] === empty_text || value['account'] == ""){
+                if(value['username'] === empty_text || value['username'] == ""){
                     pass = false;
                     add_tip('teacher_table', index, 4)
                 }
@@ -213,20 +202,16 @@
                             temp['department_id'] = teacher_table_data[i]['department'];
                             change = true;
                         }
-                        if(teacher_table_data[i]['hide_teacher_name'] !== teacher_table_data[i]['teacher_name']){
-                            temp['name'] = teacher_table_data[i]['teacher_name'];
+                        if(teacher_table_data[i]['hide_name'] !== teacher_table_data[i]['name']){
+                            temp['name'] = teacher_table_data[i]['name'];
                             change = true;
                         }
-                        if(teacher_table_data[i]['hide_account'] !== teacher_table_data[i]['account']){
-                            temp['account'] = teacher_table_data[i]['account'];
+                        if(teacher_table_data[i]['hide_username'] !== teacher_table_data[i]['username']){
+                            temp['username'] = teacher_table_data[i]['username'];
                             change = true;
                         }
                         if(teacher_table_data[i]['hide_password'] !== teacher_table_data[i]['password']){
                             temp['password'] = teacher_table_data[i]['password'];
-                            change = true;
-                        }
-                        if(teacher_table_data[i]['hide_phone'] !== teacher_table_data[i]['phone']){
-                            temp['phone'] = teacher_table_data[i]['phone'];
                             change = true;
                         }
                         if(change) {
@@ -235,10 +220,10 @@
                     }else{
                         var temp = {};
                         temp['department_id'] = teacher_table_data[i]['department'];
-                        temp['name'] = teacher_table_data[i]['teacher_name'];
-                        temp['account'] = teacher_table_data[i]['account'];
+                        temp['name'] = teacher_table_data[i]['name'];
+                        temp['username'] = teacher_table_data[i]['username'];
                         temp['password'] = teacher_table_data[i]['password'];
-                        temp['phone'] = teacher_table_data[i]['phone'];
+                        temp['school_id'] = '{{ request.session.school_id }}';
                         post_data.push(temp)
                     }
                 }

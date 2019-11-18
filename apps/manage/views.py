@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 from functools import wraps
 
 from django.http import JsonResponse, HttpResponseRedirect, QueryDict, Http404, HttpResponse
@@ -11,9 +10,8 @@ from apps.manage.models import *
 
 from logging_setting import ThisLogger
 from manage.tools.list_tool import get_model_field_ids
-from manage.tools.setting_tool import set_time_for_context, set_system_school_year
-from manage.tools.string_tool import list_to_str, str_to_set, get_labs_id_str, non_repetitive_strlist, \
-    str_to_non_repetitive_list
+from manage.tools.setting_tool import *
+from manage.tools.string_tool import *
 
 this_logger = ThisLogger().logger
 
@@ -43,22 +41,51 @@ def set_choices_context(context):
     context['experiments_type'] = ExperimentType.objects.all() if ExperimentType.objects.all() else ""
     # 学时
     context['lecture_time'] = [x for x in range(1, 11)]
+    # TODO:因为找不到联动数据的解决方案，暂时用所有实验室来代替
     context['labs_of_institute'] = Institute.objects.all() if Institute.objects.all() else ""
     context['lab_attributes'] = LabAttribute.objects.all() if LabAttribute.objects.all() else ""
-    # 因为找不到联动数据的解决方案，暂时用所有实验室来代替
     context['all_labs'] = Lab.objects.filter(dispark=True)
 
 
-# 验证登录视图
+def set_menu_name(context, url_name):
+    """
+    如果menu为根菜单，则设置context中的menu_parent_name为menu的name，否则设置menu_url_name为menu的url_name，
+    并设置对应的menu_parent_name为menu的父菜单的name
+    :param context:
+    :param url_name:
+    :return:
+    """
+    menu = Menu.objects.filter(url_name=url_name).first()
+    if menu:
+        context['title'] = menu.name
+        if menu.parent:
+            context['menu_parent_name'] = menu.parent.name
+        context['menu_url_name'] = menu.url_name
+
+
+# 验证登录
 def require_login(view):
     @wraps(view)
     def new_view(request, *args, **kwargs):
         if request.session.get('user_account', None):
-            this_logger.debug('验证登录视图：' + request.session['user_name'] + ' 用户已登录')
+            this_logger.debug('验证登录：' + request.session['user_name'] + ' 用户已登录')
             return view(request, *args, **kwargs)
         return HttpResponseRedirect('/browse/login')
 
     return new_view
+
+
+# 页面权限认证
+def require_permission(url_name):
+    def require_permission2(view_func):
+        @wraps(view_func)
+        def new_view(self, request, *args, **kwargs):
+            if request.user.has_menu(url_name):
+                return view_func(self, request, *args, **kwargs)
+            else:
+                return HttpResponseRedirect('/browse/login')
+        return new_view
+    return require_permission2
 
 
 # 本方法应该在每次创建一个新学校时被调用
@@ -129,15 +156,19 @@ class SetSchoolView(View):
 
 @method_decorator(require_login, name='dispatch')
 class SystemSettingsView(View):
+    url_name = 'system_settings'
     context = {
-        'title': '系统设置',
-        'system_settings_active': True,  # 激活导航
-
         'school_year': None,
         'term': None,
     }
 
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request):
+        set_menu_name(self.context, self.url_name)
+
         # 学年学期数据要在判断设置完系统学年信息后才能获取
         self.context['school_year'] = SchoolYear.objects.all()[0]
         if request.session.get('school_id', None):
@@ -199,7 +230,17 @@ class LittleSameModelBaseView(View):
         this_logger.debug(self.model_Chinese_name + '信息--接收到put数据：' + str(put_data))
 
         for data in put_data:
+            if self.model is User:
+                user = User.objects.filter(id=data['id']).first()
+                if self.model_Chinese_name == '教师':
+                    user.groups.add(Group.objects.get(name=TEACHER))
+                if 'password' in data.keys():
+                    password = data['password']
+                    user.set_password(password)
+                    del data['password']
+                user.save()
             self.model.objects.filter(id=data['id']).update(**data)
+
         return JsonResponse({'status': True})
 
     def post(self, request, school_id):  # 创建信息
@@ -209,6 +250,11 @@ class LittleSameModelBaseView(View):
         for data in post_data:
             if self.model is SchoolArea or self.model is LabAttribute or self.model is ExperimentType:
                 self.model.objects.create(**data, school_id=school_id)
+            elif self.model is User:
+                user = User.objects.create_user(**data)
+                if self.model_Chinese_name == '教师':
+                    user.groups.add(Group.objects.get(name=TEACHER))
+                    user.save()
             else:
                 self.model.objects.create(**data)
         return JsonResponse({'status': True})
@@ -333,14 +379,12 @@ class TeachersView(LittleSameModelBaseView):
                 'id': i,
                 'department': obj.department_id,
                 'hide_department_id': obj.department_id,
-                'teacher_name': obj.name,
-                'hide_teacher_name': obj.name,
-                'account': obj.username,
-                'hide_account': obj.username,
+                'name': obj.name,
+                'hide_name': obj.name,
+                'username': obj.username,
+                'hide_username': obj.username,
                 'password': obj.password,
                 'hide_password': obj.password,
-                'phone': obj.phone,
-                'hide_phone': obj.phone,
                 'id_in_database': obj.id
             }
             return_data.append(new_dict)
@@ -518,91 +562,26 @@ class ExperimentTypesView(LittleSameModelBaseView):
         return return_data
 
 
-
-
-
-
-# 个人主页
-def personal_info(request):
+# 个人信息页面
+@method_decorator(require_login, name='dispatch')
+class PersonalInfo(View):
     context = {
-        'title': '个人主页',
-        'personal_info_active': True,  # 激活导航
-        'superuser': None,
-        'teacher': None,
-
-        'course_amount': None,
-        'departments': [],
         'term': None,
     }
+    url_name = 'personal_info'
 
-    if request.session.get('school_id', None):
-        context['departments'] = School.objects.get(id=request.session['school_id']).get_all_departments()
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
-    return render(request, 'manage/personal_info.html', context)
-
-
-def become_a_teacher(request):
-    data = json.loads(list(request.POST.keys())[0])
-
-    context = {
-        'status': True,
-        'message': None,
-    }
-
-    if request.is_ajax():
-        try:
-            from_department_id = data['from_department_id']
-            # superuser = User.objects.get(username=request.session['user_account'])
-            # teacher = User.objects.create_user(department_id=from_department_id,
-            #                                  name=superuser.name,
-            #                                  account=superuser.account,
-            #                                  password=superuser.password,
-            #                                  phone=superuser.account)
-            # superuser.is_teacher = teacher
-            # superuser.save()
-
-        except:
-            context['status'] = False
-            context['message'] = '修改失败，请重试'
-
-        return JsonResponse(context)
-
-
-def cancel_the_teacher(request):
-    data = json.loads(list(request.POST.keys())[0])
-
-    context = {
-        'status': True,
-        'message': None,
-    }
-
-    if request.is_ajax():
-        try:
-            User.objects.filter(id=data['superuser_id'])[0].is_teacher.delete()
-
-        except:
-            context['status'] = False
-            context['message'] = '修改失败，请重试'
-
-        return JsonResponse(context)
-
-
-
-
-
-
-
-
-
+    def get(self, request):
+        set_menu_name(self.context, self.url_name)
+        return render(request, 'manage/personal_info.html', self.context)
 
 
 @method_decorator(require_login, name='dispatch')
 class SchoolManageView(View):
     context = {
-        'title': '学校管理',
-        'active_1': True,  # 激活导航
-        'school_active': True,  # 激活导航
-
         'school': None,
         'school_areas': None,
         'institutes': None,
@@ -610,8 +589,15 @@ class SchoolManageView(View):
         'grades': None,
         'years': None,
     }
+    url_name = 'school_manage'
+
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request):
+        set_menu_name(self.context, self.url_name)
+
         if request.session.get('school_id', None):
             self.context['school'] = School.objects.get(id=request.session['school_id'])
 
@@ -638,16 +624,20 @@ class SchoolManageView(View):
 @method_decorator(require_login, name='dispatch')
 class ClassesManageView(View):
     context = {
-        'title': '班级管理',
-        'active_1': True,  # 激活导航
-        'classes_active': True,  # 激活导航
-
         'departments': None,
         'grades': None,
         'classes_numbers': [x for x in range(1, 9)]
     }
 
+    url_name = 'classes_manage'
+
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request):
+        set_menu_name(self.context, self.url_name)
+
         if request.session.get('school_id', None):
             school = School.objects.get(id=request.session['school_id'])
             if school:
@@ -658,15 +648,19 @@ class ClassesManageView(View):
 @method_decorator(require_login, name='dispatch')
 class TeacherManageView(View):
     context = {
-        'title': '教师管理',
-        'active_1': True,  # 激活导航
-        'teacher_active': True,  # 激活导航
-
         'departments': [],
         'teachers': [],
     }
 
+    url_name = 'teacher_manage'
+
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request):
+        set_menu_name(self.context, self.url_name)
+
         school = School.objects.get(id=request.session['school_id'])
         if school:
             self.context['departments'] = school.get_all_departments()
@@ -678,17 +672,20 @@ class TeacherManageView(View):
 @method_decorator(require_login, name='dispatch')
 class CourseManageView(View):
     context = {
-        'title': '课程管理',
-        'active_1': True,  # 激活导航
-        'course_active': True,  # 激活导航
-
         'institutes': None,
         'classes': None,
         'teachers': None,
         'attributes': None,
     }
+    url_name = 'course_manage'
+
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request):
+        set_menu_name(self.context, self.url_name)
+
         school = School.objects.get(id=request.session['school_id'])
         if school:
             self.context['institutes'] = school.get_all_institutes()
@@ -697,21 +694,25 @@ class CourseManageView(View):
             self.context['attributes'] = school.get_all_lab_attributes()
 
             return render(request, 'manage/course_manage.html', self.context)
+        return Http404('没有对应的学校信息')
 
 
 @method_decorator(require_login, name='dispatch')
 class LabManageView(View):
     context = {
-        'title': '实验室管理',
-        'active_2': True,  # 激活导航
-        'lab_active': True,  # 激活导航
-
         'institutes': [],
         'labs': [],
         'lab_attributes': [],
     }
+    url_name = 'lab_manage'
+
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request):
+        set_menu_name(self.context, self.url_name)
+
         school = School.objects.get(id=request.session['school_id'])
         if school:
             self.context['institutes'] = school.get_all_institutes()
@@ -723,14 +724,17 @@ class LabManageView(View):
 @method_decorator(require_login, name='dispatch')
 class LabAttributeManageView(View):
     context = {
-        'title': '实验室属性管理',
-        'active_2': True,  # 激活导航
-        'lab_attribute_active': True,  # 激活导航
-
         'lab_attributes': None,
     }
+    url_name = 'lab_attribute_manage'
+
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request):
+        set_menu_name(self.context, self.url_name)
+
         school = School.objects.get(id=request.session['school_id'])
         if school:
             self.context['lab_attributes'] = school.get_all_lab_attributes()
@@ -740,22 +744,25 @@ class LabAttributeManageView(View):
 
 @method_decorator(require_login, name='dispatch')
 class ExperimentTypeManageView(View):
-    context = {
-        'title': '实验类型设置',
-        'active_3': True,  # 激活导航
-        'experiment_type_active': True,  # 激活导航
-    }
+    context = {}
+    url_name = 'experiment_type_manage'
+
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request):
+        set_menu_name(self.context, self.url_name)
         return render(request, 'manage/experiment_type_manage.html', self.context)
 
 
-# 数据联动，动态加载班级数据
+# 数据联动，选择课程后动态加载班级数据
 def load_classes_of_course(request):
     classes = get_classes_name_from_course(request.GET.get('course_id'))
     return JsonResponse({'classes': classes})
 
 
+# 数据联动，选择院系后动态加载教师数据
 def load_teachers_of_department(request):
     department_id = request.GET.get('department_id')
     this_logger.info('选择id为' + department_id + '的系别')
@@ -763,6 +770,7 @@ def load_teachers_of_department(request):
     return render(request, 'manage/teachers_options.html', {'teachers': teachers})
 
 
+# 数据联动，选择教师后动态加载课程数据
 def load_courses_of_teacher(request):
     teacher_account = request.GET.get('teacher_account')
     this_logger.info('选择username为' + teacher_account + '的教师')
@@ -776,12 +784,14 @@ def load_courses_of_teacher(request):
 
 @method_decorator(require_login, name='dispatch')
 class ApplyView(View):
+    url_name = 'apply'
+
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request):
         context = {
-            'title': '填写申请表',
-            'active_4': True,  # 激活导航
-            'apply_experiments_active': True,  # 激活导航
-
             'departments': None,
             'teachers': None,
             'courses': [],
@@ -796,6 +806,7 @@ class ApplyView(View):
             'lab_attribute': None,
             'all_labs': None,
         }
+        set_menu_name(context, self.url_name)
 
         temp_courses = None
         if request.session['user_type'] == MANAGER:
@@ -905,14 +916,17 @@ class ApplyView(View):
 @method_decorator(require_login, name='dispatch')
 class ApplicationManageView(View):
     context = {
-        'title': '实验申请表审批',
-        'active_4': True,  # 激活导航
-        'application_manage_active': True,  # 激活导航
-
         'courses': [],
     }
+    url_name = 'application_manage'
+
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request):
+        set_menu_name(self.context, self.url_name)
+
         self.context['courses'] = []
         school = School.objects.get(id=request.session['school_id'])
         if school:
@@ -942,12 +956,14 @@ class ApplicationManageView(View):
 
 @method_decorator(require_login, name='dispatch')
 class ApplicationDetailsView(View):
+    url_name = 'application_details'
+
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request, course_id=None):
         context = {
-            'title': '申请信息管理',
-            'active_3': True,  # 激活导航
-            'apply_info_active': True,  # 激活导航
-
             'course': None,
             'experiments': None,
 
@@ -958,6 +974,8 @@ class ApplicationDetailsView(View):
             'section': None,
             'all_labs': None,   # 暂时用这个代替，因为前端还做不到下拉列表数据联动
         }
+
+        set_menu_name(self.context, self.url_name)
 
         # CourseBlock.objects.filter(course=course).delete()
         # course.has_block = False
@@ -1256,7 +1274,7 @@ class WeeksTimeTableScheduleView(View):
             "rows": []
         }
 
-        selected_data = request.session['weeks_timetable_selected_data']
+        selected_data = request.session.get('weeks_timetable_selected_data', None)
         if selected_data:
             labs = Lab.objects.filter(institute_id=selected_data['selected_institute_id'], dispark=True)
 
@@ -1298,18 +1316,21 @@ class WeeksTimeTableScheduleView(View):
 
 @method_decorator(require_login, name='dispatch')
 class WeeksTimeTableView(View):
+    url_name = 'weeks_timetable'
+
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request):
         context = {
-            'title': '周次安排表',
-            'active_5': True,  # 激活导航
-            'weeks_timetable_active': True,  # 激活导航
-
             'institutes': None,
             'which_week': None,
             'days_of_the_week': None,
 
             'labs': None,
         }
+        set_menu_name(context, self.url_name)
 
         school = School.objects.get(id=request.session['school_id'])
         context['institutes'] = school.get_all_institutes()
@@ -1380,66 +1401,71 @@ class RoomsTimeTableScheduleView(View):
 
         day_of_the_week = [{'d1': '星期一'}, {'d2': '星期二'}, {'d3': '星期三'}, {'d4': '星期四'}, {'d5': '星期五'}, {'d6': '星期六'}, {'d7': '星期日'}, ]
 
-        selected_data = request.session['rooms_timetable_selected_data']
-        lab = Lab.objects.get(id=selected_data['selected_room'])
+        selected_data = request.session.get('rooms_timetable_selected_data', None)
+        if selected_data:
+            lab = Lab.objects.filter(id=selected_data['selected_room'])
+            if lab:
+                lab = lab.first()
+                # 基础空数据
+                base_dict = {}
 
-        # 基础空数据
-        base_dict = {}
+                new_dict = {}
+                for day in day_of_the_week:
+                    new_dict["%s" % list(day.keys())[0]] = ""
 
-        new_dict = {}
-        for day in day_of_the_week:
-            new_dict["%s" % list(day.keys())[0]] = ""
+                for section in range(1, 12):
+                    temp_dict = new_dict.copy()
+                    temp_dict["section"] = section
+                    base_dict["s%d" % section] = temp_dict
 
-        for section in range(1, 12):
-            temp_dict = new_dict.copy()
-            temp_dict["section"] = section
-            base_dict["s%d" % section] = temp_dict
+                empty_row = base_dict['s1'].copy()
+                empty_row["section"] = ""
 
-        empty_row = base_dict['s1'].copy()
-        empty_row["section"] = ""
+                div = '<div class="course_div %s">%s</div>'
 
-        div = '<div class="course_div %s">%s</div>'
+                courses = Course.objects.filter(institute_id=selected_data['selected_institute_id'], has_block=True)
+                temp = divmod(len(courses), len(COLOR_DIVS))
+                color_divs = COLOR_DIVS * temp[0] + COLOR_DIVS[:temp[1]]
 
-        courses = Course.objects.filter(institute_id=selected_data['selected_institute_id'], has_block=True)
-        temp = divmod(len(courses), len(COLOR_DIVS))
-        color_divs = COLOR_DIVS * temp[0] + COLOR_DIVS[:temp[1]]
+                for course, color_div in zip(courses, color_divs):
+                    course_blocks = CourseBlock.objects.filter(course=course, need_adjust=False, aready_arrange=True)
 
-        for course, color_div in zip(courses, color_divs):
-            course_blocks = CourseBlock.objects.filter(course=course, need_adjust=False, aready_arrange=True)
+                    for course_block in course_blocks:
+                        if str(selected_data['selected_which_week']) in str_to_non_repetitive_list(course_block.weeks, '、'):
+                            if lab in course_block.new_labs.all():
+                                content = '课程：' + course.name + \
+                                          '<br>老师：' + get_teachers_name_from_course(course.id) + \
+                                          '<br>周次：[ ' + course_block.weeks + \
+                                          ' ]<br>班级：' + get_classes_name_from_course(course.id)
 
-            for course_block in course_blocks:
-                if str(selected_data['selected_which_week']) in str_to_non_repetitive_list(course_block.weeks, '、'):
-                    if lab in course_block.new_labs.all():
-                        content = '课程：' + course.name + \
-                                  '<br>老师：' + get_teachers_name_from_course(course.id) + \
-                                  '<br>周次：[ ' + course_block.weeks + \
-                                  ' ]<br>班级：' + get_classes_name_from_course(course.id)
+                                new_div = div % (color_div, content)
 
-                        new_div = div % (color_div, content)
+                                for section in course_block.sections.split(','):
+                                    day = list(day_of_the_week[course_block.days_of_the_week - 1].keys())[0]
+                                    if new_div not in base_dict['s%s' % section]['%s' % day]:
+                                        base_dict['s%s' % section]['%s' % day] = base_dict['s%s' % section]['%s' % day] + new_div
 
-                        for section in course_block.sections.split(','):
-                            day = list(day_of_the_week[course_block.days_of_the_week - 1].keys())[0]
-                            if new_div not in base_dict['s%s' % section]['%s' % day]:
-                                base_dict['s%s' % section]['%s' % day] = base_dict['s%s' % section]['%s' % day] + new_div
-
-        data['rows'] = [empty_row] + list(base_dict.values())
+                data['rows'] = [empty_row] + list(base_dict.values())
         return JsonResponse(data)
 
 
 @method_decorator(require_login, name='dispatch')
 class RoomsTimeTableView(View):
+    url_name = 'rooms_timetable'
+
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request):
         context = {
-            'title': '实验室安排表',
-            'active_5': True,  # 激活导航
-            'rooms_timetable_active': True,  # 激活导航
-
             'institutes': None,
             'which_week': [x for x in range(1, 22)],
             'labs': None,
 
             'day_of_the_week': [{'d1': '星期一'}, {'d2': '星期二'}, {'d3': '星期三'}, {'d4': '星期四'}, {'d5': '星期五'}, {'d6': '星期六'}, {'d7': '星期日'}, ]
         }
+        set_menu_name(context, self.url_name)
 
         school = School.objects.get(id=request.session['school_id'])
         context['institutes'] = school.get_all_institutes()
@@ -1785,10 +1811,6 @@ def auto_arrange(institute_id, attribute1_id, attribute2_id):
 @method_decorator(require_login, name='dispatch')
 class ArrangeView(View):
     context = {
-        'title': '智能排课',
-        'active_3': True,  # 激活导航
-        'arrange_active': True,  # 激活导航
-
         'superuser': None,
         'teacher': None,
         'school': None,
@@ -1799,8 +1821,14 @@ class ArrangeView(View):
         'institutes': [],
         'attributes': None,
     }
+    url_name = 'arrange'
+
+    @require_permission(url_name=url_name)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request):
+        set_menu_name(self.context, self.url_name)
         set_time_for_context(self.context)
 
         self.context['school'] = School.objects.get(id=request.session['school_id'])
@@ -1822,8 +1850,12 @@ class ArrangeView(View):
                 request.session['current_attribute1_id'] = arrange_settings[0].attribute1_id
                 request.session['current_attribute2_id'] = arrange_settings[0].attribute2_id
             else:
-                request.session['current_attribute1_id'] = self.context['attributes'][0].id
-                request.session['current_attribute2_id'] = self.context['attributes'][0].id
+                if self.context['attributes']:
+                    default_current_attribute_id = self.context['attributes'][0].id
+                else:
+                    default_current_attribute_id = None
+                request.session['current_attribute1_id'] = default_current_attribute_id
+                request.session['current_attribute2_id'] = default_current_attribute_id
 
             request.session['arrange_settings'] = {
                 'institute_%s' % request.session['current_institute_id']: {
@@ -1912,7 +1944,6 @@ class ArrangeView(View):
         return render(request, 'manage/arrange.html', self.context)
 
 
-@method_decorator(require_login, name='dispatch')
 class CourseBlockView(View):
     context = {
         'status': True,

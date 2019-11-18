@@ -268,11 +268,11 @@ class User(AbstractUser):
     def __str__(self):
         return self.name
 
-    def has_menu(self, url):
-        if isinstance(url, str):
+    def has_menu(self, url_name):
+        if isinstance(url_name, str):
             for role in self.groups.all():
                 for menu in role.menus.all():
-                    if url == menu.url:
+                    if url_name == menu.url_name:
                         return True
         else:
             print('please enter a URL type string.')

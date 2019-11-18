@@ -21,11 +21,13 @@ def homepage(request):
     return HttpResponseRedirect('/browse/login')
 
 
-def set_user_info_to_session(request, username, user_type, user_name, user_id):
+def set_user_info_to_session(request, username, user_type, user_name, user_id, user_school):
     request.session['user_account'] = username  # user_account是账号username，不是姓名，user_name才是姓名
     request.session['user_type'] = user_type
     request.session['user_name'] = user_name
     request.session['user_id'] = user_id
+    if user_school:
+        request.session['school_id'] = user_school.id
 
     role = User.objects.get(id=user_id).groups.all().first()
     """
@@ -33,11 +35,13 @@ def set_user_info_to_session(request, username, user_type, user_name, user_id):
     {'菜单id': {
         'name':'xxx', 
         'icon':'xxx', 
+        'url_name: 'xxx',
         'url':'xxx', 
         'children':[
             {
                 'name':'xxx', 
                 'icon':'xxx', 
+                'url_name: 'xxx',
                 'url':'xxx',
             }
         ],
@@ -50,6 +54,7 @@ def set_user_info_to_session(request, username, user_type, user_name, user_id):
         return {
                     'name': menu.name,
                     'icon': menu.icon,
+                    'url_name': menu.url_name,
                     'url': menu.get_URL(),
                     'children': [],
                 }
@@ -94,7 +99,7 @@ class RegisterView(View):
                     user.groups.add(Group.objects.get(name=MANAGER))
                     user.save()
 
-                    set_user_info_to_session(request, username, MANAGER, user.name, user.id)
+                    set_user_info_to_session(request, username, MANAGER, user.name, user.id, user.school)
                     this_logger.info(user.name + '管理员注册成功')
                 else:
                     self.context['status'] = False
@@ -125,14 +130,12 @@ class LoginView(View):
                         this_logger.info(user.name + '登录成功')
 
                         if user.groups.all()[0].name == MANAGER:
-                            set_user_info_to_session(request, user.username, MANAGER, user.name, user.id)
-                            if user.school:
-                                request.session['school_id'] = user.school_id
+                            set_user_info_to_session(request, user.username, MANAGER, user.name, user.id, user.school)
                         elif user.groups.all()[0].name == TEACHER:
-                            set_user_info_to_session(request, user.username, TEACHER, user.name, user.id)
+                            set_user_info_to_session(request, user.username, TEACHER, user.name, user.id, user.school)
                             request.session['department_name'] = user.department.name
                         else:
-                            set_user_info_to_session(request, user.username, STUDENT, user.name, user.id)
+                            set_user_info_to_session(request, user.username, STUDENT, user.name, user.id, user.school)
 
                         return HttpResponseRedirect('/')
                     else:

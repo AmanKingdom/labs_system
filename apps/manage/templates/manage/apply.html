@@ -32,7 +32,7 @@
                 </tr></thead>
                 <tbody><tr>
                     <td id="department">
-                        {% if request.session.user_type == 'superuser' %}
+                        {% if request.session.user_type == 'managers' %}
                             <select id="departments_select" class="form-control">
                                 {% for department in departments %}
                                     {% if forloop.first %}
@@ -43,14 +43,14 @@
                                 {% empty %}
                                 {% endfor %}
                             </select>
-                        {% elif request.session.user_type == 'teacher' %}
+                        {% elif request.session.user_type == 'teachers' %}
                             {{ request.session.department_name }}
                         {% else %}
                             无
                         {% endif %}
                     </td>
                     <td id="teacher">
-                        {% if request.session.user_type == 'superuser' %}
+                        {% if request.session.user_type == 'managers' %}
                             <select id="teachers_select" class="form-control">
                                 <option>--------</option>
                                 {% for teacher in teachers %}
@@ -58,7 +58,7 @@
                                 {% empty %}
                                 {% endfor %}
                             </select>
-                        {% elif request.session.user_type == 'teacher' %}
+                        {% elif request.session.user_type == 'teachers' %}
                             {{ request.session.user_name }}
                         {% else %}
                             无
@@ -657,12 +657,12 @@
             var classes = document.getElementById("classes").innerText;
 
             var data_json = {
-                {% if request.session.user_type == 'superuser' %}
+                {% if request.session.user_type == 'managers' %}
                     "department": $('#departments_select option:selected').text(),
                 {% else %}
                     "department": document.getElementById("department").innerText,
                 {% endif %}
-                {% if request.session.user_type == 'superuser' %}
+                {% if request.session.user_type == 'managers' %}
                     "teacher_name": $('#teachers_select option:selected').text(),
                 {% else %}
                     "teacher_name":document.getElementById("teacher_name").innerText,

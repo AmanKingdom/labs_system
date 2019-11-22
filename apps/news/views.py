@@ -7,6 +7,31 @@ from django.urls import reverse
 
 from apps.news.models import News, Category
 
+from .serializers import NewsSerializer
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
+
+
+class NewsAPIView(APIView):
+    def get(self, request):
+        all_news = News.objects.all()
+        # 分页查询
+        pg = PageNumberPagination()
+        page_roles = pg.paginate_queryset(queryset=all_news, request=request, view=self)
+        serializer = NewsSerializer(instance=page_roles, many=True)
+        # serializer = NewsSerializer(instance=all_news, many=True)   # 全表查询
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = NewsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class NewsView(View):
     def get(self, request):
@@ -33,7 +58,7 @@ class NewsView(View):
                 all_data.append(new_dict)
         else:
             api_url = reverse('news:explain')
-            return HttpResponse('请输入正确的参数，参数可参见<a href="'+api_url+'"></a>')
+            return HttpResponse('请输入正确的参数，参数可参见<a href="' + api_url + '"></a>')
         return HttpResponse(json.dumps(all_data), content_type="application/json")
 
 

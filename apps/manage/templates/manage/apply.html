@@ -54,8 +54,7 @@
                             <select id="teachers_select" class="form-control">
                                 <option>--------</option>
                                 {% for teacher in teachers %}
-                                    <option value='{{ teacher.account }}'>{{ teacher.name }}</option>
-                                {% empty %}
+                                    <option value='{{ teacher.name }}'>{{ teacher.name }}</option>
                                 {% endfor %}
                             </select>
                         {% elif request.session.user_type == 'teachers' %}

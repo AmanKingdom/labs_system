@@ -44,9 +44,11 @@
 
 {% block add_js_to_manage %}
     <!--全局的参数或函数-->
+    {% if request.session.school_id %}
     <script>
         var experiment_type_url = "{% url 'manage:experiment_types' request.session.school_id %}";
     </script>
+    {% endif %}
 
 
 

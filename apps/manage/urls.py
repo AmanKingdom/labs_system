@@ -8,11 +8,13 @@ from apps.manage.views import PersonalInfo,\
     ApplicationManageView, ApplicationDetailsView, ApplyView, load_classes_of_course, WeeksTimeTableView, \
     RoomsTimeTableView, \
     load_teachers_of_department, load_courses_of_teacher, ExperimentsView, TotalRequirementsView, \
-    WeeksTimeTableScheduleView, RoomsTimeTableScheduleView
+    WeeksTimeTableScheduleView, RoomsTimeTableScheduleView, init_all
 
 app_name = 'manage'
 
 urlpatterns = [
+    path('init_all/', init_all, name='init_all'),
+
     path('schools/<school_id>/school_areas', SchoolAreasView.as_view(), name='school_areas'),
     path('schools/<school_id>/institutes', InstitutesView.as_view(), name='institutes'),
     path('schools/<school_id>/departments', DepartmentsView.as_view(), name='departments'),

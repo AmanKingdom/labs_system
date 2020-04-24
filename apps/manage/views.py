@@ -9,15 +9,17 @@ from django.views import View
 from apps.manage.models import *
 
 from logging_setting import ThisLogger
-from manage.tools.list_tool import get_model_field_ids
-from manage.tools.setting_tool import *
-from manage.tools.string_tool import *
+from apps.manage.tools.list_tool import get_model_field_ids
+from apps.manage.tools.setting_tool import *
+from apps.manage.tools.string_tool import *
 
 this_logger = ThisLogger().logger
 
 MANAGER = 'managers'
 TEACHER = 'teachers'
 STUDENT = 'students'
+
+GROUP_LIST = [MANAGER, TEACHER, STUDENT]
 
 STATUS = {
     '1': '已提交待审核',
@@ -28,6 +30,57 @@ STATUS = {
 # 设计13个可用的课程块背景颜色
 COLOR_DIVS = ['color1_div', 'color2_div', 'color3_div', 'color4_div', 'color5_div', 'color6_div',
               'color7_div', 'color8_div', 'color9_div', 'color10_div', 'color11_div', 'color12_div', 'color13_div']
+
+MENUS = [
+    {'name': '个人信息', 'url_name': 'personal_info', 'parent': None, 'icon': '<i class="fa fa-user-circle-o"></i>', 'app_name': 'manage', 'roles': GROUP_LIST},
+    {'name': '系统设置', 'url_name': 'system_settings', 'parent': None, 'icon': '<i class="fa fa-cog"></i>', 'app_name': 'manage', 'roles': [GROUP_LIST[0],]},
+    {'name': '教学信息管理', 'url_name': None, 'parent': None, 'icon': '<i class="fa fa-bank"></i>', 'app_name': 'manage', 'roles': [GROUP_LIST[0],]},
+    {'name': '校内机构管理', 'url_name': 'school_manage', 'parent': '教学信息管理', 'icon': None, 'app_name': 'manage', 'roles': [GROUP_LIST[0],]},
+    {'name': '班级管理', 'url_name': 'classes_manage', 'parent': '教学信息管理', 'icon': None, 'app_name': 'manage', 'roles': [GROUP_LIST[0],]},
+    {'name': '教师管理', 'url_name': 'teacher_manage', 'parent': '教学信息管理', 'icon': None, 'app_name': 'manage', 'roles': [GROUP_LIST[0],]},
+    {'name': '课程管理', 'url_name': 'course_manage', 'parent': '教学信息管理', 'icon': None, 'app_name': 'manage', 'roles': [GROUP_LIST[0],]},
+    {'name': '实验室信息管理', 'url_name': None, 'parent': None, 'icon': '<i class="fa fa-laptop"></i>', 'app_name': 'manage', 'roles': [GROUP_LIST[0],]},
+    {'name': '实验室管理', 'url_name': 'lab_manage', 'parent': '实验室信息管理', 'icon': None, 'app_name': 'manage', 'roles': [GROUP_LIST[0],]},
+    {'name': '实验室属性管理', 'url_name': 'lab_attribute_manage', 'parent': '实验室信息管理', 'icon': None, 'app_name': 'manage', 'roles': [GROUP_LIST[0],]},
+    {'name': '实验课管理', 'url_name': None, 'parent': None, 'icon': '<i class="fa fa-tasks"></i>', 'app_name': 'manage', 'roles': [GROUP_LIST[0],]},
+    {'name': '实验类型设置', 'url_name': 'experiment_type_manage', 'parent': '实验课管理', 'icon': None, 'app_name': 'manage', 'roles': [GROUP_LIST[0],]},
+    {'name': '智能排课', 'url_name': 'arrange', 'parent': '实验课管理', 'icon': None, 'app_name': 'manage', 'roles': [GROUP_LIST[0],]},
+    {'name': '实验申请', 'url_name': None, 'parent': None, 'icon': '<i class="fa fa-edit"></i>', 'app_name': 'manage', 'roles': [GROUP_LIST[0], GROUP_LIST[1]]},
+    {'name': '填写申请表', 'url_name': 'apply', 'parent': '实验申请', 'icon': None, 'app_name': 'manage', 'roles': [GROUP_LIST[0], GROUP_LIST[1]]},
+    {'name': '实验申请表审批', 'url_name': 'application_manage', 'parent': '实验申请', 'icon': None, 'app_name': 'manage', 'roles': [GROUP_LIST[0], GROUP_LIST[1]]},
+    {'name': '课程表', 'url_name': None, 'parent': None, 'icon': '<i class="fa fa-pie-chart"></i>', 'app_name': 'manage', 'roles': GROUP_LIST},
+    {'name': '周次课程表', 'url_name': 'weeks_timetable', 'parent': '课程表', 'icon': None, 'app_name': 'manage', 'roles': GROUP_LIST},
+    {'name': '实验室课程表', 'url_name': 'rooms_timetable', 'parent': '课程表', 'icon': None, 'app_name': 'manage', 'roles': GROUP_LIST},
+    {'name': '', 'url_name': 'application_details', 'parent': None, 'icon': None, 'app_name': 'manage', 'roles': [GROUP_LIST[0],]},
+]
+
+
+def init_all(request):
+    groups = Group.objects.all()
+    if not groups:
+        for group in GROUP_LIST:
+            Group.objects.create(name=group)
+
+    menus = Menu.objects.all()
+    if not menus:
+        for menu in MENUS:
+            roles = []
+            for role in menu['roles']:
+                temp = Group.objects.get(name=role)
+                roles.append(temp.id)
+            parent = None
+            if menu['parent']:
+                parent = Menu.objects.get(name=menu['parent'])
+            del menu['parent']
+            del menu['roles']
+
+            m = Menu.objects.create(**menu)
+            m.roles.add(*roles)
+            if parent:
+                m.parent = parent
+            m.save()
+
+    return JsonResponse({'state': True})
 
 
 # 后期需根据实际情况调整下列静态数据：
@@ -80,11 +133,16 @@ def require_permission(url_name):
     def require_permission2(view_func):
         @wraps(view_func)
         def new_view(self, request, *args, **kwargs):
-            if request.user.has_menu(url_name):
-                return view_func(self, request, *args, **kwargs)
-            else:
-                return HttpResponseRedirect('/browse/login')
+            if request.user:
+                from apps.manage.models import User
+                user = User.objects.get(id=request.user.id)
+                if user:
+                    if user.has_menu(url_name):
+                        return view_func(self, request, *args, **kwargs)
+            return HttpResponseRedirect('/browse/login')
+
         return new_view
+
     return require_permission2
 
 
@@ -660,12 +718,13 @@ class TeacherManageView(View):
 
     def get(self, request):
         set_menu_name(self.context, self.url_name)
-
-        school = School.objects.get(id=request.session['school_id'])
-        if school:
-            self.context['departments'] = school.get_all_departments()
-            if self.context['departments']:
-                self.context['teachers'] = school.get_all_teachers()
+        school_id = request.session.get('school_id', None)
+        if school_id:
+            school = School.objects.get(id=school_id)
+            if school:
+                self.context['departments'] = school.get_all_departments()
+                if self.context['departments']:
+                    self.context['teachers'] = school.get_all_teachers()
         return render(request, 'manage/teacher_manage.html', self.context)
 
 
@@ -686,15 +745,17 @@ class CourseManageView(View):
     def get(self, request):
         set_menu_name(self.context, self.url_name)
 
-        school = School.objects.get(id=request.session['school_id'])
-        if school:
-            self.context['institutes'] = school.get_all_institutes()
-            self.context['classes'] = school.get_all_classes()
-            self.context['teachers'] = school.get_all_teachers()
-            self.context['attributes'] = school.get_all_lab_attributes()
+        school_id = request.session.get('school_id', None)
+        if school_id:
+            school = School.objects.get(id=school_id)
+            if school:
+                self.context['institutes'] = school.get_all_institutes()
+                self.context['classes'] = school.get_all_classes()
+                self.context['teachers'] = school.get_all_teachers()
+                self.context['attributes'] = school.get_all_lab_attributes()
 
-            return render(request, 'manage/course_manage.html', self.context)
-        return Http404('没有对应的学校信息')
+        return render(request, 'manage/course_manage.html', self.context)
+        # return Http404('没有对应的学校信息')
 
 
 @method_decorator(require_login, name='dispatch')
@@ -713,10 +774,12 @@ class LabManageView(View):
     def get(self, request):
         set_menu_name(self.context, self.url_name)
 
-        school = School.objects.get(id=request.session['school_id'])
-        if school:
-            self.context['institutes'] = school.get_all_institutes()
-            self.context['lab_attributes'] = school.get_all_lab_attributes()
+        school_id = request.session.get('school_id', None)
+        if school_id:
+            school = School.objects.get(id=school_id)
+            if school:
+                self.context['institutes'] = school.get_all_institutes()
+                self.context['lab_attributes'] = school.get_all_lab_attributes()
 
         return render(request, 'manage/lab_manage.html', self.context)
 
@@ -735,9 +798,11 @@ class LabAttributeManageView(View):
     def get(self, request):
         set_menu_name(self.context, self.url_name)
 
-        school = School.objects.get(id=request.session['school_id'])
-        if school:
-            self.context['lab_attributes'] = school.get_all_lab_attributes()
+        school_id = request.session.get('school_id', None)
+        if school_id:
+            school = School.objects.get(id=school_id)
+            if school:
+                self.context['lab_attributes'] = school.get_all_lab_attributes()
 
         return render(request, 'manage/lab_attribute_manage.html', self.context)
 
@@ -773,8 +838,8 @@ def load_teachers_of_department(request):
 # 数据联动，选择教师后动态加载课程数据
 def load_courses_of_teacher(request):
     teacher_account = request.GET.get('teacher_account')
-    this_logger.info('选择username为' + teacher_account + '的教师')
-    temp_courses = Course.objects.filter(teachers__username__contains=teacher_account)
+    this_logger.info('选择name为' + teacher_account + '的教师')
+    temp_courses = Course.objects.filter(teachers__name=teacher_account)
     courses = []
     for course in temp_courses:
         if len(Experiment.objects.filter(course=course)) <= 0:
@@ -816,7 +881,8 @@ class ApplyView(View):
                 if context['departments']:
                     context['teachers'] = User.objects.filter(department_id=context['departments'][0].id)
                     if context['teachers']:
-                        temp_courses = Course.objects.filter(teachers__username__contains=context['teachers'][0].username)
+                        temp_courses = Course.objects.filter(
+                            teachers__username__contains=context['teachers'][0].username)
         elif request.session['user_type'] == TEACHER:
             temp_courses = Course.objects.filter(teachers__username__contains=request.session['user_account'])
 
@@ -928,29 +994,31 @@ class ApplicationManageView(View):
         set_menu_name(self.context, self.url_name)
 
         self.context['courses'] = []
-        school = School.objects.get(id=request.session['school_id'])
-        if school:
-            all_courses = school.get_all_courses()
-            if all_courses:
-                for course, i in zip(all_courses, range(0, len(all_courses))):
-                    experiments_of_the_course = Experiment.objects.filter(course=course)
-                    if experiments_of_the_course:
-                        experiments_amount = len(experiments_of_the_course)
+        school_id = request.session.get('school_id', None)
+        if school_id:
+            school = School.objects.get(id=school_id)
+            if school:
+                all_courses = school.get_all_courses()
+                if all_courses:
+                    for course, i in zip(all_courses, range(0, len(all_courses))):
+                        experiments_of_the_course = Experiment.objects.filter(course=course)
+                        if experiments_of_the_course:
+                            experiments_amount = len(experiments_of_the_course)
 
-                        classes_name = get_classes_name_from_course(course.id)
-                        teachers = get_teachers_name_from_course(course.id)
+                            classes_name = get_classes_name_from_course(course.id)
+                            teachers = get_teachers_name_from_course(course.id)
 
-                        course_item = {
-                            "id": course.id,
-                            "no": i,
-                            "teachers": teachers,
-                            "course": course.name,
-                            "experiments_amount": experiments_amount,
-                            "classes": classes_name,
-                            "modify_time": course.modify_time,
-                            "status": STATUS['%d' % experiments_of_the_course[0].status]
-                        }
-                        self.context['courses'].append(course_item)
+                            course_item = {
+                                "id": course.id,
+                                "no": i,
+                                "teachers": teachers,
+                                "course": course.name,
+                                "experiments_amount": experiments_amount,
+                                "classes": classes_name,
+                                "modify_time": course.modify_time,
+                                "status": STATUS['%d' % experiments_of_the_course[0].status]
+                            }
+                            self.context['courses'].append(course_item)
         return render(request, 'manage/application_manage.html', self.context)
 
 
@@ -972,10 +1040,10 @@ class ApplicationDetailsView(View):
             'which_week': None,
             'days_of_the_week': None,
             'section': None,
-            'all_labs': None,   # 暂时用这个代替，因为前端还做不到下拉列表数据联动
+            'all_labs': None,  # 暂时用这个代替，因为前端还做不到下拉列表数据联动
         }
 
-        set_menu_name(self.context, self.url_name)
+        set_menu_name(context, self.url_name)
 
         # CourseBlock.objects.filter(course=course).delete()
         # course.has_block = False
@@ -1091,7 +1159,7 @@ class ExperimentsView(LittleSameModelBaseView):
             for name in name_list:
                 if name in data.keys():
                     temp_dict[name] = data[name]
-            this_logger.debug('整理出可直接赋值的实验项目修改数据'+str(temp_dict))
+            this_logger.debug('整理出可直接赋值的实验项目修改数据' + str(temp_dict))
 
             me = self.model.objects.filter(id=data['id'])
             me.update(**temp_dict)
@@ -1113,7 +1181,8 @@ class ExperimentsView(LittleSameModelBaseView):
         this_logger.debug(self.model_Chinese_name + '信息--接收到post数据：' + str(post_data))
 
         for data in post_data:
-            name_list = ['no', 'name', 'experiment_type_id', 'lecture_time', 'which_week', 'days_of_the_week', 'section']
+            name_list = ['no', 'name', 'experiment_type_id', 'lecture_time', 'which_week', 'days_of_the_week',
+                         'section']
 
             temp_dict = {}
             for name in name_list:
@@ -1136,7 +1205,7 @@ class ExperimentsView(LittleSameModelBaseView):
 
     def delete(self, request, course_id):
         if course_id != '-1':
-            this_logger.debug('删除课程id为'+course_id+'的所有实验项目')
+            this_logger.debug('删除课程id为' + course_id + '的所有实验项目')
             Experiment.objects.filter(course_id=course_id).delete()
         else:
             delete_data = QueryDict(request.body)
@@ -1248,20 +1317,21 @@ def today_in_which_week(school_id):
     days_in_first_week = 7 - begin_date_is_which_day  # 第一周有多少天
 
     now_date = datetime.now().date()
-    now_date_days = int(now_date.strftime('%j'))    # 今天日期在一年中的第几天
+    now_date_days = int(now_date.strftime('%j'))  # 今天日期在一年中的第几天
 
     interval_days = now_date_days - begin_date_days  # 起始日期到现在日期的间隔天数
 
-    this_logger.debug('今天：'+str(now_date)+' 起始日期：'+str(begin_date))
-    this_logger.debug('第一周天数：' + str(days_in_first_week)+' 间隔天数：'+str(interval_days)+' 起始日期的星期：'+str(begin_date_is_which_day))
+    this_logger.debug('今天：' + str(now_date) + ' 起始日期：' + str(begin_date))
+    this_logger.debug(
+        '第一周天数：' + str(days_in_first_week) + ' 间隔天数：' + str(interval_days) + ' 起始日期的星期：' + str(begin_date_is_which_day))
 
-    if interval_days <= days_in_first_week - 1:     # 包含负数，即如果用户输入的起始日期比现在日期还要靠后，则默认为第一周
+    if interval_days <= days_in_first_week - 1:  # 包含负数，即如果用户输入的起始日期比现在日期还要靠后，则默认为第一周
         return 1
     else:
         temp = divmod((interval_days - days_in_first_week), 7)  # interval_days - days_in_first_week只会大于1
-        this_logger.debug('temp:'+str(temp))
+        this_logger.debug('temp:' + str(temp))
         which_week = temp[0] + 2
-        if which_week > 21:     # 把周次控制在 21 周内
+        if which_week > 21:  # 把周次控制在 21 周内
             which_week = 21
         return which_week
 
@@ -1295,7 +1365,8 @@ class WeeksTimeTableScheduleView(View):
 
                 for course_block in course_blocks:
                     if course_block.days_of_the_week == int(selected_data['selected_days_of_the_week']):
-                        if str(selected_data['selected_which_week']) in str_to_non_repetitive_list(course_block.weeks, '、'):
+                        if str(selected_data['selected_which_week']) in str_to_non_repetitive_list(course_block.weeks,
+                                                                                                   '、'):
                             content = '课程：' + course.name + \
                                       '<br>老师：' + get_teachers_name_from_course(course.id) + \
                                       '<br>周次：[ ' + course_block.weeks + \
@@ -1305,8 +1376,10 @@ class WeeksTimeTableScheduleView(View):
 
                             for section in course_block.sections.split(','):
                                 for lab in course_block.new_labs.all():
-                                    if new_div not in base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name]:
-                                        base_dict['d%d_s%s' % (course_block.days_of_the_week, section)]['%s' % lab.name] = \
+                                    if new_div not in base_dict['d%d_s%s' % (course_block.days_of_the_week, section)][
+                                        '%s' % lab.name]:
+                                        base_dict['d%d_s%s' % (course_block.days_of_the_week, section)][
+                                            '%s' % lab.name] = \
                                             base_dict['d%d_s%s' % (course_block.days_of_the_week, section)][
                                                 '%s' % lab.name] + new_div
 
@@ -1332,8 +1405,10 @@ class WeeksTimeTableView(View):
         }
         set_menu_name(context, self.url_name)
 
-        school = School.objects.get(id=request.session['school_id'])
-        context['institutes'] = school.get_all_institutes()
+        school_id = request.session.get('school_id', None)
+        if school_id:
+            school = School.objects.get(id=school_id)
+            context['institutes'] = school.get_all_institutes()
 
         if context['institutes']:
             # 如果用户通过点击选择下拉框筛选展示条件，则通过get方式传过来
@@ -1343,7 +1418,7 @@ class WeeksTimeTableView(View):
                 temp = request.GET.get(name, None)
                 if temp:
                     selected_data[name] = temp
-            this_logger.debug('周次课程表接收get数据：'+str(selected_data))
+            this_logger.debug('周次课程表接收get数据：' + str(selected_data))
 
             if not selected_data:  # 没有选择数据则说明用户是第一次请求得到页面，先看看session有没有记录
                 # session中如果有周次课程表的选择数据，则直接使用这些数据
@@ -1379,7 +1454,7 @@ class WeeksTimeTableView(View):
             for name in ['selected_institute_id', 'selected_which_week', 'selected_days_of_the_week']:
                 if name in selected_data:
                     request.session['weeks_timetable_selected_data'][name] = selected_data[name]
-            this_logger.debug('最终session:'+str(request.session['weeks_timetable_selected_data']))
+            this_logger.debug('最终session:' + str(request.session['weeks_timetable_selected_data']))
             request.session.modified = True
 
             context['labs'] = Lab.objects.filter(institute_id=selected_data['selected_institute_id'], dispark=True)
@@ -1399,7 +1474,8 @@ class RoomsTimeTableScheduleView(View):
             "rows": []
         }
 
-        day_of_the_week = [{'d1': '星期一'}, {'d2': '星期二'}, {'d3': '星期三'}, {'d4': '星期四'}, {'d5': '星期五'}, {'d6': '星期六'}, {'d7': '星期日'}, ]
+        day_of_the_week = [{'d1': '星期一'}, {'d2': '星期二'}, {'d3': '星期三'}, {'d4': '星期四'}, {'d5': '星期五'}, {'d6': '星期六'},
+                           {'d7': '星期日'}, ]
 
         selected_data = request.session.get('rooms_timetable_selected_data', None)
         if selected_data:
@@ -1431,7 +1507,8 @@ class RoomsTimeTableScheduleView(View):
                     course_blocks = CourseBlock.objects.filter(course=course, need_adjust=False, aready_arrange=True)
 
                     for course_block in course_blocks:
-                        if str(selected_data['selected_which_week']) in str_to_non_repetitive_list(course_block.weeks, '、'):
+                        if str(selected_data['selected_which_week']) in str_to_non_repetitive_list(course_block.weeks,
+                                                                                                   '、'):
                             if lab in course_block.new_labs.all():
                                 content = '课程：' + course.name + \
                                           '<br>老师：' + get_teachers_name_from_course(course.id) + \
@@ -1443,7 +1520,8 @@ class RoomsTimeTableScheduleView(View):
                                 for section in course_block.sections.split(','):
                                     day = list(day_of_the_week[course_block.days_of_the_week - 1].keys())[0]
                                     if new_div not in base_dict['s%s' % section]['%s' % day]:
-                                        base_dict['s%s' % section]['%s' % day] = base_dict['s%s' % section]['%s' % day] + new_div
+                                        base_dict['s%s' % section]['%s' % day] = base_dict['s%s' % section][
+                                                                                     '%s' % day] + new_div
 
                 data['rows'] = [empty_row] + list(base_dict.values())
         return JsonResponse(data)
@@ -1463,12 +1541,15 @@ class RoomsTimeTableView(View):
             'which_week': [x for x in range(1, 22)],
             'labs': None,
 
-            'day_of_the_week': [{'d1': '星期一'}, {'d2': '星期二'}, {'d3': '星期三'}, {'d4': '星期四'}, {'d5': '星期五'}, {'d6': '星期六'}, {'d7': '星期日'}, ]
+            'day_of_the_week': [{'d1': '星期一'}, {'d2': '星期二'}, {'d3': '星期三'}, {'d4': '星期四'}, {'d5': '星期五'},
+                                {'d6': '星期六'}, {'d7': '星期日'}, ]
         }
         set_menu_name(context, self.url_name)
 
-        school = School.objects.get(id=request.session['school_id'])
-        context['institutes'] = school.get_all_institutes()
+        school_id = request.session.get('school_id', None)
+        if school_id:
+            school = School.objects.get(id=school_id)
+            context['institutes'] = school.get_all_institutes()
 
         if context['institutes']:
             # 如果用户通过点击选择下拉框筛选展示条件，则通过get方式传过来
@@ -1831,10 +1912,12 @@ class ArrangeView(View):
         set_menu_name(self.context, self.url_name)
         set_time_for_context(self.context)
 
-        self.context['school'] = School.objects.get(id=request.session['school_id'])
+        school_id = request.session.get('school_id', None)
+        if school_id:
+            self.context['school'] = School.objects.get(id=school_id)
 
-        self.context['institutes'] = self.context['school'].get_all_institutes()
-        self.context['attributes'] = LabAttribute.objects.filter(school=self.context['school'])
+            self.context['institutes'] = self.context['school'].get_all_institutes()
+            self.context['attributes'] = LabAttribute.objects.filter(school=self.context['school'])
 
         if self.context['institutes']:
             # 为用户记住最近编辑的学院，要百分百确保session中包含当前学院id
@@ -1864,7 +1947,8 @@ class ArrangeView(View):
                 }
             }
 
-            self.context['labs'] = Lab.objects.filter(institute_id=request.session['current_institute_id'], dispark=True)
+            self.context['labs'] = Lab.objects.filter(institute_id=request.session['current_institute_id'],
+                                                      dispark=True)
             # 获取有课程块的课程，有课程块说明已经通过了审核
             courses = Course.objects.filter(institute_id=request.session['current_institute_id'], has_block=True)
             self.context['need_adjust_course_blocks'] = self.get_course_blocks(courses, True)

@@ -46,9 +46,11 @@
 
 {% block add_js_to_manage %}
     <!--全局的参数或函数-->
+    {% if grades %}
     <script>
         var classes_url = "{% url 'manage:classes' request.session.school_id %}";
     </script>
+    {% endif %}
 
     <!--班级表设置相关  开始-->
     <script>

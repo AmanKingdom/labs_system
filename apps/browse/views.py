@@ -3,7 +3,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.views import View
 
-from browse.forms import LoginForm
+from apps.browse.forms import LoginForm
 
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required, permission_required
@@ -15,8 +15,8 @@ from apps.manage.views import MANAGER, TEACHER, STUDENT
 
 @login_required(login_url='/browse/login')
 def homepage(request):
-    this_logger.debug('主页获取用户类型：' + request.session['user_type'])
     if request.session.get('user_type', None):
+        this_logger.debug('主页获取用户类型：' + request.session['user_type'])
         return HttpResponseRedirect('/manage/weeks_timetable')
     return HttpResponseRedirect('/browse/login')
 
@@ -60,13 +60,14 @@ def set_user_info_to_session(request, username, user_type, user_name, user_id, u
                 }
     this_logger.debug('用户'+username+'拥有的菜单有：'+str(menus))
     for menu in menus:
-        if menu.parent:
-            if str(menu.parent.id) not in menus_dict.keys():
-                menus_dict['%d' % menu.parent.id] = get_new_menu_dict(menu.parent)
-            menus_dict['%d' % menu.parent.id]['children'].append(get_new_menu_dict(menu))
-        else:
-            if str(menu.id) not in menus_dict.keys():
-                menus_dict['%d' % menu.id] = get_new_menu_dict(menu)
+        if menu.name != '':
+            if menu.parent:
+                if str(menu.parent.id) not in menus_dict.keys():
+                    menus_dict['%d' % menu.parent.id] = get_new_menu_dict(menu.parent)
+                menus_dict['%d' % menu.parent.id]['children'].append(get_new_menu_dict(menu))
+            else:
+                if str(menu.id) not in menus_dict.keys():
+                    menus_dict['%d' % menu.id] = get_new_menu_dict(menu)
     print('整理数据提供到前端：')
     for key, menu in menus_dict.items():
         print(menu['name'])
@@ -92,21 +93,25 @@ class RegisterView(View):
         name = request.POST.get('name', None)
         if name:
             username = request.POST.get('username', None)
-            if not User.objects.filter(username=username):
-                password = request.POST.get('password', None)
-                if len(password) >= 6:
-                    user = User.objects.create_user(name=name, username=username, password=password)
-                    user.groups.add(Group.objects.get(name=MANAGER))
-                    user.save()
+            if username:
+                if not User.objects.filter(username=username):
+                    password = request.POST.get('password', None)
+                    if len(password) >= 6:
+                        user = User.objects.create_user(name=name, username=username, password=password)
+                        user.groups.add(Group.objects.get(name=MANAGER))
+                        user.save()
 
-                    set_user_info_to_session(request, username, MANAGER, user.name, user.id, user.school)
-                    this_logger.info(user.name + '管理员注册成功')
+                        set_user_info_to_session(request, username, MANAGER, name, user.id, None)
+                        this_logger.info(user.name + '管理员注册成功')
+                    else:
+                        self.context['status'] = False
+                        self.context['message'] = '这密码也太短了8'
                 else:
                     self.context['status'] = False
-                    self.context['message'] = '这密码也太短了8'
+                    self.context['message'] = '该账号已被注册'
             else:
                 self.context['status'] = False
-                self.context['message'] = '该账号已被注册'
+                self.context['message'] = '请输入账号'
         else:
             self.context['status'] = False
             self.context['message'] = '请输入姓名'
@@ -155,5 +160,4 @@ def assistant_view(request):
 
 def logout_view(request):
     logout(request)
-
     return HttpResponseRedirect('/browse/login')

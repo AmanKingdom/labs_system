@@ -4,9 +4,9 @@
 
 {% block login_register_block %}
     <p>{% if message %}{{ message }}{% else %}欢迎登录！
-        <br>由于本系统涉及大量高校数据，为了您能快速了解本系统，现提供一个有数据的账号:
-        <br>账号：12345678900
-        <br>密码：123456
+{#        <br>由于本系统涉及大量高校数据，为了您能快速了解本系统，现提供一个有数据的账号:#}
+{#        <br>账号：12345678900#}
+{#        <br>密码：123456#}
     {% endif %}</p>
     <form class="m-t" role="form" action="{% url 'browse:login' %}" method="post">
         {% csrf_token %}

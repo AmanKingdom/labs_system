@@ -92,7 +92,7 @@
                         <img alt="image" class="img-circle" src="/static/image/default/dog.jpg" style="width: 40px"/>
                     </div>
                 </li>
-
+                <li><a href="{% url 'manage:personal_info' %}"><i class="fa fa-user-circle-o"></i>个人信息</a></li>
                 {% for key, menu in request.session.user_menus.items %}
                     {% if menu.children %}
                         <li {% if menu_parent_name %}{% if menu_parent_name|urlencode:'' == menu.name|urlencode:'' %}class="active"{% endif %}{% endif %}>
@@ -122,56 +122,56 @@
                     <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i> </a>
                 </div>
                 <ul class="nav navbar-top-links navbar-right">
-{#                    <li class="dropdown">#}
-{#                        <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">#}
-{#                            <i class="fa fa-envelope"></i>  <span class="label label-warning">16</span>#}
-{#                        </a>#}
-{#                        <ul class="dropdown-menu dropdown-messages">#}
-{#                            <li>#}
-{#                                <div class="dropdown-messages-box">#}
-{#                                    <div class="media-body">#}
-{#                                        <a href="#">#}
-{#                                            <small class="pull-right text-navy">1小时前</small>#}
-{#                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>#}
-{#                                            <small class="text-muted">2019.05.21 16:58</small>#}
-{#                                        </a>#}
-{#                                    </div>#}
-{#                                </div>#}
-{#                            </li>#}
-{#                            <li class="divider"></li>#}
-{#                            <li>#}
-{#                                <div class="dropdown-messages-box">#}
-{#                                    <div class="media-body">#}
-{#                                        <a href="#">#}
-{#                                            <small class="pull-right">6小时前</small>#}
-{#                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>#}
-{#                                            <small class="text-muted">2019.05.21 16:58</small>#}
-{#                                        </a>#}
-{#                                    </div>#}
-{#                                </div>#}
-{#                            </li>#}
-{#                            <li class="divider"></li>#}
-{#                            <li>#}
-{#                                <div class="dropdown-messages-box">#}
-{#                                    <div class="media-body">#}
-{#                                        <a href="#">#}
-{#                                            <small class="pull-right">8小时前</small>#}
-{#                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>#}
-{#                                            <small class="text-muted">2019.05.21 16:58</small>#}
-{#                                        </a>#}
-{#                                    </div>#}
-{#                                </div>#}
-{#                            </li>#}
-{#                            <li class="divider"></li>#}
-{#                            <li>#}
-{#                                <div class="text-center link-block">#}
-{#                                    <a href="#">#}
-{#                                        <i class="fa fa-envelope"></i> <strong>阅读所有消息</strong>#}
-{#                                    </a>#}
-{#                                </div>#}
-{#                            </li>#}
-{#                        </ul>#}
-{#                    </li>#}
+                    {#                    <li class="dropdown">#}
+                    {#                        <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">#}
+                    {#                            <i class="fa fa-envelope"></i>  <span class="label label-warning">16</span>#}
+                    {#                        </a>#}
+                    {#                        <ul class="dropdown-menu dropdown-messages">#}
+                    {#                            <li>#}
+                    {#                                <div class="dropdown-messages-box">#}
+                    {#                                    <div class="media-body">#}
+                    {#                                        <a href="#">#}
+                    {#                                            <small class="pull-right text-navy">1小时前</small>#}
+                    {#                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>#}
+                    {#                                            <small class="text-muted">2019.05.21 16:58</small>#}
+                    {#                                        </a>#}
+                    {#                                    </div>#}
+                    {#                                </div>#}
+                    {#                            </li>#}
+                    {#                            <li class="divider"></li>#}
+                    {#                            <li>#}
+                    {#                                <div class="dropdown-messages-box">#}
+                    {#                                    <div class="media-body">#}
+                    {#                                        <a href="#">#}
+                    {#                                            <small class="pull-right">6小时前</small>#}
+                    {#                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>#}
+                    {#                                            <small class="text-muted">2019.05.21 16:58</small>#}
+                    {#                                        </a>#}
+                    {#                                    </div>#}
+                    {#                                </div>#}
+                    {#                            </li>#}
+                    {#                            <li class="divider"></li>#}
+                    {#                            <li>#}
+                    {#                                <div class="dropdown-messages-box">#}
+                    {#                                    <div class="media-body">#}
+                    {#                                        <a href="#">#}
+                    {#                                            <small class="pull-right">8小时前</small>#}
+                    {#                                            <strong>嵌入式系统设计实验</strong> 通过了 . <br>#}
+                    {#                                            <small class="text-muted">2019.05.21 16:58</small>#}
+                    {#                                        </a>#}
+                    {#                                    </div>#}
+                    {#                                </div>#}
+                    {#                            </li>#}
+                    {#                            <li class="divider"></li>#}
+                    {#                            <li>#}
+                    {#                                <div class="text-center link-block">#}
+                    {#                                    <a href="#">#}
+                    {#                                        <i class="fa fa-envelope"></i> <strong>阅读所有消息</strong>#}
+                    {#                                    </a>#}
+                    {#                                </div>#}
+                    {#                            </li>#}
+                    {#                        </ul>#}
+                    {#                    </li>#}
                     <li>
                         <a href="{% url 'browse:logout' %}">
                             <i class="fa fa-sign-out"></i> 退出账户

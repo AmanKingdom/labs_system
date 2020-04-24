@@ -159,12 +159,14 @@
 
 {% block add_js_to_manage %}
     <!--全局性的参数或函数-->
+    {% if school.name %}
     <script>
         var school_area_url = '{% url "manage:school_areas" request.session.school_id %}';
         var institute_url = '{% url "manage:institutes" request.session.school_id %}';
         var department_url = '{% url "manage:departments" request.session.school_id %}';
         var grade_url = '{% url "manage:grades" request.session.school_id %}';
     </script>
+    {% endif %}
 
 
     <!--学校信息设置相关  开始-->

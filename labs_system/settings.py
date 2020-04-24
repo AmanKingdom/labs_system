@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'apps.browse.apps.BrowseConfig',
     'apps.news.apps.NewsConfig',
     'rest_framework',
-    'captcha',
 ]
 
 MIDDLEWARE = [
@@ -83,22 +82,22 @@ WSGI_APPLICATION = 'labs_system.wsgi.application'
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
 DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.sqlite3',
-    #     'NAME': os.path.join(BASE_DIR, 'labs_system_database.db'),
-    # }
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'labs_system_database',
-        'USER': 'root',
-        'PASSWORD': 'dgut520!',
-        'HOST': 'localhost',
-        'PORT': '3306',
-
-        # 'OPTIONS': {
-        #     'read_default_file': '/path/to/my.cnf',
-        # },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'labs_system_database.db'),
     }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.mysql',
+    #     'NAME': 'labs_system_database',
+    #     'USER': 'root',
+    #     'PASSWORD': 'dgut520!',
+    #     'HOST': 'localhost',
+    #     'PORT': '3306',
+    #
+    #     # 'OPTIONS': {
+    #     #     'read_default_file': '/path/to/my.cnf',
+    #     # },
+    # }
 }
 
 
@@ -156,18 +155,18 @@ REST_FRAMEWORK = {
 
 # django-simple-captcha 验证码的基本配置
 # 验证码的显示顺序：输入框、隐藏域、验证码图片，下面这是顺序的设置：
-CAPTCHA_OUTPUT_FORMAT = '%(text_field)s %(hidden_field)s %(image)s'
-# 设置图片噪点
-CAPTCHA_NOISE_FUNCTIONS = (
-    'captcha.helpers.noise_null',   # 设置样式
-    'captcha.helpers.noise_arcs',   # 设置干扰线
-    'captcha.helpers.noise_dots',   # 设置干扰点
-)
-# 图片大小、图片背景颜色
-CAPTCHA_IMAGE_SIZE = (100, 25)
-CAPTCHA_BACKGROUND_COLOR = '#FFFFFF'
-
-CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.random_char_challenge'   # 设置图片中的文字为随机的英文字母
-# CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.word_challenge'   # 设置图片中的文字为随机的英文单词
-# CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.math_challenge'   # 设置图片中的文字为随机的数字表达式
-
+# CAPTCHA_OUTPUT_FORMAT = '%(text_field)s %(hidden_field)s %(image)s'
+# # 设置图片噪点
+# CAPTCHA_NOISE_FUNCTIONS = (
+#     'captcha.helpers.noise_null',   # 设置样式
+#     'captcha.helpers.noise_arcs',   # 设置干扰线
+#     'captcha.helpers.noise_dots',   # 设置干扰点
+# )
+# # 图片大小、图片背景颜色
+# CAPTCHA_IMAGE_SIZE = (100, 25)
+# CAPTCHA_BACKGROUND_COLOR = '#FFFFFF'
+#
+# CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.random_char_challenge'   # 设置图片中的文字为随机的英文字母
+# # CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.word_challenge'   # 设置图片中的文字为随机的英文单词
+# # CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.math_challenge'   # 设置图片中的文字为随机的数字表达式
+#

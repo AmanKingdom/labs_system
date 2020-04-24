@@ -50,10 +50,11 @@
 {% block add_js_to_manage %}
     <script src="/static/css_js/js/plugins/select2/select2.full.min.js"></script>
     <!--全局的参数或函数-->
+    {% if institutes %}
     <script>
         var lab_url = "{% url 'manage:labs' request.session.school_id %}";
     </script>
-
+{% endif %}
 
     <!--实验室信息表设置相关  开始-->
     <script>
